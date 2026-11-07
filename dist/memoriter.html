@@ -1,0 +1,913 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Memoriter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Andika:wght@700&display=swap">
+<style>
+:root{
+  --bg:#FFF7EA;
+  --card:#FFFFFF;
+  --back-bg:#7FB2F0;
+  --page-bg:var(--bg);
+  --mark:"";
+  --tile:24px;
+  --bgtile:56px;
+  --ink:#2F3A4A;
+  --gap:12px;
+  --radius:18px;
+  --flip:380ms;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--page-bg);overflow:hidden;
+  font-family:"Andika","Nunito",system-ui,sans-serif;color:var(--ink);
+  user-select:none;-webkit-user-select:none;touch-action:manipulation}
+#board{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom))}
+#grid{display:grid;gap:var(--gap)}
+.card{position:relative;perspective:900px;cursor:pointer;border:0;padding:0;background:none;
+  width:var(--size);height:var(--size);outline:none}
+.inner{position:absolute;inset:0;transform-style:preserve-3d;
+  transition:transform var(--flip) cubic-bezier(.4,0,.2,1)}
+.card.up .inner{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;border-radius:var(--radius);backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 3px 0 rgba(47,58,74,.12),0 6px 14px rgba(47,58,74,.08)}
+.back{background:var(--back-bg)}
+.back::after{content:var(--mark);width:34%;height:34%;border-radius:50%;
+  background:rgba(255,255,255,.55);box-shadow:inset 0 -3px 0 rgba(0,0,0,.06)}
+.front{background:var(--card);transform:rotateY(180deg);container-type:size;overflow:hidden}
+.front svg{width:78%;height:78%}
+.front img{width:84%;height:84%;object-fit:contain;pointer-events:none}
+.txt{font-weight:700;line-height:1;white-space:nowrap;paint-order:stroke fill}
+.card:focus-visible .face{box-shadow:0 0 0 4px #2F6FDB}
+.card.gone{pointer-events:none}
+.card.gone .inner{animation:pop .3s ease-in forwards}
+@keyframes pop{
+  0%{transform:rotateY(180deg) scale(1);opacity:1}
+  35%{transform:rotateY(180deg) scale(1.08);opacity:1}
+  100%{transform:rotateY(180deg) scale(.2);opacity:0}}
+#night{position:fixed;inset:0;pointer-events:none;opacity:0;transition:opacity 1.2s ease;
+  background:radial-gradient(ellipse at 50% 35%,#2B3C7A 0%,#18224A 60%,#10173A 100%)}
+#night.on{opacity:.94}
+#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
+/* Start screen: one tap unlocks sound + speech, so the very first card is heard. */
+#start{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  background:rgba(255,247,234,.72);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);
+  transition:opacity .4s ease;flex-direction:column}
+
+#start.hide{opacity:0;pointer-events:none}
+#langnote{max-width:min(90vw,520px);margin:1.4em 16px 0;text-align:center;
+  font:600 14px/1.4 system-ui,sans-serif;color:#8a5a00}
+#langnote:empty{display:none}
+#start button{display:flex;align-items:center;gap:.45em;border:0;cursor:pointer;
+  font:700 clamp(36px,9vmin,84px)/1 "Andika","Nunito",system-ui,sans-serif;color:#fff;
+  background:#3DAA5C;box-shadow:0 .12em 0 #2C7E44,0 .3em .6em rgba(47,58,74,.18);
+  padding:.45em .9em .45em .75em;border-radius:999px;animation:breathe 2.2s ease-in-out infinite}
+#start button:active{translate:0 .08em;box-shadow:0 .04em 0 #2C7E44}
+#start svg{width:.9em;height:.9em}
+@keyframes breathe{50%{scale:1.05}}
+@media (prefers-reduced-motion:reduce){#start button{animation:none}}
+#again{position:fixed;left:50%;bottom:8%;translate:-50% 0;width:96px;height:96px;border-radius:50%;
+  border:0;background:#3DAA5C;color:#fff;box-shadow:0 5px 0 #2C7E44;cursor:pointer;
+  display:none;align-items:center;justify-content:center;opacity:0;transition:opacity .6s}
+#again.show{display:flex}
+#again svg{width:52px;height:52px}
+.overlay{position:fixed;inset:16px;overflow:auto;background:#fff;border-radius:16px;padding:20px;
+  font:14px/1.5 ui-monospace,Consolas,monospace;white-space:pre-wrap;box-shadow:0 10px 40px rgba(0,0,0,.15)}
+@media (prefers-reduced-motion:reduce){:root{--flip:1ms}.card.gone .inner{animation:none;opacity:0}}
+.overlay .voice{cursor:pointer;padding:2px 0}
+
+</style>
+</head>
+<body>
+<div id="board"><div id="grid" role="grid" aria-label="Memory cards"></div></div>
+<div id="start"><button type="button"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5Z"/></svg><span></span></button><p id="langnote"></p></div>
+<div id="night"></div>
+<canvas id="fx"></canvas>
+<button id="again" aria-label="Play again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg></button>
+
+<script>
+(() => {
+"use strict";
+/* ===== src/js/config.js ===== */
+/* config.js: everything read from the URL, plus small shared helpers.
+   Loaded first; every other file may use these names. */
+
+const Q = new URLSearchParams(location.search);
+const num = (k, d) => { const v = parseFloat(Q.get(k)); return Number.isFinite(v) ? v : d; };
+const list = k => Q.getAll(k).flatMap(v => v.split(",")).map(s => s.trim()).filter(Boolean);
+
+/* Language: "es", "es-MX", "spanish", "español" … all work. LANG is the 2-letter code used for
+   built-in words; LANG_TAG is the full tag used to pick a voice. */
+const LANG_ALIASES = { spanish: "es", espanol: "es", "español": "es", english: "en", ingles: "en", "inglés": "en" };
+const LANG_TAG = (() => { const v = (Q.get("lang") || "en").trim().replace("_", "-"); return LANG_ALIASES[v.toLowerCase()] || v; })();
+const LANG = LANG_TAG.slice(0, 2).toLowerCase() === "es" ? "es" : "en";
+
+/* Theme: given with theme=…, or guessed from the other settings, so "?letters=vowels" alone
+   already means the letters theme. */
+const THEME_ALIASES = { number: "numbers", numeros: "numbers", "números": "numbers", letter: "letters", letras: "letters", shape: "shapes", formas: "shapes", figuras: "shapes", image: "images", imagenes: "images", "imágenes": "images", animals: "images", animales: "images" };
+function guessTheme() {
+  const t = (Q.get("theme") || "").trim().toLowerCase();
+  if (t) return THEME_ALIASES[t] || t;
+  if (Q.has("letters")) return "letters";
+  if (Q.has("shapes")) return "shapes";
+  if (Q.has("items")) return "custom";
+  return "numbers";
+}
+
+const CFG = {
+  theme: guessTheme(),
+  pairs: Math.max(1, Math.min(30, Math.floor(num("cards", 8) / 2))),   // cards=8 (default) → 4 pairs
+  tts: Q.get("tts") !== "0",
+  sound: Q.get("sound") !== "0",
+  rate: num("rate", null),                            // null = use the voice preset's value
+  pitch: num("pitch", null),
+  colors: (Q.get("colors") || "one").toLowerCase(),   // one | pair | 0 | <name> | <hex>
+  delay: num("delay", 1200),
+  vanish: num("vanish", 900),
+  upper: (Q.get("case") || "upper").toLowerCase() !== "lower",
+};
+
+/* Random numbers: optionally seeded (seed=…) so the same shuffle repeats. */
+let rnd = Math.random;
+if (Q.has("seed")) {
+  let a = num("seed", 1) >>> 0;
+  rnd = () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+}
+const shuffle = arr => { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; };
+const pick = (pool, n) => shuffle(pool.slice()).slice(0, n);
+const randOf = a => a[Math.floor(Math.random() * a.length)];
+const escapeHTML = s => s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+/* ===== src/js/i18n.js ===== */
+/* i18n.js: every word the game shows or speaks, per language.
+   Numbers and letters are turned into words here ("1" → "uno", "B" → "be"), so they are spoken in
+   the chosen language even when the device falls back to a voice of another language.
+   To add a language: copy the "en" block, translate it, and add the code to LANG in config.js. */
+
+const TEXT = {
+  en: {
+    start: "Let's go!",
+    win: "Good job!",
+    sample: "Hello, one, two, three",
+    noVoice: "No English voice on this device/browser.",
+    shapes: { line: "line", circle: "circle", oval: "oval", square: "square", rectangle: "rectangle", triangle: "triangle", diamond: "diamond", pentagon: "pentagon", hexagon: "hexagon", heptagon: "heptagon", octagon: "octagon", star: "star", heart: "heart" },
+    animals: ["🐶|dog", "🐱|cat", "🐮|cow", "🐷|pig", "🐸|frog", "🦁|lion", "🐵|monkey", "🐤|chick", "🦆|duck", "🐻|bear", "🐰|rabbit", "🐟|fish", "🐘|elephant", "🐴|horse"],
+    alphabet: "abcdefghijklmnopqrstuvwxyz",
+    // English voices read a single capital letter as its name, so letters are spoken as "A", "B" …
+    letter: ch => ch.toUpperCase(),
+    number: n => numberEN(n),
+  },
+  es: {
+    start: "¡Vamos!",
+    win: "¡Muy bien!",
+    sample: "Hola, uno, dos, tres",
+    noVoice: "No hay voz en español en este dispositivo/navegador.",
+    shapes: { line: "línea", circle: "círculo", oval: "óvalo", square: "cuadrado", rectangle: "rectángulo", triangle: "triángulo", diamond: "rombo", pentagon: "pentágono", hexagon: "hexágono", heptagon: "heptágono", octagon: "octágono", star: "estrella", heart: "corazón" },
+    animals: ["🐶|perro", "🐱|gato", "🐮|vaca", "🐷|cerdo", "🐸|rana", "🦁|león", "🐵|mono", "🐤|pollito", "🦆|pato", "🐻|oso", "🐰|conejo", "🐟|pez", "🐘|elefante", "🐴|caballo"],
+    alphabet: "abcdefghijklmnñopqrstuvwxyz",
+    letter: ch => LETTERS_ES[ch.toLowerCase()] || ch,
+    number: n => numberES(n),
+  },
+};
+const W = TEXT[LANG];
+
+const LETTERS_ES = { a: "a", b: "be", c: "ce", d: "de", e: "e", f: "efe", g: "ge", h: "hache", i: "i", j: "jota", k: "ka", l: "ele", m: "eme", n: "ene", "ñ": "eñe", o: "o", p: "pe", q: "cu", r: "erre", s: "ese", t: "te", u: "u", v: "uve", w: "uve doble", x: "equis", y: "ye", z: "zeta" };
+
+function numberES(n) {
+  if (n < 0) return "menos " + numberES(-n);
+  const U = ["cero", "uno", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve", "diez", "once", "doce", "trece", "catorce", "quince", "dieciséis", "diecisiete", "dieciocho", "diecinueve", "veinte", "veintiuno", "veintidós", "veintitrés", "veinticuatro", "veinticinco", "veintiséis", "veintisiete", "veintiocho", "veintinueve"];
+  const T = { 3: "treinta", 4: "cuarenta", 5: "cincuenta", 6: "sesenta", 7: "setenta", 8: "ochenta", 9: "noventa" };
+  const H = ["", "ciento", "doscientos", "trescientos", "cuatrocientos", "quinientos", "seiscientos", "setecientos", "ochocientos", "novecientos"];
+  const below1000 = x => {
+    if (x < 30) return U[x];
+    if (x < 100) { const r = x % 10; return T[Math.floor(x / 10)] + (r ? " y " + U[r] : ""); }
+    if (x === 100) return "cien";
+    const r = x % 100; return H[Math.floor(x / 100)] + (r ? " " + below1000(r) : "");
+  };
+  if (n < 1000) return below1000(n);
+  if (n < 1e6) { const k = Math.floor(n / 1000), r = n % 1000; return (k === 1 ? "mil" : below1000(k).replace(/uno$/, "un") + " mil") + (r ? " " + below1000(r) : ""); }
+  return String(n);
+}
+
+function numberEN(n) {
+  if (n < 0) return "minus " + numberEN(-n);
+  const U = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"];
+  const T = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"];
+  const below1000 = x => {
+    if (x < 20) return U[x];
+    if (x < 100) { const r = x % 10; return T[Math.floor(x / 10)] + (r ? "-" + U[r] : ""); }
+    const r = x % 100; return U[Math.floor(x / 100)] + " hundred" + (r ? " " + below1000(r) : "");
+  };
+  if (n < 1000) return below1000(n);
+  if (n < 1e6) { const r = n % 1000; return below1000(Math.floor(n / 1000)) + " thousand" + (r ? " " + below1000(r) : ""); }
+  return String(n);
+}
+
+/* What to speak for a card's text: whole numbers and single letters become words in the
+   current language; anything else is spoken as written. */
+function spoken(text) {
+  const t = String(text).trim();
+  if (/^-?\d+$/.test(t)) return W.number(parseInt(t, 10));
+  if ([...t].length === 1 && /\p{L}/u.test(t)) return W.letter(t);
+  return t;
+}
+
+/* ===== src/js/colors.js ===== */
+/* colors.js: the toddler palette and colour helpers. */
+
+/* Unambiguous, named colours, softened just enough. */
+const NAMED = { red: "#E04848", blue: "#2F6FDB", yellow: "#F2C230", green: "#3DAA5C", orange: "#F28C28", purple: "#8A4FC7", pink: "#E8649E", brown: "#8B5A3C" };
+const PALETTE = Object.values(NAMED);
+const INK = "#2F3A4A";
+
+const darker = (hex, f = .72) => "#" + [1, 3, 5].map(i => Math.round(parseInt(hex.substr(i, 2), 16) * f).toString(16).padStart(2, "0")).join("");
+const lighten = (hex, f) => "#" + [1, 3, 5].map(i => { const v = parseInt(hex.substr(i, 2), 16); return Math.round(v + (255 - v) * f).toString(16).padStart(2, "0"); }).join("");
+
+/* A colour from the URL: a palette name (optionally softened towards white) or a 6-digit hex. */
+const colorParam = (k, dflt, soften = 0) => {
+  const v = (Q.get(k) || "").toLowerCase();
+  if (NAMED[v]) return soften ? lighten(NAMED[v], soften) : NAMED[v];
+  if (/^#?[0-9a-f]{6}$/.test(v)) return "#" + v.replace("#", "");
+  return dflt;
+};
+
+/* Colour for every card in a game. Default: one random colour shared by all cards, so the
+   child matches the item itself and colour is never a clue or a distraction. Yellow is skipped
+   in random picks because it is hard to read on a white card. */
+function gameColors(n) {
+  const c = CFG.colors;
+  if (c === "pair") return Array.from({ length: n }, (_, i) => PALETTE[i % PALETTE.length]);
+  let one;
+  if (c === "0" || c === "ink") one = INK;
+  else if (NAMED[c]) one = NAMED[c];
+  else if (/^#?[0-9a-f]{6}$/.test(c)) one = "#" + c.replace("#", "");
+  else one = randOf(PALETTE.filter(p => p !== NAMED.yellow));
+  return Array(n).fill(one);
+}
+
+/* ===== src/js/patterns.js ===== */
+/* patterns.js: card back and page background patterns.
+   Pure CSS gradients for the geometric ones, tiny inline SVG tiles for the picture ones.
+   Tile size comes from a CSS variable so the pattern scales with the cards. */
+
+const svgTile = body => `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'>${body}</svg>`)}")`;
+const heartPath = (x, y, s) => `<path transform='translate(${x} ${y}) scale(${s})' d='M0 7 C-7 2 -9 -1 -9 -4 C-9 -7 -6.5 -9 -4.5 -9 C-2.5 -9 -1 -8 0 -6 C1 -8 2.5 -9 4.5 -9 C6.5 -9 9 -7 9 -4 C9 -1 7 2 0 7Z'/>`;
+const starPts = (cx, cy, R) => Array.from({ length: 10 }, (_, i) => { const r = i % 2 ? R * .45 : R, a = (-90 + i * 36) * Math.PI / 180; return `${(cx + r * Math.cos(a)).toFixed(1)},${(cy + r * Math.sin(a)).toFixed(1)}`; }).join(" ");
+
+/* Each pattern returns a list of CSS background layers. f = pattern colour, t = tile size. */
+const PATTERNS = {
+  plain:    () => [],
+  dots:     (f, t) => [`radial-gradient(circle, ${f} 13%, transparent 15%) 0 0/${t} ${t}`],
+  polka:    (f, t) => [`radial-gradient(circle, ${f} 16%, transparent 18%) 0 0/${t} ${t}`,
+                       `radial-gradient(circle, ${f} 16%, transparent 18%) calc(${t}/2) calc(${t}/2)/${t} ${t}`],
+  stripes:  (f, t) => [`repeating-linear-gradient(90deg, ${f} 0 calc(${t}/4), transparent 0 calc(${t}/2))`],
+  diagonal: (f, t) => [`repeating-linear-gradient(45deg, ${f} 0 calc(${t}/5), transparent 0 calc(${t}/2.5))`],
+  checks:   (f, t) => [`conic-gradient(${f} 25%, transparent 0 50%, ${f} 0 75%, transparent 0) 0 0/${t} ${t}`],
+  grid:     (f, t) => [`linear-gradient(${f} 2px, transparent 0) -1px -1px/${t} ${t}`, `linear-gradient(90deg, ${f} 2px, transparent 0) -1px -1px/${t} ${t}`],
+  zigzag:   (f, t) => [`${svgTile(`<polyline points='0,25 10,15 20,25 30,15 40,25' fill='none' stroke='${f}' stroke-width='4' stroke-linejoin='round' stroke-linecap='round'/>`)} 0 0/${t} ${t}`],
+  waves:    (f, t) => [`${svgTile(`<path d='M0 20 Q10 10 20 20 T40 20' fill='none' stroke='${f}' stroke-width='4' stroke-linecap='round'/>`)} 0 0/${t} ${t}`],
+  stars:    (f, t) => [`${svgTile(`<g fill='${f}'><polygon points='${starPts(10, 11, 7)}'/><polygon points='${starPts(30, 31, 7)}'/></g>`)} 0 0/${t} ${t}`],
+  hearts:   (f, t) => [`${svgTile(`<g fill='${f}'>${heartPath(10, 11, .75)}${heartPath(30, 31, .75)}</g>`)} 0 0/${t} ${t}`],
+  bubbles:  (f, t) => [`${svgTile(`<g fill='none' stroke='${f}' stroke-width='2.5'><circle cx='10' cy='10' r='6'/><circle cx='29' cy='25' r='8'/><circle cx='12' cy='32' r='3'/></g>`)} 0 0/${t} ${t}`],
+};
+
+/* Random pick that never repeats the previous game's choice. */
+const lastPick = {};
+function freshPick(key, pool) {
+  const options = pool.length > 1 ? pool.filter(v => v !== lastPick[key]) : pool;
+  return (lastPick[key] = randOf(options));
+}
+const BACK_COLORS = Object.keys(NAMED).filter(k => k !== "brown");   // soft brown looks muddy
+
+/* Called at the start of every game: card back pattern + colour (random by default) and page background. */
+function applyPatterns() {
+  const root = document.documentElement.style;
+  const bc = (Q.get("backcolor") || "random").toLowerCase();
+  const back = bc === "random" ? lighten(NAMED[freshPick("color", BACK_COLORS)], .35) : colorParam("backcolor", "#7FB2F0", .35);
+  const bp = (Q.get("back") || "random").toLowerCase();
+  const backPat = PATTERNS[bp === "random" ? freshPick("pattern", Object.keys(PATTERNS).filter(k => k !== "plain")) : bp] || PATTERNS.dots;
+  root.setProperty("--back-bg", [...backPat("rgba(255,255,255,.38)", "var(--tile)"), `linear-gradient(160deg, ${back}, ${darker(back, .92)})`].join(","));
+  if (Q.get("mark") === "0") root.setProperty("--mark", "none");
+  // Page: plain by default; a very faint tone-on-tone pattern if asked.
+  const bg = colorParam("bgcolor", "#FFF7EA", .82);
+  const bgPat = PATTERNS[(Q.get("bg") || "plain").toLowerCase()] || PATTERNS.plain;
+  root.setProperty("--page-bg", [...bgPat(darker(bg, .94), "var(--bgtile)"), bg].join(","));
+}
+
+/* ===== src/js/shapes.js ===== */
+/* shapes.js: SVG drawings for the shapes theme (viewBox 0 0 100 100).
+   Each function takes a fill colour (c) and an outline colour (s). Names are translated in i18n.js. */
+
+const poly = (n, r = 42, cy = 50, rot = -90) => Array.from({ length: n }, (_, i) => {
+  const a = (rot + i * 360 / n) * Math.PI / 180; return `${(50 + r * Math.cos(a)).toFixed(1)},${(cy + r * Math.sin(a)).toFixed(1)}`; }).join(" ");
+const starPoly = () => Array.from({ length: 10 }, (_, i) => {
+  const r = i % 2 ? 19 : 44, a = (-90 + i * 36) * Math.PI / 180; return `${(50 + r * Math.cos(a)).toFixed(1)},${(53 + r * Math.sin(a)).toFixed(1)}`; }).join(" ");
+const polygon = (pts, c, s) => `<polygon points="${pts}" fill="${c}" stroke="${s}" stroke-width="4" stroke-linejoin="round"/>`;
+
+const SHAPES = {
+  line:      c => `<line x1="12" y1="50" x2="88" y2="50" stroke="${c}" stroke-width="12" stroke-linecap="round"/>`,
+  circle:    (c, s) => `<circle cx="50" cy="50" r="40" fill="${c}" stroke="${s}" stroke-width="4"/>`,
+  oval:      (c, s) => `<ellipse cx="50" cy="50" rx="44" ry="28" fill="${c}" stroke="${s}" stroke-width="4"/>`,
+  square:    (c, s) => `<rect x="15" y="15" width="70" height="70" rx="4" fill="${c}" stroke="${s}" stroke-width="4"/>`,
+  rectangle: (c, s) => `<rect x="6" y="26" width="88" height="48" rx="4" fill="${c}" stroke="${s}" stroke-width="4"/>`,
+  triangle:  (c, s) => polygon(poly(3, 46, 58), c, s),
+  diamond:   (c, s) => polygon("50,6 84,50 50,94 16,50", c, s),
+  pentagon:  (c, s) => polygon(poly(5, 44, 53), c, s),
+  hexagon:   (c, s) => polygon(poly(6, 44, 50, 0), c, s),
+  heptagon:  (c, s) => polygon(poly(7, 44, 52), c, s),
+  octagon:   (c, s) => polygon(poly(8, 44, 50, -67.5), c, s),
+  star:      (c, s) => polygon(starPoly(), c, s),
+  heart:     (c, s) => `<path d="M50 86 C20 64 8 48 8 32 C8 18 19 9 31 9 C40 9 46 14 50 21 C54 14 60 9 69 9 C81 9 92 18 92 32 C92 48 80 64 50 86Z" fill="${c}" stroke="${s}" stroke-width="4" stroke-linejoin="round"/>`,
+};
+
+/* ===== src/js/content.js ===== */
+/* content.js: builds the list of card items for the chosen theme.
+   Each item: { kind: "text" | "shape" | "img" | "emoji", show, say }
+   "show" is what appears on the card, "say" is what the voice speaks (already in the game language). */
+
+/* "shown|spoken" → item. Without "|", numbers and single letters are spoken as words (see spoken()). */
+const parseItem = (raw, kind) => {
+  const [show, say] = raw.split("|");
+  return { kind, show: show.trim(), say: say !== undefined ? say.trim() : kind === "text" ? spoken(show) : show.trim() };
+};
+
+const THEMES = {
+  numbers(n) {
+    const from = Math.round(num("from", 1)), to = Math.round(num("to", from + n - 1));
+    const lo = Math.min(from, to), hi = Math.max(from, to);
+    const all = Array.from({ length: Math.min(hi - lo + 1, 1000) }, (_, i) => lo + i);
+    return (all.length <= n ? all : pick(all, n)).map(v => ({ kind: "text", show: String(v), say: W.number(v) }));
+  },
+
+  letters(n) {
+    const spec = (Q.get("letters") || "abc").toLowerCase();
+    const abc = W.alphabet;
+    let chars;
+    if (["abc", "all", "a-z"].includes(spec)) chars = [...abc];
+    else if (spec === "vowels" || spec === "vocales") chars = [..."aeiou"];
+    else if (/^.-.$/u.test(spec)) { const a = abc.indexOf(spec[0]), b = abc.indexOf(spec[2]); chars = [...abc].slice(Math.min(a, b), Math.max(a, b) + 1); }
+    else chars = [...new Set([...spec.replace(/[^\p{L}]/gu, "")])];
+    return (chars.length <= n ? chars : pick(chars, n)).map(ch => ({ kind: "text", show: CFG.upper ? ch.toUpperCase() : ch, say: W.letter(ch) }));
+  },
+
+  shapes(n) {
+    const want = list("shapes").map(s => s.toLowerCase()).filter(s => SHAPES[s]);
+    return (want.length ? want.slice(0, n) : pick(Object.keys(SHAPES), n)).map(s => ({ kind: "shape", show: s, say: W.shapes[s] }));
+  },
+
+  images(n) {
+    // items= with emoji or image links (https://…, data:…, ./file.png); "shown|spoken" works here too.
+    const custom = list("items").map(v => parseItem(v, /^(https?:|data:|\.{0,2}\/)/.test(v) ? "img" : "emoji"));
+    return pick(custom.length ? custom : W.animals.map(v => parseItem(v, "emoji")), n);
+  },
+
+  custom(n) {
+    const items = list("items").map(v => parseItem(v, "text"));
+    if (!items.length) return THEMES.numbers(n);
+    return items.length <= n ? items : pick(items, n);
+  },
+};
+
+function buildItems() {
+  return (THEMES[CFG.theme] || THEMES.numbers)(CFG.pairs);
+}
+
+/* ===== src/js/audio.js ===== */
+/* audio.js: all sound effects, synthesised with Web Audio (no sound files).
+   Sounds stay soft on purpose: the audience is toddlers. */
+
+let AC = null, master = null, noiseBuf = null;
+
+/* Creates/resumes the audio engine. Browsers only allow this after a tap. */
+function audio() {
+  if (!CFG.sound) return null;
+  if (!AC) {
+    const C = window.AudioContext || window.webkitAudioContext; if (!C) return null;
+    AC = new C(); master = AC.createGain(); master.gain.value = 0.6; master.connect(AC.destination);
+    noiseBuf = AC.createBuffer(1, AC.sampleRate * 1.5, AC.sampleRate);
+    const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
+  if (AC.state === "suspended") AC.resume();
+  return AC;
+}
+
+function env(g, t, peak, attack, decay) { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + attack); g.gain.exponentialRampToValueAtTime(0.0001, t + attack + decay); }
+
+/* pan: -1 (left) … 1 (right), so a firework on the left is heard on the left. */
+function out(pan) {
+  if (!pan || !AC.createStereoPanner) return master;
+  const p = AC.createStereoPanner(); p.pan.value = Math.max(-1, Math.min(1, pan)); p.connect(master); return p;
+}
+function tone(freq, t, { type = "sine", peak = .15, attack = .005, decay = .12, to = null, pan = 0 } = {}) {
+  const o = AC.createOscillator(), g = AC.createGain(); o.type = type; o.frequency.setValueAtTime(freq, t);
+  if (to) o.frequency.exponentialRampToValueAtTime(to, t + attack + decay * .6);
+  env(g, t, peak, attack, decay); o.connect(g).connect(out(pan)); o.start(t); o.stop(t + attack + decay + .05);
+}
+function noise(t, { dur = .4, peak = .2, filter = "lowpass", f0 = 1200, f1 = null, q = .7, attack = .005, pan = 0 } = {}) {
+  const s = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain();
+  s.buffer = noiseBuf; s.loop = true; f.type = filter; f.Q.value = q; f.frequency.setValueAtTime(f0, t);
+  if (f1) f.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  env(g, t, peak, attack, dur); s.connect(f).connect(g).connect(out(pan));
+  s.start(t, Math.random()); s.stop(t + attack + dur + .05);
+}
+
+const sfx = {
+  /* Soft "bloop" when a card is touched (the flip itself is silent). */
+  tap() { if (!audio()) return; tone(720, AC.currentTime, { type: "sine", peak: .18, decay: .09, to: 480 }); },
+  /* Bubble pop when a matched card vanishes. */
+  pop() {
+    if (!audio()) return; const t = AC.currentTime;
+    tone(260, t, { type: "sine", peak: .22, attack: .003, decay: .11, to: 1100 });
+    noise(t, { dur: .03, peak: .05, filter: "highpass", f0: 2500 });
+    tone(1568, t + .06, { type: "triangle", peak: .035, decay: .25 });
+  },
+  whoosh(pan) { if (!audio()) return; noise(AC.currentTime, { dur: .8, peak: .045, filter: "bandpass", f0: 300, f1: 2600, q: 1.4, attack: .3, pan }); },
+  /* Toddler-safe bangs: a muffled thump plus a texture that matches the burst type. */
+  burst(kind, pan, big = false) {
+    if (!audio()) return; const t = AC.currentTime;
+    noise(t, { dur: big ? .9 : .6, peak: big ? .2 : .14, f0: 700, f1: 120, pan });
+    const penta = [1047, 1175, 1319, 1568, 1760, 2093, 2349, 2637];                          // C major pentatonic, high
+    if (kind === "heart" || kind === "smile") {                                              // happy arpeggio C-E-G-C
+      [1047, 1319, 1568, 2093, 2637].forEach((f, i) => tone(f, t + .08 + i * .09, { type: "triangle", peak: .06, decay: .7, pan }));
+    } else if (kind === "willow") {                                                           // long soft shimmer
+      noise(t + .1, { dur: 2, peak: .035, filter: "highpass", f0: 5000, attack: .25, pan });
+    } else if (kind === "glitter" || kind === "crossette") {                                  // gentle crackle
+      for (let i = 0; i < 22; i++) noise(t + .35 + Math.random() * 1.1, { dur: .018, peak: .03 + Math.random() * .03, filter: "highpass", f0: 2500 + Math.random() * 3000, pan: pan + (Math.random() - .5) * .6 });
+    } else {                                                                                  // twinkly notes
+      for (let i = 0; i < 5; i++) tone(randOf(penta), t + .05 + i * .07 + Math.random() * .05, { type: "triangle", peak: .045, decay: .6, pan });
+    }
+  },
+};
+
+/* ===== src/js/speech.js ===== */
+/* speech.js: text-to-speech with the browser's Web Speech API.
+   The voices come from the browser + operating system, so what is available differs per device
+   (Edge: natural Microsoft voices, Chrome: Google voices, IDE previews: older Windows voices).
+   Presets pick the most natural voice of the wanted kind. Browsers don't expose a voice's
+   gender, so it is guessed from well-known voice names. */
+
+const synth = CFG.tts && "speechSynthesis" in window ? window.speechSynthesis : null;
+
+const VOICE_PRESETS = {
+  auto:   { gender: null,     rate: 1,   pitch: 1    },
+  soft:   { gender: "female", rate: .92, pitch: 1.05 },
+  female: { gender: "female", rate: 1,   pitch: 1    },
+  male:   { gender: "male",   rate: 1,   pitch: .95  },
+};
+const FEMALE = /aria|jenny|ana\b|michelle|emma|ava|sonia|libby|maisie|natasha|clara|zira|hazel|susan|samantha|karen|moira|tessa|victoria|allison|serena|fiona|catherine|nicky|joanna|salli|kimberly|ivy|elvira|dalia|paloma|helena|laura|sabina|monica|mónica|paulina|marisol|esperanza|elena|lucia|lucía|camila|valentina|ximena|larissa|female|mujer/i;
+const MALE   = /guy|davis|tony|jason|brian|andrew|christopher|eric|roger|steffan|ryan|thomas|george|david|mark|james|daniel|alex\b|fred|tom\b|arthur|aaron|oliver|rishi|gordon|matthew|joey|justin|alvaro|álvaro|jorge|pablo|raul|raúl|gerardo|liberto|diego|tomas|tomás|juan|carlos|male|hombre/i;
+const VOICE_Q = (Q.get("voice") || "auto").toLowerCase();
+const PRESET = VOICE_PRESETS[VOICE_Q] || VOICE_PRESETS.auto;
+
+/* Higher = more natural sounding. */
+const quality = v => {
+  const n = v.name.toLowerCase(); let s = 0;
+  if (/natural|neural/.test(n)) s += 50;                  // Edge "… Online (Natural)" voices
+  if (/premium|enhanced|siri/.test(n)) s += 40;           // Apple downloadable voices
+  if (/google/.test(n)) s += 30;                          // Chrome network voices
+  if (/online/.test(n)) s += 10;
+  if (/espeak|robot|compact/.test(n)) s -= 40;
+  if (!v.localService) s += 5;
+  return s;
+};
+const genderOf = v => MALE.test(v.name) && !/female|mujer/i.test(v.name) ? "male" : FEMALE.test(v.name) ? "female" : null;
+const voiceLang = v => v.lang.toLowerCase().replace("_", "-");
+const speaksLang = v => voiceLang(v).startsWith(LANG_TAG.toLowerCase()) || voiceLang(v).startsWith(LANG);
+
+let voice = null, onlineFailed = false, noLangVoice = false;
+
+function chooseVoice() {
+  if (!synth) return;
+  const all = synth.getVoices();
+  // Voices that speak the game language. After an online voice failed to start in time, prefer
+  // voices installed on the device, but never switch to another language just for that.
+  let pool = all.filter(speaksLang);
+  if (onlineFailed && pool.some(v => v.localService)) pool = pool.filter(v => v.localService);
+  noLangVoice = all.length > 0 && !pool.length;
+  if (noLangVoice) pool = all.filter(v => v.default).concat(all);   // better a foreign accent than silence
+  updateLangNotice();
+  if (!VOICE_PRESETS[VOICE_Q]) {                                      // voice=<part of a name>
+    const named = pool.find(v => v.name.toLowerCase().includes(VOICE_Q)) || all.find(v => v.name.toLowerCase().includes(VOICE_Q));
+    if (named) { voice = named; return; }
+  }
+  const score = v => quality(v) + (PRESET.gender ? (genderOf(v) === PRESET.gender ? 100 : genderOf(v) ? -100 : 0) : 0)
+                   + (voiceLang(v).startsWith(LANG_TAG.toLowerCase()) ? 20 : 0)    // exact region match (lang=es-MX)
+                   + ((navigator.languages || []).some(l => l.toLowerCase() === voiceLang(v)) ? 10 : 0);   // the browser's own locale
+  voice = pool.slice().sort((a, b) => score(b) - score(a))[0] || null;
+}
+
+/* Note for the grown-up on the Start screen when the device has no voice for the language. */
+function updateLangNotice() {
+  const el = document.getElementById("langnote"); if (!el) return;
+  el.textContent = noLangVoice ? `${W.noVoice} Try Edge or Chrome, or add the language's speech pack in Windows Settings → Time & language → Speech. (?voices=1 lists the voices)` : "";
+}
+
+/* Speak right away: cut off anything still talking (a queue makes the voice lag behind the cards).
+   If a voice doesn't start within 1.2 s, retry once (with an installed voice if it was an online one). */
+let current = null;                                       // kept referenced: Chrome can drop utterances that get garbage-collected
+function say(text, retry = true) {
+  if (!synth || !text) return;
+  const u = new SpeechSynthesisUtterance(text);
+  // Always tag the utterance with the game language, so the engine pronounces it that way.
+  u.lang = voice && speaksLang(voice) ? voice.lang : LANG_TAG;
+  if (voice) u.voice = voice;
+  u.rate = CFG.rate ?? PRESET.rate; u.pitch = CFG.pitch ?? PRESET.pitch;
+  let started = false;
+  u.onstart = () => { started = true; };
+  current = u;
+  // Chrome/Edge can silently drop an utterance spoken in the same instant as cancel(),
+  // so only cancel when something is actually talking, and give it a moment.
+  const busy = synth.speaking || synth.pending;
+  if (busy) synth.cancel();
+  synth.resume();                                         // un-sticks Chrome's occasionally paused queue
+  setTimeout(() => { if (current === u) synth.speak(u); }, busy ? 60 : 0);
+  if (retry) setTimeout(() => {
+    if (started || current !== u) return;
+    if (voice && !voice.localService) { onlineFailed = true; chooseVoice(); }
+    synth.cancel(); say(text, false);
+  }, 1200);
+}
+
+function initSpeech() {
+  if (!synth) return;
+  chooseVoice();
+  synth.addEventListener?.("voiceschanged", chooseVoice);
+}
+
+/* ===== src/js/fireworks.js ===== */
+/* fireworks.js: canvas particles. Two uses:
+   - sparkle(): small bursts (matched cards, Start button)
+   - fireworksShow(): the short end show (about 4 seconds). The page dims to a soft night sky, then rockets with spark trails
+     burst as peony, ring, double ring, willow, glitter, crossette (splits again), star, heart and
+     smiley. Bursts glow (additive blending) and leave short trails; sounds pan with the burst. */
+
+const fx = document.getElementById("fx"), ctx = fx.getContext("2d");
+const night = document.getElementById("night");
+const NIGHT_COLORS = PALETTE.map(c => lighten(c, .25)).concat(["#FFD86B", "#FFFFFF", "#7FE3FF"]);
+const GOLD = "#FFCF6B";
+const MAX_PARTS = 3500;
+const BURSTS = ["peony", "ring", "double", "willow", "glitter", "crossette", "star", "peony", "ring"];
+
+let parts = [], rockets = [], running = false, animating = false;
+let timers = [];
+const later = (fn, ms) => timers.push(setTimeout(fn, ms));
+const fxScale = () => Math.min(innerWidth, innerHeight) / 700;
+
+function fitFx() { const r = devicePixelRatio || 1; fx.width = innerWidth * r; fx.height = innerHeight * r; ctx.setTransform(r, 0, 0, r, 0, 0); }
+function kick() { if (!animating) { animating = true; requestAnimationFrame(frame); } }
+
+function spark(o) {
+  if (parts.length >= MAX_PARTS) return;
+  parts.push({ px: o.x, py: o.y, life: 1, fade: .012, drag: .975, grav: .045, size: 2.4, glow: true, ...o });
+}
+
+/* Small burst at (x, y). color = null → mixed palette colours. */
+function sparkle(x, y, size, color) {
+  const n = 26, sp = size / 34;
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2 + Math.random() * .2, v = sp * (.5 + Math.random() * .7);
+    const col = color ? (Math.random() < .25 ? "#FFFFFF" : color) : randOf(PALETTE);
+    spark({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, fade: .028, drag: .97, grav: .06, glow: false, color: col, size: 2.5 + Math.random() * 2.5 });
+  }
+  kick();
+}
+
+function launch(kind, x, ty) {
+  const Wd = innerWidth, H = innerHeight;
+  x = x ?? Wd * (.15 + Math.random() * .7);
+  ty = ty ?? H * (.14 + Math.random() * .28);
+  const vy = -Math.sqrt(H + 10 - ty) * .52;              // roughly tops out near the target height
+  const r = { x, y: H + 10, vx: (Wd / 2 - x) * .0015 * Math.random(), vy, ty, kind: kind || randOf(BURSTS), color: randOf(NIGHT_COLORS), color2: randOf(NIGHT_COLORS) };
+  rockets.push(r);
+  sfx.whoosh(x / Wd * 2 - 1);
+  return r;
+}
+
+function explode(r) {
+  const S = fxScale() * (r.big ? 1.45 : 1), { x, y, color, color2 } = r, k = r.kind;
+  const ring = (n, speed, col, extra = {}) => { const off = Math.random() * 7; for (let i = 0; i < n; i++) { const a = off + i / n * Math.PI * 2; spark({ x, y, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed, color: col, ...extra }); } };
+  const shape = (n, fn, speed, col) => { for (let i = 0; i < n; i++) { const [dx, dy] = fn(i / n * Math.PI * 2); spark({ x, y, vx: dx * speed, vy: dy * speed, color: col, grav: .02, fade: .011 }); } };
+  const sphere = (n, vMin, vMax, extra) => { for (let i = 0; i < n; i++) { const a = Math.random() * 7, v = S * (vMin + Math.random() * (vMax - vMin)); spark({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, ...extra() }); } };
+
+  if (k === "peony") sphere(110, 1.5, 4.8, () => ({ color: Math.random() < .15 ? "#FFFFFF" : color }));
+  else if (k === "ring") { ring(70, S * 4.2, color, { size: 2.8 }); ring(24, S * 1.6, "#FFFFFF", { size: 1.8, fade: .02 }); }
+  else if (k === "double") { ring(64, S * 4.6, color, { size: 2.6 }); ring(44, S * 2.8, color2, { size: 2.6 }); }
+  else if (k === "willow") sphere(120, 1, 4, () => ({ color: GOLD, fade: .0065, drag: .955, grav: .03, size: 2 }));
+  else if (k === "glitter") sphere(100, 1.2, 4.6, () => ({ color: Math.random() < .5 ? "#FFFFFF" : color, twinkle: true, fade: .009 }));
+  else if (k === "crossette") ring(18, S * 3.6, color, { size: 3.2, fade: .02, split: .55, splitColor: color2 });
+  else if (k === "star") shape(120, a => { const q = 1 + .45 * Math.cos(5 * a); return [Math.cos(a - Math.PI / 2) * q, Math.sin(a - Math.PI / 2) * q]; }, S * 3, color);
+  else if (k === "heart") {
+    shape(130, t => [Math.sin(t) ** 3, -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) / 16], S * 4.4, lighten(NAMED.pink, .2));
+    ring(30, S * 1.4, "#FFFFFF", { size: 1.8, fade: .02 });
+  } else if (k === "smile") {
+    const yellow = "#FFD86B", v = S * 4.4, o = { color: yellow, grav: .02, fade: .011 };
+    ring(80, v, yellow, { grav: .02, fade: .011 });
+    for (const ex of [-.38, .38]) for (let i = 0; i < 10; i++) { const a = i / 10 * 7; spark({ x, y, vx: (ex + Math.cos(a) * .07) * v, vy: (-.32 + Math.sin(a) * .07) * v, ...o }); }
+    for (let i = 0; i < 26; i++) { const a = Math.PI * (.2 + .6 * i / 25); spark({ x, y, vx: Math.cos(a) * .6 * v, vy: Math.sin(a) * .6 * v, ...o }); }
+  }
+  // Flash of light at the burst centre.
+  parts.push({ x, y, px: x, py: y, vx: 0, vy: 0, life: 1, fade: .09, drag: 1, grav: 0, size: 26 * S, flash: true, glow: true, color: "#FFFFFF" });
+  sfx.burst(k, x / innerWidth * 2 - 1, r.big);
+}
+
+function frame() {
+  // Fade what is already drawn instead of clearing: this leaves soft trails.
+  ctx.globalCompositeOperation = "destination-out";
+  ctx.fillStyle = "rgba(0,0,0,.24)"; ctx.fillRect(0, 0, innerWidth, innerHeight);
+  ctx.lineCap = "round";
+
+  rockets = rockets.filter(r => {
+    const px = r.x, py = r.y;
+    r.x += r.vx; r.y += r.vy; r.vy *= .985; r.vy += .02;
+    ctx.globalCompositeOperation = "lighter";
+    ctx.strokeStyle = GOLD; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(r.x, r.y); ctx.stroke();
+    if (Math.random() < .7) spark({ x: r.x, y: r.y, vx: (Math.random() - .5) * .8, vy: Math.random() * 1.2, color: GOLD, fade: .05, size: 1.6 });
+    if (r.y <= r.ty || r.vy >= -.5) { explode(r); return false; }
+    return true;
+  });
+
+  const born = [];
+  parts = parts.filter(p => {
+    p.px = p.x; p.py = p.y;
+    p.vx *= p.drag; p.vy = p.vy * p.drag + p.grav; p.x += p.vx; p.y += p.vy; p.life -= p.fade;
+    if (p.split && p.life < p.split) {                     // crossette: break into a little cross
+      for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2 + Math.PI / 4, v = fxScale() * 2.2; born.push({ x: p.x, y: p.y, px: p.x, py: p.y, vx: Math.cos(a) * v + p.vx, vy: Math.sin(a) * v + p.vy, life: .8, fade: .02, drag: .96, grav: .04, size: 2, glow: true, twinkle: true, color: p.splitColor }); }
+      return false;
+    }
+    let a = Math.max(0, p.life);
+    if (p.twinkle && Math.random() < .35) a *= .2;
+    ctx.globalCompositeOperation = p.glow && running ? "lighter" : "source-over";
+    ctx.globalAlpha = a;
+    if (p.flash) {
+      const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size);
+      g.addColorStop(0, "rgba(255,255,255,.55)"); g.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = g; ctx.fillRect(p.x - p.size, p.y - p.size, p.size * 2, p.size * 2);
+    } else {
+      ctx.strokeStyle = p.color; ctx.lineWidth = p.size * (.5 + a * .5);
+      ctx.beginPath(); ctx.moveTo(p.px, p.py); ctx.lineTo(p.x, p.y); ctx.stroke();
+    }
+    return p.life > 0 && p.y < innerHeight + 40;
+  });
+  parts.push(...born);
+  ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over";
+
+  if (running || rockets.length || parts.length) requestAnimationFrame(frame);
+  else { animating = false; ctx.clearRect(0, 0, innerWidth, innerHeight); }
+}
+
+/* Fireworks end show. onReady fires when the "play again" button may appear (to practise patience). */
+function fireworksShow(onReady) {
+  running = true; night.classList.add("on"); say(Q.get("win") || W.win);
+  const Wd = innerWidth, H = innerHeight, reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let t = 400;
+  // 1. Two single rockets.
+  for (let i = 0; i < 2; i++) { later(() => launch(), t); t += 550; }
+  // 2. One mirrored pair, left and right.
+  if (!reduced) {
+    const k = randOf(BURSTS), x = Wd * (.2 + Math.random() * .1), y = H * (.2 + Math.random() * .15);
+    later(() => { launch(k, x, y); launch(k, Wd - x, y); }, t); t += 700;
+  }
+  // 3. A quick volley.
+  if (!reduced) for (let i = 0; i < 4; i++) { later(() => launch(), t); t += 180; }
+  // 4. Big heart or smiley in the middle.
+  t += 300;
+  later(() => { launch(Math.random() < .5 ? "heart" : "smile", Wd / 2, H * .3).big = true; }, t);
+  later(() => { running = false; }, t + 1800);
+  later(onReady, num("again", t + 1500));
+  kick();
+}
+
+function stopFireworks() {
+  timers.forEach(clearTimeout); timers = []; rockets = []; running = false;
+  night.classList.remove("on");
+}
+
+function initFireworks() {
+  fitFx();
+  addEventListener("resize", fitFx);
+}
+
+/* ===== src/js/board.js ===== */
+/* board.js: the game itself: dealing cards, flipping, matching, layout. */
+
+const grid = document.getElementById("grid"), board = document.getElementById("board");
+let cards = [], openCards = [], locked = false, matched = 0, total = 0;
+
+function faceHTML(item, color) {
+  if (item.kind === "shape") return `<svg viewBox="0 0 100 100" aria-hidden="true">${SHAPES[item.show](color, darker(color, .85))}</svg>`;
+  if (item.kind === "img") return `<img src="${encodeURI(item.show)}" alt="" draggable="false">`;
+  const len = [...item.show].length;
+  const size = item.kind === "emoji" ? 66 : Math.min(64, 150 / len);
+  return `<span class="txt" style="font-size:${size}cqmin;color:${color}">${escapeHTML(item.show)}</span>`;
+}
+
+function newGame() {
+  applyPatterns();                                  // new random card back each game
+  const items = buildItems();
+  total = items.length; matched = 0; openCards = []; locked = false;
+  const colors = gameColors(items.length);
+  const deck = shuffle(items.flatMap((it, i) => [{ ...it, id: i, color: colors[i] }, { ...it, id: i, color: colors[i] }]));
+  grid.innerHTML = "";
+  cards = deck.map((d, idx) => {
+    const el = document.createElement("button");
+    el.className = "card"; el.setAttribute("aria-label", "card " + (idx + 1));
+    el.dataset.say = d.say;                         // what this card speaks (used by tests/check.py)
+    el.innerHTML = `<div class="inner"><div class="face back"></div><div class="face front">${faceHTML(d, d.color)}</div></div>`;
+    el.addEventListener("click", () => onTap(idx));
+    grid.appendChild(el);
+    return { ...d, el, up: false, done: false };
+  });
+  layout();
+}
+
+function onTap(i) {
+  const c = cards[i];
+  audio();                                          // make sure audio is unlocked
+  if (c.done || c.up || locked) return;
+  sfx.tap();
+  c.up = true; c.el.classList.add("up"); c.el.setAttribute("aria-label", c.say);
+  say(c.say);
+  openCards.push(c);
+  if (openCards.length < 2) return;
+  const [a, b] = openCards; openCards = [];
+  if (a.id === b.id) {
+    a.done = b.done = true;
+    const last = ++matched === total;
+    // Let the child see and hear the pair, then pop them away one after the other.
+    setTimeout(() => vanish(a), CFG.vanish);
+    setTimeout(() => vanish(b), CFG.vanish + 160);
+    if (last) setTimeout(finale, CFG.vanish + 900);
+  } else {
+    locked = true;
+    setTimeout(() => {
+      for (const x of [a, b]) { x.up = false; x.el.classList.remove("up"); x.el.setAttribute("aria-label", "card"); }
+      locked = false;
+    }, CFG.delay);
+  }
+}
+
+/* End of the game: a short fireworks show. */
+function finale() {
+  fireworksShow(showAgain);
+}
+
+function vanish(c) {
+  const r = c.el.getBoundingClientRect();
+  sfx.pop();
+  sparkle(r.left + r.width / 2, r.top + r.height / 2, r.width, c.color === INK ? null : c.color);
+  c.el.classList.add("gone");                       // the grid slot stays, so nothing moves around
+  c.el.setAttribute("aria-hidden", "true"); c.el.tabIndex = -1;
+}
+
+/* Fit the grid: pick the column count that gives the biggest square cards. */
+function layout() {
+  const n = cards.length; if (!n) return;
+  const cs = getComputedStyle(board);
+  const Wd = board.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  const Ht = board.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+  const gap = Math.max(6, Math.min(16, Math.min(Wd, Ht) / 40));
+  let best = { size: 0, cols: 1 };
+  for (let cols = 1; cols <= n; cols++) {
+    const rows = Math.ceil(n / cols);
+    const size = Math.min((Wd - gap * (cols - 1)) / cols, (Ht - gap * (rows - 1)) / rows);
+    if (size > best.size + .5 || (Math.abs(size - best.size) <= .5 && n % cols === 0)) best = { size, cols };
+  }
+  const size = Math.floor(Math.min(best.size, 240));
+  const root = document.documentElement.style;
+  grid.style.gridTemplateColumns = `repeat(${best.cols}, ${size}px)`;
+  root.setProperty("--size", size + "px");
+  root.setProperty("--gap", gap + "px");
+  root.setProperty("--radius", Math.round(size * .14) + "px");
+  root.setProperty("--tile", Math.max(12, Math.round(size / 4.5)) + "px");
+}
+
+function initBoard() {
+  addEventListener("resize", layout);
+}
+
+/* ===== src/js/screens.js ===== */
+/* screens.js: everything around the board: Start screen, "play again" button,
+   ?help=1 (settings list) and ?voices=1 (voice list). */
+
+const HELP = `MEMORITER: a memory pairs game for toddlers. Every setting comes from the URL.
+
+theme    numbers | letters | shapes | images                    (default: numbers; also guessed from letters=, shapes=, items=)
+cards    number of cards on the board, even number               (default: 8 = 4 pairs)
+from,to  numbers range, e.g. from=1&to=20 (random pick if the range has more numbers than pairs)
+letters  abc (whole alphabet) | a-d (range) | aeiou (exact list) | vowels
+case     upper | lower                                           (default: upper)
+shapes   comma list: line,circle,oval,square,rectangle,triangle,diamond,
+         pentagon,hexagon,heptagon,octagon,star,heart          (default: random pick)
+items    your own cards, comma list or repeated; "shown|spoken" to say something else
+         e.g. items=A|Apple,B|Ball      with theme=images: emoji or image links, e.g. items=https://…/cat.png|cat
+lang     language of every spoken/shown word: en | es (also es-MX, spanish, español)  (default: en)
+voice    auto (default: most natural voice) | soft | female | male | part of a voice name (e.g. voice=Jenny)
+voices   1 = list the voices this browser has (tap one to hear it)
+rate     TTS speed (default from the voice preset, ~1)    pitch   TTS pitch (default from preset, ~1)
+tts      0 = mute speech            sound   0 = mute sound effects
+colors   one = one random colour for all cards, new each game (default)
+         pair = each pair its own colour
+         red|blue|green|orange|purple|pink|brown|yellow or a hex like 2F6FDB = fixed colour
+         0 = dark ink
+delay    ms before a non-matching pair flips back (default 1200)
+vanish   ms a matched pair stays visible before it pops away (default 900)
+back     card back pattern (default: random, new each game, never plain)
+         random | plain | dots | polka | stripes | diagonal | checks | grid | zigzag | waves | stars | hearts | bubbles
+backcolor card back colour: random | a colour name (softened) | hex like 7FB2F0   (default: random)
+mark     0 = hide the white circle in the middle of the card back
+bg       page background pattern, same list as "back", drawn very faint (default: plain)
+bgcolor  page colour: a colour name (very light tint) or hex like FFF7EA   (default: cream)
+seed     number = same shuffle every time
+start    0 = skip the Start button (first card may then be silent: browsers need a tap to unlock sound)
+starttext text on the Start button, also spoken (default "Let's go!" / "¡Vamos!")
+win      phrase spoken at the end (default "Good job!" / "¡Muy bien!")
+demo     end = skip the game and show the end fireworks (to try them, or win=)
+again    ms after the end before the "play again" button shows (default: when the celebration ends)
+
+(tap to close)`;
+
+const again = document.getElementById("again");
+function showAgain() { again.classList.add("show"); requestAnimationFrame(() => again.style.opacity = 1); }
+
+function initAgainButton() {
+  again.addEventListener("click", () => {
+    sfx.tap(); stopFireworks();
+    again.style.opacity = 0; again.classList.remove("show");
+    newGame();
+  });
+}
+
+/* Start screen: browsers only allow sound and speech after a tap, and the speech engine is slow
+   to wake up. Tapping it unlocks audio and says the word out loud, so the first card is heard. */
+function initStartScreen() {
+  const el = document.getElementById("start");
+  if (Q.get("start") === "0") { el.remove(); return; }
+  const btn = el.querySelector("button"), label = Q.get("starttext") || W.start;
+  el.querySelector("span").textContent = label;
+  btn.setAttribute("aria-label", label);
+  btn.addEventListener("click", () => {
+    audio(); sfx.pop(); say(label);
+    const r = btn.getBoundingClientRect();         // festive confetti pop from the button
+    sparkle(r.left + r.width * .3, r.top + r.height / 2, r.height * 2.2, null);
+    sparkle(r.left + r.width * .7, r.top + r.height / 2, r.height * 2.2, null);
+    el.classList.add("hide");
+    setTimeout(() => el.remove(), 450);
+  }, { once: true });
+  updateLangNotice();
+}
+
+function overlay() {
+  const box = document.createElement("div"); box.className = "overlay";
+  document.body.appendChild(box); return box;
+}
+
+function initHelp() {
+  if (Q.get("help") !== "1") return;
+  const box = overlay(); box.textContent = HELP; box.onclick = () => box.remove();
+}
+
+/* ?voices=1: what this browser offers; tap a row to hear it. */
+function initVoiceList() {
+  if (Q.get("voices") !== "1") return;
+  const box = overlay();
+  const render = () => {
+    const vs = synth ? synth.getVoices() : [];
+    box.innerHTML = "";
+    const head = document.createElement("div");
+    head.textContent = !synth ? "Speech is not available (or tts=0)." :
+      `${vs.length} voices in this browser. ★ = the one the game uses now (lang=${LANG_TAG}, voice=${VOICE_Q}).\n` +
+      `Tap a voice to hear it. Use its name in the URL: voice=<part of the name>.  Tap here to close.\n\n`;
+    head.onclick = () => box.remove(); box.appendChild(head);
+    vs.slice().sort((a, b) => a.lang.localeCompare(b.lang) || quality(b) - quality(a)).forEach(v => {
+      const row = document.createElement("div"); row.className = "voice";
+      row.textContent = `${v === voice ? "★" : " "} ${v.lang.padEnd(6)} ${v.name}  [${genderOf(v) || "?"}, ${v.localService ? "local" : "online"}, quality ${quality(v)}]`;
+      row.onclick = () => { synth.cancel(); const u = new SpeechSynthesisUtterance(speaksLang(v) ? W.sample : "Hello, one, two, three"); u.voice = v; u.lang = v.lang; synth.speak(u); };
+      box.appendChild(row);
+    });
+  };
+  render(); synth?.addEventListener?.("voiceschanged", render);
+}
+
+/* ===== src/js/main.js ===== */
+/* main.js: start-up. Loaded last, after every other file has defined its functions. */
+
+document.documentElement.lang = LANG_TAG;
+initSpeech();
+initFireworks();
+initBoard();
+initAgainButton();
+initStartScreen();
+initHelp();
+initVoiceList();
+newGame();
+
+/* demo=end: skip the game and show the end celebration (to try it out, or win=). */
+if (Q.get("demo") === "end") { cards.forEach(c => { c.done = true; c.el.classList.add("gone"); }); setTimeout(finale, 300); }
+})();
+</script>
+</body>
+</html>

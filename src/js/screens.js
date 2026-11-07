@@ -1,0 +1,102 @@
+"use strict";
+/* screens.js: everything around the board: Start screen, "play again" button,
+   ?help=1 (settings list) and ?voices=1 (voice list). */
+
+const HELP = `MEMORITER: a memory pairs game for toddlers. Every setting comes from the URL.
+
+theme    numbers | letters | shapes | images                    (default: numbers; also guessed from letters=, shapes=, items=)
+cards    number of cards on the board, even number               (default: 8 = 4 pairs)
+from,to  numbers range, e.g. from=1&to=20 (random pick if the range has more numbers than pairs)
+letters  abc (whole alphabet) | a-d (range) | aeiou (exact list) | vowels
+case     upper | lower                                           (default: upper)
+shapes   comma list: line,circle,oval,square,rectangle,triangle,diamond,
+         pentagon,hexagon,heptagon,octagon,star,heart          (default: random pick)
+items    your own cards, comma list or repeated; "shown|spoken" to say something else
+         e.g. items=A|Apple,B|Ball      with theme=images: emoji or image links, e.g. items=https://…/cat.png|cat
+lang     language of every spoken/shown word: en | es (also es-MX, spanish, español)  (default: en)
+voice    auto (default: most natural voice) | soft | female | male | part of a voice name (e.g. voice=Jenny)
+voices   1 = list the voices this browser has (tap one to hear it)
+rate     TTS speed (default from the voice preset, ~1)    pitch   TTS pitch (default from preset, ~1)
+tts      0 = mute speech            sound   0 = mute sound effects
+colors   one = one random colour for all cards, new each game (default)
+         pair = each pair its own colour
+         red|blue|green|orange|purple|pink|brown|yellow or a hex like 2F6FDB = fixed colour
+         0 = dark ink
+delay    ms before a non-matching pair flips back (default 1200)
+vanish   ms a matched pair stays visible before it pops away (default 900)
+back     card back pattern (default: random, new each game, never plain)
+         random | plain | dots | polka | stripes | diagonal | checks | grid | zigzag | waves | stars | hearts | bubbles
+backcolor card back colour: random | a colour name (softened) | hex like 7FB2F0   (default: random)
+mark     0 = hide the white circle in the middle of the card back
+bg       page background pattern, same list as "back", drawn very faint (default: plain)
+bgcolor  page colour: a colour name (very light tint) or hex like FFF7EA   (default: cream)
+seed     number = same shuffle every time
+start    0 = skip the Start button (first card may then be silent: browsers need a tap to unlock sound)
+starttext text on the Start button, also spoken (default "Let's go!" / "¡Vamos!")
+win      phrase spoken at the end (default "Good job!" / "¡Muy bien!")
+demo     end = skip the game and show the end fireworks (to try them, or win=)
+again    ms after the end before the "play again" button shows (default: when the celebration ends)
+
+(tap to close)`;
+
+const again = document.getElementById("again");
+function showAgain() { again.classList.add("show"); requestAnimationFrame(() => again.style.opacity = 1); }
+
+function initAgainButton() {
+  again.addEventListener("click", () => {
+    sfx.tap(); stopFireworks();
+    again.style.opacity = 0; again.classList.remove("show");
+    newGame();
+  });
+}
+
+/* Start screen: browsers only allow sound and speech after a tap, and the speech engine is slow
+   to wake up. Tapping it unlocks audio and says the word out loud, so the first card is heard. */
+function initStartScreen() {
+  const el = document.getElementById("start");
+  if (Q.get("start") === "0") { el.remove(); return; }
+  const btn = el.querySelector("button"), label = Q.get("starttext") || W.start;
+  el.querySelector("span").textContent = label;
+  btn.setAttribute("aria-label", label);
+  btn.addEventListener("click", () => {
+    audio(); sfx.pop(); say(label);
+    const r = btn.getBoundingClientRect();         // festive confetti pop from the button
+    sparkle(r.left + r.width * .3, r.top + r.height / 2, r.height * 2.2, null);
+    sparkle(r.left + r.width * .7, r.top + r.height / 2, r.height * 2.2, null);
+    el.classList.add("hide");
+    setTimeout(() => el.remove(), 450);
+  }, { once: true });
+  updateLangNotice();
+}
+
+function overlay() {
+  const box = document.createElement("div"); box.className = "overlay";
+  document.body.appendChild(box); return box;
+}
+
+function initHelp() {
+  if (Q.get("help") !== "1") return;
+  const box = overlay(); box.textContent = HELP; box.onclick = () => box.remove();
+}
+
+/* ?voices=1: what this browser offers; tap a row to hear it. */
+function initVoiceList() {
+  if (Q.get("voices") !== "1") return;
+  const box = overlay();
+  const render = () => {
+    const vs = synth ? synth.getVoices() : [];
+    box.innerHTML = "";
+    const head = document.createElement("div");
+    head.textContent = !synth ? "Speech is not available (or tts=0)." :
+      `${vs.length} voices in this browser. ★ = the one the game uses now (lang=${LANG_TAG}, voice=${VOICE_Q}).\n` +
+      `Tap a voice to hear it. Use its name in the URL: voice=<part of the name>.  Tap here to close.\n\n`;
+    head.onclick = () => box.remove(); box.appendChild(head);
+    vs.slice().sort((a, b) => a.lang.localeCompare(b.lang) || quality(b) - quality(a)).forEach(v => {
+      const row = document.createElement("div"); row.className = "voice";
+      row.textContent = `${v === voice ? "★" : " "} ${v.lang.padEnd(6)} ${v.name}  [${genderOf(v) || "?"}, ${v.localService ? "local" : "online"}, quality ${quality(v)}]`;
+      row.onclick = () => { synth.cancel(); const u = new SpeechSynthesisUtterance(speaksLang(v) ? W.sample : "Hello, one, two, three"); u.voice = v; u.lang = v.lang; synth.speak(u); };
+      box.appendChild(row);
+    });
+  };
+  render(); synth?.addEventListener?.("voiceschanged", render);
+}

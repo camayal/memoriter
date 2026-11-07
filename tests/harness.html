@@ -1,0 +1,25 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Memoriter test harness</title>
+<!-- Used by tests/check.py: loads the game once per query inside a frame and collects each
+     resulting page, so the browser only has to start once. Queries come in the URL hash as a
+     JSON list; results are written into the "out" element as base64-encoded JSON (so nothing gets HTML-escaped). -->
+<iframe id="f" style="width:900px;height:700px"></iframe>
+<pre id="out"></pre>
+<script>
+const { page, queries } = JSON.parse(decodeURIComponent(location.hash.slice(1)));
+const f = document.getElementById("f"), results = [];
+let i = 0;
+// Saved after every page, so a run that stops early still returns the pages it finished.
+const save = () => { document.getElementById("out").textContent = btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(results)).reduce((a, b) => (a.push(b), a), []))); };
+function next() {
+  if (i >= queries.length) return;
+  f.onload = () => setTimeout(() => {
+    let dom = "";
+    try { dom = f.contentDocument.documentElement.outerHTML; } catch (e) { dom = "ERROR " + e; }
+    results.push(dom); i++; save(); next();
+  }, 450);
+  f.src = page + "?" + (queries[i] ? queries[i] + "&" : "") + "_run=" + i;   // unique query so every load is a real page load
+}
+next();
+</script>

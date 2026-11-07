@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Memoriter</title>
+<!-- Development page: loads the source files separately so each one shows up on its own in the
+     browser's dev tools. "python build.py" bundles everything into dist/memoriter.html (one file,
+     for embedding). Add ?help=1 to the URL to see all settings. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Andika:wght@700&display=swap">
+<link rel="stylesheet" href="src/styles.css">
+</head>
+<body>
+<div id="board"><div id="grid" role="grid" aria-label="Memory cards"></div></div>
+<div id="start"><button type="button"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5Z"/></svg><span></span></button><p id="langnote"></p></div>
+<div id="night"></div>
+<canvas id="fx"></canvas>
+<button id="again" aria-label="Play again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg></button>
+
+<!-- build:js  (order matters: each file may use names defined by the files above it) -->
+<script src="src/js/config.js"></script>
+<script src="src/js/i18n.js"></script>
+<script src="src/js/colors.js"></script>
+<script src="src/js/patterns.js"></script>
+<script src="src/js/shapes.js"></script>
+<script src="src/js/content.js"></script>
+<script src="src/js/audio.js"></script>
+<script src="src/js/speech.js"></script>
+<script src="src/js/fireworks.js"></script>
+<script src="src/js/board.js"></script>
+<script src="src/js/screens.js"></script>
+<script src="src/js/main.js"></script>
+<!-- endbuild -->
+</body>
+</html>
