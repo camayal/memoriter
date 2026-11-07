@@ -141,6 +141,13 @@ CASES = [
     ("bg=dots", "bg=dots", lambda p: re.search(r"--page-bg:[^;]*radial-gradient", p.root_style) is not None),
     ("bgcolor=blue", "bgcolor=blue (light tint)", lambda p: re.search(r"--page-bg:\s*#[0-9a-f]{6}", p.root_style) is not None and "#fff7ea" not in p.root_style.lower()),
     ("demo=end&start=0", "end fireworks (night sky on)", lambda p: 'id="night" class="on"' in p.dom),
+    ("demo=end&start=0&again=0", "end screen: current game big, others small",
+     lambda p: re.search(r'id="end" class="show"', p.dom) and re.findall(r'class="tile big" data-theme="(\w+)"', p.dom) == ["numbers"]
+               and len(re.findall(r'class="tile small"', p.dom)) == 4),
+    ("demo=end&start=0&again=0&themes=letters,shapes", "end screen respects themes=",
+     lambda p: re.findall(r'class="tile (?:big|small)" data-theme="(\w+)"', p.dom) == ["numbers", "letters", "shapes"]),
+    ("demo=end&theme=letters&again=0", "URL-fixed game: play-again button only",
+     lambda p: 'id="again" aria-label="Play again" class="show"' in p.dom and 'class="tile big"' not in p.dom),
     ("start=0", "start=0 removes Start screen", lambda p: 'id="start"' not in p.dom),
     ("", "Start screen: 5 game tiles", lambda p: p.dom.count('class="tile"') == 5 and 'class="go"' not in p.dom),
     ("themes=numbers,colors", "themes= limits the tiles", lambda p: re.findall(r'data-theme="(\w+)"', p.dom) == ["numbers", "colors"]),

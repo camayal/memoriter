@@ -24,7 +24,7 @@ Works in a browser but has not been tested on real devices yet.
 | `src/js/audio.js` | Sound effects (Web Audio) |
 | `src/js/speech.js` | Text-to-speech, voice choice and presets |
 | `src/js/fireworks.js` | Sparkle particles and the end fireworks show |
-| `tests/check.py` | `python tests/check.py` checks 46 URL settings in headless Edge/Chrome (~5 s). `--dist` tests the built file. |
+| `tests/check.py` | `python tests/check.py` checks 49 URL settings in headless Edge/Chrome (~5 s). `--dist` tests the built file. |
 | `src/js/board.js` | Game logic: deal, flip, match, layout |
 | `src/js/screens.js` | Start screen, play-again button, `?help=1`, `?voices=1` |
 | `src/js/main.js` | Start-up |
@@ -53,7 +53,7 @@ To add a language, copy the `en` block in `src/js/i18n.js`, translate it, and ac
 | Matched pair vanishes with a pop sound and a small firework | ✅ Done | Pair stays visible for `vanish=` ms (default 900), then pops away. Its grid slot stays empty so nothing moves around. |
 | Every card in a game shares one random color | ✅ Done | Default `colors=one`, so color is never a clue or a distraction. Also `pair`, a color name, a hex value, or `0`. Applies to numbers, letters, custom text and shapes. |
 | Start screen: the toddler picks the game | ✅ Done | One big tile per game: numbers **1**, letters **A**, animals 🐶, shapes ▲, colors 🔴. Each tile shows a small fanned stack of three cards, so the child can choose by looking. Tapping says "Let's find pairs of numbers!" / "¡Vamos a buscar parejas de números!" (etc.), pops confetti and starts. The tap also unlocks sound and speech, so the first card is heard. `themes=` limits or orders the tiles. If the URL already picks the game (`theme=`, `letters=`, `shapes=`, `items=`), a single "Let's go!" / "¡Vamos!" button is shown instead (`starttext=`). `start=0` skips the screen. If the device has no voice for the language, a note for the grown-up appears. |
-| Play again / home after the fireworks | ✅ Done | Big green button: same game again. Smaller blue grid button: back to the game tiles (only when the child picked the game). |
+| Choose the next game after the fireworks | ✅ Done | The game just played appears as a big tile in the middle (most likely what the child wants again), with the other games as smaller tiles below. Tapping any tile starts that game. If the URL fixed the game, a single "play again" button appears instead. |
 | Theme 5: colors | ✅ Done | Colour swatches (red, blue, yellow, green, orange, purple, pink, brown, black), spoken as their names in English or Spanish. |
 | Theme 1: numbers (range from the URL) | ✅ Done | `from` / `to`. Picks at random when the range is bigger than `pairs`. Spoken as words in the game language. |
 | Theme 2: letters (`abc`, `a-d`, `aeiou`) | ✅ Done | Also `vowels` / `vocales` and `case=lower`. Spanish adds ñ and speaks the Spanish letter names (be, ce, hache, jota…). |
