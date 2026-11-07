@@ -9,6 +9,18 @@ const parseItem = (raw, kind) => {
   return { kind, show: show.trim(), say: say !== undefined ? say.trim() : kind === "text" ? spoken(show) : show.trim() };
 };
 
+/* Picture set for the images theme: set=animals|fruits|vehicles|nature, or random (default).
+   With random, a new set is chosen each time the child picks the pictures game (never the same
+   twice in a row), and the voice names it: "Let's find pairs of fruits!". */
+const SET_ALIASES = { animales: "animals", animal: "animals", frutas: "fruits", fruta: "fruits", fruit: "fruits", vehiculos: "vehicles", "vehículos": "vehicles", vehicle: "vehicles", naturaleza: "nature" };
+const SET_WANTED = (() => { const v = (Q.get("set") || "random").toLowerCase(); return SET_ALIASES[v] || v; })();
+let chosenSet = null;
+function chooseSet() {
+  chosenSet = W.sets[SET_WANTED] ? SET_WANTED : freshPick("set", Object.keys(W.sets));
+  return chosenSet;
+}
+const currentSet = () => chosenSet || chooseSet();
+
 const THEMES = {
   numbers(n) {
     const from = Math.round(num("from", 1)), to = Math.round(num("to", from + n - 1));
@@ -25,7 +37,7 @@ const THEMES = {
     else if (spec === "vowels" || spec === "vocales") chars = [..."aeiou"];
     else if (/^.-.$/u.test(spec)) { const a = abc.indexOf(spec[0]), b = abc.indexOf(spec[2]); chars = [...abc].slice(Math.min(a, b), Math.max(a, b) + 1); }
     else chars = [...new Set([...spec.replace(/[^\p{L}]/gu, "")])];
-    return (chars.length <= n ? chars : pick(chars, n)).map(ch => ({ kind: "text", show: CFG.upper ? ch.toUpperCase() : ch, say: W.letter(ch) }));
+    return (chars.length <= n ? chars : pick(chars, n)).map(ch => ({ kind: "text", show: CFG.upper ? ch.toUpperCase() : ch, say: letterSpeech(ch) }));
   },
 
   shapes(n) {
@@ -41,7 +53,8 @@ const THEMES = {
   images(n) {
     // items= with emoji or image links (https://…, data:…, ./file.png); "shown|spoken" works here too.
     const custom = list("items").map(v => parseItem(v, /^(https?:|data:|\.{0,2}\/)/.test(v) ? "img" : "emoji"));
-    return pick(custom.length ? custom : W.animals.map(v => parseItem(v, "emoji")), n);
+    if (custom.length) return pick(custom, n);
+    return pick(W.sets[currentSet()].items.map(v => parseItem(v, "emoji")), n);
   },
 
   custom(n) {

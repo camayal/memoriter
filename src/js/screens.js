@@ -4,15 +4,18 @@
 
 const HELP = `MEMORITER: a memory pairs game for toddlers. Every setting comes from the URL.
 
-theme    numbers | letters | shapes | images | colors   (default: the child picks a tile on the Start screen;
-         also guessed from letters=, shapes=, items=)
+setup    open the parents' setup screen (…/index.html?setup): choose the game, then Start game
+theme    numbers | letters | shapes | images (pictures) | colors   (default: the child picks a tile on the Start screen;
+         also guessed from letters=, shapes=, items=; then one big tile with a replay badge)
 themes   which tiles the Start screen offers, in order, e.g. themes=numbers,colors (default: all five)
 cards    number of cards on the board, even number               (default: 8 = 4 pairs)
 from,to  numbers range, e.g. from=1&to=20 (random pick if the range has more numbers than pairs)
 letters  abc (whole alphabet) | a-d (range) | aeiou (exact list) | vowels
 case     upper | lower                                           (default: upper)
+phonics  letters say their name (0, default) | their sound, e.g. "buh" (1) | both, "bee … buh" (both)
 shapes   comma list: line,circle,oval,square,rectangle,triangle,diamond,
          pentagon,hexagon,heptagon,octagon,star,heart          (default: random pick)
+set      pictures game: animals | fruits | vehicles | nature | random (default: random, a new set each game)
 items    your own cards, comma list or repeated; "shown|spoken" to say something else
          e.g. items=A|Apple,B|Ball      with theme=images: emoji or image links, e.g. items=https://…/cat.png|cat
 lang     language of every spoken/shown word: en | es (also es-MX, spanish, español)  (default: en)
@@ -33,32 +36,42 @@ mark     0 = hide the white circle in the middle of the card back
 bg       page background pattern, same list as "back", drawn very faint (default: plain)
 bgcolor  page colour: a colour name (very light tint) or hex like FFF7EA   (default: cream)
 seed     number = same shuffle every time
-start    0 = skip the Start screen (plays numbers; first card may be silent: browsers need a tap to unlock sound)
-starttext text of the "Let's go!" button, shown instead of the tiles when the URL already picks the game
+start    0 = skip the Start screen (first card may be silent: browsers need a tap to unlock sound)
 win      phrase spoken at the end (default "Good job!" / "¡Muy bien!")
 demo     end = skip the game and show the end fireworks (to try them, or win=)
-again    ms after the end before the game tiles (or "play again") show (default: when the fireworks end)
+again    ms after the end before the game tiles show (default: when the fireworks end)
 
 (tap to close)`;
 
 /* ---------- Game tiles ----------
-   One tile per game (numbers, letters, animals, shapes, colors). Each tile shows a small fanned
-   stack of three cards with the game's symbols, so a toddler can choose by looking.
-   Tapping says e.g. "Let's find pairs of numbers!" and starts that game.
-   themes= limits/orders the tiles, e.g. themes=numbers,colors. */
+   A tile shows a small fanned stack of three cards with the game's symbols, so a toddler can
+   choose by looking. Tapping says e.g. "Let's find pairs of numbers!" and starts that game.
+   - Child picks: one tile per game (themes= limits/orders them, e.g. themes=numbers,colors).
+   - Parent-made game (the URL sets theme=, letters=, shapes= or items=, e.g. from ?setup):
+     one big tile previewing that exact game, with a replay badge. */
+const face = (show, kind = "text") => ({ kind, show });
 const THEME_TILES = {
-  numbers: { tint: NAMED.blue,   faces: ["1", "2", "3"] },
-  letters: { tint: NAMED.red,    faces: ["A", "B", "C"] },
-  images:  { tint: NAMED.orange, faces: ["🐶", "🐱", "🐮"], emoji: true },
-  shapes:  { tint: NAMED.green,  faces: ["triangle", "circle", "square"], shape: true },
-  colors:  { tint: NAMED.purple, faces: [NAMED.red, NAMED.blue, NAMED.yellow], swatch: true },
+  numbers: { tint: NAMED.blue,   faces: [face("1"), face("2"), face("3")] },
+  letters: { tint: NAMED.red,    faces: [face("A"), face("B"), face("C")] },
+  images:  { tint: NAMED.orange, faces: [face("🐶", "emoji"), face("🍎", "emoji"), face("🚗", "emoji")] },   // pictures: animals, fruits, vehicles …
+  shapes:  { tint: NAMED.green,  faces: [face("triangle", "shape"), face("circle", "shape"), face("square", "shape")] },
+  colors:  { tint: NAMED.purple, faces: [face(NAMED.red, "swatch"), face(NAMED.blue, "swatch"), face(NAMED.yellow, "swatch")] },
 };
 const tileThemes = () => {
-  const wanted = list("themes").map(t => THEME_ALIASES[t.toLowerCase()] || t.toLowerCase()).filter(t => THEME_TILES[t]);
+  const wanted = list("themes").map(x => THEME_ALIASES[x.toLowerCase()] || x.toLowerCase()).filter(x => THEME_TILES[x]);
   return wanted.length ? wanted : Object.keys(THEME_TILES);
 };
 const startEl = document.getElementById("start"), endEl = document.getElementById("end");
-const again = document.getElementById("again");
+
+/* The tile for a parent-made game: previews its first three cards. */
+function customTile() {
+  const base = THEME_TILES[CFG.theme] || { tint: NAMED.pink };
+  const items = buildItems().slice(0, 3);
+  while (items.length < 3) items.push(items[items.length - 1] || face("?"));
+  return { tint: base.tint, faces: items };
+}
+const tileFor = theme => THEME_GIVEN ? customTile() : THEME_TILES[theme];
+const tileLabel = theme => theme === "images" && !list("items").length ? W.findPairs(W.sets[currentSet()].name) : W.themes[theme] || W.start;
 
 /* A crayon, drawn diagonally: rounded end, paper wrapper with two stripes, pointed tip.
    Used on the colors tile so it doesn't look like the shapes tile. */
@@ -73,21 +86,32 @@ function crayonSVG(c) {
   </g></svg>`;
 }
 
-function miniFace(tile, f) {
-  if (tile.shape) return `<svg viewBox="0 0 100 100">${SHAPES[f](tile.tint, darker(tile.tint, .85))}</svg>`;
-  if (tile.swatch) return crayonSVG(f);
-  return `<span class="${tile.emoji ? "emo" : "sym"}" style="color:${tile.tint}">${f}</span>`;
+/* What one mini card on a tile shows. */
+function miniFace(tint, f) {
+  if (f.kind === "shape") return `<svg viewBox="0 0 100 100">${SHAPES[f.show](tint, darker(tint, .85))}</svg>`;
+  if (f.kind === "swatch") return crayonSVG(f.show);
+  if (f.kind === "img") return `<img src="${encodeURI(f.show)}" alt="">`;
+  if (f.kind === "emoji") return `<span class="emo">${escapeHTML(f.show)}</span>`;
+  const len = [...f.show].length;
+  return `<span class="sym" style="color:${tint};font-size:${Math.min(72, 160 / len)}cqmin">${escapeHTML(f.show)}</span>`;
 }
 
-/* A tile button for game t. Tapping it starts that game. */
-function makeTile(t, i, extraClass = "") {
-  const tile = THEME_TILES[t], b = document.createElement("button");
-  b.type = "button"; b.className = ("tile " + extraClass).trim(); b.dataset.theme = t;
-  b.setAttribute("aria-label", W.themes[t]);
+const REPLAY_ICON = `<span class="replay" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg></span>`;
+
+/* A tile button for game `theme`. Tapping it starts that game. */
+function makeTile(theme, i, extraClass = "") {
+  const tile = tileFor(theme), b = document.createElement("button");
+  b.type = "button"; b.className = ("tile " + extraClass).trim(); b.dataset.theme = theme;
+  b.setAttribute("aria-label", tileLabel(theme));
   b.style.setProperty("--tint", lighten(tile.tint, .82)); b.style.animationDelay = (i * .25) + "s";
   // Drawn back to front, so the first symbol (1, A, 🐶 …) sits on top.
-  b.innerHTML = [2, 1, 0].map(k => `<span class="mini m${k}">${miniFace(tile, tile.faces[k])}</span>`).join("");
-  b.addEventListener("click", () => { hideEnd(); CFG.theme = t; newGame(); beginGame(b, W.themes[t]); });
+  b.innerHTML = [2, 1, 0].map(k => `<span class="mini m${k}">${miniFace(tile.tint, tile.faces[k])}</span>`).join("")
+              + (THEME_GIVEN ? REPLAY_ICON : "");
+  b.addEventListener("click", () => {
+    // Child-picked pictures game: a fresh set each time (a parent-made game keeps the one previewed).
+    if (theme === "images" && !THEME_GIVEN) chooseSet();
+    hideEnd(); CFG.theme = theme; newGame(); beginGame(b, tileLabel(theme));
+  });
   return b;
 }
 
@@ -99,21 +123,22 @@ function beginGame(fromEl, label) {
   startEl.classList.add("hide");
 }
 
-/* ---------- Start screen ----------
-   Browsers only allow sound and speech after a tap, and the speech engine is slow to wake up, so
-   the game always begins with a tap here: the game tiles, or one "Let's go!" button when the URL
-   already chooses the game (theme=, letters=, shapes=, items=). */
 /* Tiles are sized to the screen, as big as possible for little hands (like the cards).
    Start screen: try every column count and keep the one giving the biggest tiles.
-   End screen: the current game takes ~half the height, the others share one row below. */
+   End screen: the current game takes ~half the height, the others below (wrapping on phones). */
 const TILE_GAP = () => Math.max(14, Math.min(32, Math.min(innerWidth, innerHeight) * .035));
+/* Best square size for n tiles in W×H: tries every column count. Ties (e.g. when the size is
+   capped) go to the more even layout. Returns { size, cols, width } where width is the
+   exact row width, so the browser wraps the tiles into exactly that many columns. */
 function bestGrid(n, W, H, gap, max) {
-  let best = 0;
+  let best = { size: 0, cols: 1, empty: Infinity };
   for (let cols = 1; cols <= n; cols++) {
-    const rows = Math.ceil(n / cols);
-    best = Math.max(best, Math.min((W - gap * (cols - 1)) / cols, (H - gap * (rows - 1)) / rows));
+    const rows = Math.ceil(n / cols), empty = cols * rows - n;
+    const size = Math.floor(Math.min((W - gap * (cols - 1)) / cols, (H - gap * (rows - 1)) / rows, max));
+    // Bigger wins; on a tie (size capped) the more even layout wins: 3 + 2 rather than 4 + 1.
+    if (size > best.size || (size === best.size && empty <= best.empty)) best = { size, cols, empty };
   }
-  return Math.floor(Math.min(best, max));
+  return { ...best, width: best.cols * best.size + (best.cols - 1) * gap };
 }
 function fitTiles() {
   const gap = TILE_GAP(), W = innerWidth - 32, H = innerHeight - 32;
@@ -121,62 +146,53 @@ function fitTiles() {
   if (n) {
     const note = document.getElementById("langnote");
     const noteH = note && note.textContent ? note.offsetHeight + 24 : 0;
-    startEl.style.setProperty("--tile", bestGrid(n, W, H - noteH, gap, 420) + "px");
+    const g = bestGrid(n, W, H - noteH, gap, n === 1 ? 440 : 420);
+    startEl.style.setProperty("--tile", g.size + "px");
+    startEl.style.setProperty("--themes-w", g.width + "px");
     startEl.style.setProperty("--tile-gap", gap + "px");
   }
-  // Other games: one row on wide screens, wrapping (e.g. 2×2 on a phone) when that makes them bigger.
-  const m = Math.max(1, endEl.querySelectorAll(".tile.small").length);
-  const small = bestGrid(m, W, H * .4, gap, 220);
-  const cols = Math.max(1, Math.min(m, Math.floor((W + gap) / (small + gap))));
-  const rows = Math.ceil(m / cols), othersH = rows * small + (rows - 1) * gap;
-  const big = Math.floor(Math.min(H - othersH - gap * 1.5, W * .8, 440));
-  endEl.style.setProperty("--others-w", (cols * small + (cols - 1) * gap) + "px");
-  endEl.style.setProperty("--big", big + "px");
-  endEl.style.setProperty("--small", small + "px");
+  // End screen: the other games get up to 40% of the height; the big tile takes the rest.
+  const m = endEl.querySelectorAll(".tile.small").length;
+  const o = m ? bestGrid(m, W, H * .4, gap, 220) : { size: 0, cols: 1, width: 0 };
+  const rows = m ? Math.ceil(m / o.cols) : 0, othersH = rows ? rows * o.size + (rows - 1) * gap + gap * 1.5 : 0;
+  endEl.style.setProperty("--big", Math.floor(Math.min(H - othersH, W * .8, 440)) + "px");
+  endEl.style.setProperty("--small", o.size + "px");
+  endEl.style.setProperty("--others-w", o.width + "px");
   endEl.style.setProperty("--tile-gap", gap + "px");
 }
 
+/* ---------- Start screen ----------
+   Browsers only allow sound and speech after a tap, and the speech engine is slow to wake up, so
+   the game always begins with a tap on a tile. */
 function initStartScreen() {
   addEventListener("resize", fitTiles);
   if (Q.get("start") === "0") { startEl.remove(); return; }
-  const go = startEl.querySelector(".go"), tiles = startEl.querySelector(".themes");
-  if (THEME_GIVEN) {
-    tiles.remove();
-    const label = Q.get("starttext") || W.start;
-    go.querySelector("span").textContent = label;
-    go.setAttribute("aria-label", label);
-    go.addEventListener("click", () => beginGame(go, label));
-  } else {
-    go.remove();
-    tileThemes().forEach((t, i) => tiles.appendChild(makeTile(t, i)));
-  }
+  const tiles = startEl.querySelector(".themes");
+  if (THEME_GIVEN) tiles.appendChild(makeTile(CFG.theme, 0, "big"));
+  else tileThemes().forEach((theme, i) => tiles.appendChild(makeTile(theme, i)));
   updateLangNotice();
   fitTiles();
 }
 
 /* ---------- After the fireworks ----------
    The game just played as a big tile in the middle (most likely what the child wants again),
-   with the other games as smaller tiles underneath. When the URL fixed the game (or it is a
-   custom game with no tile), a single "play again" button instead. */
+   with the other games as smaller tiles underneath. For a parent-made game: only its big tile. */
 function showAgain() {
-  const current = THEME_TILES[CFG.theme] && !THEME_GIVEN ? CFG.theme : null;
-  if (!current) { again.classList.add("show"); requestAnimationFrame(() => again.style.opacity = 1); return; }
+  const current = CFG.theme;
+  if (current === "images" && THEME_GIVEN) chooseSet();   // random set: the tile previews the next one
   endEl.innerHTML = "";
   endEl.appendChild(makeTile(current, 0, "big"));
-  const others = document.createElement("div"); others.className = "others";
-  tileThemes().filter(t => t !== current).forEach((t, i) => others.appendChild(makeTile(t, i + 1, "small")));
-  endEl.appendChild(others);
+  if (!THEME_GIVEN) {
+    const others = document.createElement("div"); others.className = "others";
+    tileThemes().filter(x => x !== current).forEach((x, i) => others.appendChild(makeTile(x, i + 1, "small")));
+    endEl.appendChild(others);
+  }
   fitTiles();
   endEl.classList.add("show");
 }
 function hideEnd() {
   stopFireworks();
   endEl.classList.remove("show");
-  again.style.opacity = 0; again.classList.remove("show");
-}
-
-function initAgainButton() {
-  again.addEventListener("click", () => { sfx.tap(); hideEnd(); newGame(); });
 }
 
 function overlay() {

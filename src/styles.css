@@ -53,19 +53,8 @@ html,body{margin:0;height:100%;background:var(--page-bg);overflow:hidden;
 #langnote{max-width:min(90vw,520px);margin:1.4em 16px 0;text-align:center;
   font:600 14px/1.4 system-ui,sans-serif;color:#8a5a00}
 #langnote:empty{display:none}
-#start .go{display:flex;align-items:center;gap:.45em;border:0;cursor:pointer;
-  font:700 clamp(36px,9vmin,84px)/1 "Andika","Nunito",system-ui,sans-serif;color:#fff;
-  background:#3DAA5C;box-shadow:0 .12em 0 #2C7E44,0 .3em .6em rgba(47,58,74,.18);
-  padding:.45em .9em .45em .75em;border-radius:999px;animation:breathe 2.2s ease-in-out infinite}
-#start .go:active{translate:0 .08em;box-shadow:0 .04em 0 #2C7E44}
-#start .go svg{width:.9em;height:.9em}
 @keyframes breathe{50%{scale:1.05}}
-@media (prefers-reduced-motion:reduce){#start .go,#start .tile,#end .tile{animation:none}}
-#again{position:fixed;left:50%;bottom:8%;translate:-50% 0;width:96px;height:96px;border-radius:50%;
-  border:0;background:#3DAA5C;color:#fff;box-shadow:0 5px 0 #2C7E44;cursor:pointer;
-  display:none;align-items:center;justify-content:center;opacity:0;transition:opacity .6s}
-#again.show{display:flex}
-#again svg{width:52px;height:52px}
+@media (prefers-reduced-motion:reduce){#start .tile,#end .tile{animation:none}}
 .overlay{position:fixed;inset:16px;overflow:auto;background:#fff;border-radius:16px;padding:20px;
   font:14px/1.5 ui-monospace,Consolas,monospace;white-space:pre-wrap;box-shadow:0 10px 40px rgba(0,0,0,.15)}
 @media (prefers-reduced-motion:reduce){:root{--flip:1ms}.card.gone .inner{animation:none;opacity:0}}
@@ -74,7 +63,7 @@ html,body{margin:0;height:100%;background:var(--page-bg);overflow:hidden;
 
 /* Game tiles on the Start screen: a fanned stack of three mini cards per game. */
 #start .themes{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--tile-gap,24px);
-  max-width:min(100%,1100px);padding:16px}
+  width:var(--themes-w,auto);max-width:100%}
 #start .tile,#end .tile{position:relative;width:var(--tile,200px);aspect-ratio:1;border:0;padding:0;cursor:pointer;
   border-radius:24%;background:var(--tint);box-shadow:0 .5vmin 0 rgba(47,58,74,.12),0 1.2vmin 2.4vmin rgba(47,58,74,.12);
   animation:breathe 2.6s ease-in-out infinite;transition:translate .1s}
@@ -99,3 +88,35 @@ html,body{margin:0;height:100%;background:var(--page-bg);overflow:hidden;
 #end .others{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--tile-gap,20px);max-width:var(--others-w,100%)}
 #end .tile.small{width:var(--small,140px)}
 @keyframes fadeIn{to{opacity:1}}
+
+/* Replay badge on the tile of a parent-made game. */
+.tile .replay{position:absolute;right:-4%;bottom:-4%;width:30%;aspect-ratio:1;border-radius:50%;
+  background:#3DAA5C;color:#fff;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 .4vmin 0 #2C7E44,0 .8vmin 1.6vmin rgba(47,58,74,.18)}
+.tile .replay svg{width:58%;height:58%}
+.mini img{width:84%;height:84%;object-fit:contain}
+
+/* Parents' setup screen (?setup): plain grown-up form. */
+#setup{position:fixed;inset:0;overflow:auto;background:var(--bg);z-index:10;
+  font:16px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink)}
+#setup form{max-width:640px;margin:0 auto;padding:24px 16px 48px}
+#setup h1{font-size:24px;margin:0 0 4px}
+#setup p.lead{margin:0 0 20px;color:#5b6573}
+#setup fieldset{border:0;background:#fff;border-radius:14px;padding:14px 16px;margin:0 0 14px;
+  box-shadow:0 1px 3px rgba(47,58,74,.1)}
+#setup legend{font-weight:700;padding:0;margin-bottom:8px;float:left;width:100%}
+#setup .row{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;clear:both}
+#setup label{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+#setup .choices label{background:#F4F1EA;border-radius:10px;padding:8px 12px}
+#setup .choices input:checked+span{font-weight:700}
+#setup input[type=text],#setup input[type=number],#setup select,#setup textarea{
+  font:inherit;padding:8px 10px;border:1px solid #cfd5dd;border-radius:8px;background:#fff;color:inherit}
+#setup input[type=number]{width:90px}
+#setup textarea{width:100%;min-height:96px;resize:vertical}
+#setup small{color:#5b6573}
+#setup .actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:18px}
+#setup button{font:700 18px/1 system-ui,sans-serif;border:0;border-radius:12px;padding:14px 22px;cursor:pointer}
+#setup .start{background:#3DAA5C;color:#fff;box-shadow:0 3px 0 #2C7E44}
+#setup .copy{background:#E6ECF7;color:#23529F}
+#setup .link{width:100%;font:13px/1.4 ui-monospace,Consolas,monospace;word-break:break-all;color:#5b6573}
+#setup [hidden]{display:none!important}
