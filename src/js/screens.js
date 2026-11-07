@@ -126,6 +126,7 @@ function beginGame(fromEl, label) {
 /* Tiles are sized to the screen, as big as possible for little hands (like the cards).
    Start screen: try every column count and keep the one giving the biggest tiles.
    End screen: the current game takes ~half the height, the others below (wrapping on phones). */
+const CREDIT_H = 26;                                // strip kept free at the bottom for the credit line
 const TILE_GAP = () => Math.max(14, Math.min(32, Math.min(innerWidth, innerHeight) * .035));
 /* Best square size for n tiles in W×H: tries every column count. Ties (e.g. when the size is
    capped) go to the more even layout. Returns { size, cols, width } where width is the
@@ -141,7 +142,7 @@ function bestGrid(n, W, H, gap, max) {
   return { ...best, width: best.cols * best.size + (best.cols - 1) * gap };
 }
 function fitTiles() {
-  const gap = TILE_GAP(), W = innerWidth - 32, H = innerHeight - 32;
+  const gap = TILE_GAP(), W = innerWidth - 32, H = innerHeight - 32 - CREDIT_H;
   const n = startEl.querySelectorAll(".tile").length;
   if (n) {
     const note = document.getElementById("langnote");
