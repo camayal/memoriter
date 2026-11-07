@@ -36,7 +36,7 @@ const TEXT = {
     shapes: { line: "línea", circle: "círculo", oval: "óvalo", square: "cuadrado", rectangle: "rectángulo", triangle: "triángulo", diamond: "rombo", pentagon: "pentágono", hexagon: "hexágono", heptagon: "heptágono", octagon: "octágono", star: "estrella", heart: "corazón" },
     sets: {
       animals:  { name: "animales",   items: ["🐶|perro", "🐱|gato", "🐮|vaca", "🐷|cerdo", "🐸|rana", "🦁|león", "🐵|mono", "🐤|pollito", "🦆|pato", "🐻|oso", "🐰|conejo", "🐟|pez", "🐘|elefante", "🐴|caballo"] },
-      fruits:   { name: "frutas",     items: ["🍎|manzana", "🍌|plátano", "🍇|uvas", "🍓|fresa", "🍊|naranja", "🍉|sandía", "🍐|pera", "🍒|cerezas", "🍍|piña", "🍋|limón", "🥝|kiwi", "🍑|durazno"] },
+      fruits:   { name: "frutas",     items: ["🍎|manzana", "🍌|banano", "🍇|uvas", "🍓|fresa", "🍊|naranja", "🍉|sandía", "🍐|pera", "🍒|cerezas", "🍍|piña", "🍋|limón", "🥝|kiwi", "🍑|durazno"] },
       vehicles: { name: "vehículos",  items: ["🚗|carro", "🚌|autobús", "🚒|camión de bomberos", "🚓|patrulla", "🚑|ambulancia", "🚜|tractor", "🚂|tren", "✈️|avión", "🚁|helicóptero", "🚀|cohete", "🚢|barco", "🚲|bicicleta"] },
       nature:   { name: "naturaleza", items: ["☀️|sol", "🌙|luna", "⭐|estrella", "☁️|nube", "🌈|arcoíris", "🌸|flor", "🌳|árbol", "🍄|hongo", "🍂|hoja", "❄️|copo de nieve", "🌊|ola", "🌵|cactus"] },
     },

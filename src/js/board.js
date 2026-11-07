@@ -38,7 +38,9 @@ function onTap(i) {
   if (c.done || c.up || locked) return;
   sfx.tap();
   c.up = true; c.el.classList.add("up"); c.el.setAttribute("aria-label", c.say);
-  say(c.say);
+  // The second card of a pair found right away isn't spoken again: the word was just said.
+  const sameAsOpen = openCards.length === 1 && openCards[0].id === c.id;
+  if (!sameAsOpen) say(c.say);
   openCards.push(c);
   if (openCards.length < 2) return;
   const [a, b] = openCards; openCards = [];

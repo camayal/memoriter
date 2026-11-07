@@ -238,7 +238,7 @@ const TEXT = {
     shapes: { line: "línea", circle: "círculo", oval: "óvalo", square: "cuadrado", rectangle: "rectángulo", triangle: "triángulo", diamond: "rombo", pentagon: "pentágono", hexagon: "hexágono", heptagon: "heptágono", octagon: "octágono", star: "estrella", heart: "corazón" },
     sets: {
       animals:  { name: "animales",   items: ["🐶|perro", "🐱|gato", "🐮|vaca", "🐷|cerdo", "🐸|rana", "🦁|león", "🐵|mono", "🐤|pollito", "🦆|pato", "🐻|oso", "🐰|conejo", "🐟|pez", "🐘|elefante", "🐴|caballo"] },
-      fruits:   { name: "frutas",     items: ["🍎|manzana", "🍌|plátano", "🍇|uvas", "🍓|fresa", "🍊|naranja", "🍉|sandía", "🍐|pera", "🍒|cerezas", "🍍|piña", "🍋|limón", "🥝|kiwi", "🍑|durazno"] },
+      fruits:   { name: "frutas",     items: ["🍎|manzana", "🍌|banano", "🍇|uvas", "🍓|fresa", "🍊|naranja", "🍉|sandía", "🍐|pera", "🍒|cerezas", "🍍|piña", "🍋|limón", "🥝|kiwi", "🍑|durazno"] },
       vehicles: { name: "vehículos",  items: ["🚗|carro", "🚌|autobús", "🚒|camión de bomberos", "🚓|patrulla", "🚑|ambulancia", "🚜|tractor", "🚂|tren", "✈️|avión", "🚁|helicóptero", "🚀|cohete", "🚢|barco", "🚲|bicicleta"] },
       nature:   { name: "naturaleza", items: ["☀️|sol", "🌙|luna", "⭐|estrella", "☁️|nube", "🌈|arcoíris", "🌸|flor", "🌳|árbol", "🍄|hongo", "🍂|hoja", "❄️|copo de nieve", "🌊|ola", "🌵|cactus"] },
     },
@@ -845,7 +845,9 @@ function onTap(i) {
   if (c.done || c.up || locked) return;
   sfx.tap();
   c.up = true; c.el.classList.add("up"); c.el.setAttribute("aria-label", c.say);
-  say(c.say);
+  // The second card of a pair found right away isn't spoken again: the word was just said.
+  const sameAsOpen = openCards.length === 1 && openCards[0].id === c.id;
+  if (!sameAsOpen) say(c.say);
   openCards.push(c);
   if (openCards.length < 2) return;
   const [a, b] = openCards; openCards = [];
