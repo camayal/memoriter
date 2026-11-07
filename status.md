@@ -24,6 +24,7 @@ Works in a browser but has not been tested on real devices yet.
 | `src/js/audio.js` | Sound effects (Web Audio) |
 | `src/js/speech.js` | Text-to-speech, voice choice and presets |
 | `src/js/fireworks.js` | Sparkle particles and the end fireworks show |
+| `site/wa/pairs/` | Copies of the website's shell files for `camayal.info/wa/pairs` (iframe page, manifest, offline `sw.js`) |
 | `tests/check.py` | `python tests/check.py` checks 61 URL settings in headless Edge/Chrome (~5 s). `--dist` tests the built file. |
 | `src/js/board.js` | Game logic: deal, flip, match, layout |
 | `src/js/screens.js` | Game tiles, Start screen, end screen, `?help=1`, `?voices=1` |
@@ -81,7 +82,8 @@ Removed: `starttext` (the "Let's go!" button became the big tile). Removed as re
 
 People play at **https://camayal.info/wa/pairs** (the GitHub Pages site with the custom domain).
 
-- In the **website** repository, `wa/pairs/index.html` is only a full-screen iframe showing this repository's build at `/memoriter/dist/` (GitHub Pages of this repo), passing along any settings in the address (`?lang=es`, `?set=fruits`, `?setup`). Next to it, `wa/pairs/manifest.webmanifest` makes `camayal.info/wa/pairs` installable as an app (it reuses the icons from `/memoriter/dist/`). The shell also turns off pull-to-refresh and zoom, since the outer page handles those gestures.
+- The website's files are kept here too, in **`site/wa/pairs/`** (`index.html`, `manifest.webmanifest`, `sw.js`): copy them to the website's `wa/pairs/` whenever they change (rarely).
+- In the **website** repository, `wa/pairs/index.html` is only a full-screen iframe showing this repository's build at `/memoriter/dist/` (GitHub Pages of this repo), passing along any settings in the address (`?lang=es`, `?set=fruits`, `?setup`). Next to it, `wa/pairs/manifest.webmanifest` makes `camayal.info/wa/pairs` installable as an app (it reuses the icons from `/memoriter/dist/`). The shell also turns off pull-to-refresh and zoom, since the outer page handles those gestures. `wa/pairs/sw.js` saves the shell, manifest and icons for offline use; the game in the iframe saves itself with `dist/sw.js`. After one visit online, the installed app opens with no connection (tested by stopping a local server, including settings never opened online).
 - To update the game: change `src/`, run `python build.py` (and `python tests/check.py`), commit and push this repository. Nothing needs copying: the iframe shows the new version.
 - The shell and its manifest only change if the game's address or the install details change.
 
@@ -136,7 +138,7 @@ People play at **https://camayal.info/wa/pairs** (the GitHub Pages site with the
 ### Technical
 - [ ] Message API so the hosting page can be notified when a game ends (`postMessage`)
 - [x] ~~Install as an app (PWA)~~, with offline play
-- [ ] Offline play for the installed app from `camayal.info/wa/pairs` (needs a small service worker in the website's `wa/pairs/`)
+- [x] ~~Offline play for the installed app from `camayal.info/wa/pairs`~~ (`site/wa/pairs/sw.js`)
 - [ ] Recorded voice clips as an alternative to TTS (`audio=url`)
 - [x] ~~Split into modules~~ (`src/` + `build.py`)
 - [x] ~~Automated checks~~ (`tests/check.py`)
