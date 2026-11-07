@@ -14,7 +14,10 @@ const LANG = LANG_TAG.slice(0, 2).toLowerCase() === "es" ? "es" : "en";
 
 /* Theme: given with theme=…, or guessed from the other settings, so "?letters=vowels" alone
    already means the letters theme. */
-const THEME_ALIASES = { number: "numbers", numeros: "numbers", "números": "numbers", letter: "letters", letras: "letters", shape: "shapes", formas: "shapes", figuras: "shapes", image: "images", imagenes: "images", "imágenes": "images", animals: "images", animales: "images" };
+const THEME_ALIASES = { number: "numbers", numeros: "numbers", "números": "numbers", letter: "letters", letras: "letters", shape: "shapes", formas: "shapes", figuras: "shapes", image: "images", imagenes: "images", "imágenes": "images", animals: "images", animales: "images", animal: "images", color: "colors", colores: "colors" };
+/* True when the URL already chooses the game, so the Start screen shows one "Let's go!" button
+   instead of the theme tiles. */
+const THEME_GIVEN = ["theme", "letters", "shapes", "items"].some(k => Q.has(k));
 function guessTheme() {
   const t = (Q.get("theme") || "").trim().toLowerCase();
   if (t) return THEME_ALIASES[t] || t;

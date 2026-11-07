@@ -13,6 +13,9 @@ const TEXT = {
     shapes: { line: "line", circle: "circle", oval: "oval", square: "square", rectangle: "rectangle", triangle: "triangle", diamond: "diamond", pentagon: "pentagon", hexagon: "hexagon", heptagon: "heptagon", octagon: "octagon", star: "star", heart: "heart" },
     animals: ["🐶|dog", "🐱|cat", "🐮|cow", "🐷|pig", "🐸|frog", "🦁|lion", "🐵|monkey", "🐤|chick", "🦆|duck", "🐻|bear", "🐰|rabbit", "🐟|fish", "🐘|elephant", "🐴|horse"],
     alphabet: "abcdefghijklmnopqrstuvwxyz",
+    colors: { red: "red", blue: "blue", yellow: "yellow", green: "green", orange: "orange", purple: "purple", pink: "pink", brown: "brown", black: "black" },
+    // Spoken when the child taps a game tile on the Start screen.
+    themes: { numbers: "Let's find pairs of numbers!", letters: "Let's find pairs of letters!", images: "Let's find pairs of animals!", shapes: "Let's find pairs of shapes!", colors: "Let's find pairs of colors!" },
     // English voices read a single capital letter as its name, so letters are spoken as "A", "B" …
     letter: ch => ch.toUpperCase(),
     number: n => numberEN(n),
@@ -25,6 +28,8 @@ const TEXT = {
     shapes: { line: "línea", circle: "círculo", oval: "óvalo", square: "cuadrado", rectangle: "rectángulo", triangle: "triángulo", diamond: "rombo", pentagon: "pentágono", hexagon: "hexágono", heptagon: "heptágono", octagon: "octágono", star: "estrella", heart: "corazón" },
     animals: ["🐶|perro", "🐱|gato", "🐮|vaca", "🐷|cerdo", "🐸|rana", "🦁|león", "🐵|mono", "🐤|pollito", "🦆|pato", "🐻|oso", "🐰|conejo", "🐟|pez", "🐘|elefante", "🐴|caballo"],
     alphabet: "abcdefghijklmnñopqrstuvwxyz",
+    colors: { red: "rojo", blue: "azul", yellow: "amarillo", green: "verde", orange: "naranja", purple: "morado", pink: "rosa", brown: "café", black: "negro" },
+    themes: { numbers: "¡Vamos a buscar parejas de números!", letters: "¡Vamos a buscar parejas de letras!", images: "¡Vamos a buscar parejas de animales!", shapes: "¡Vamos a buscar parejas de figuras!", colors: "¡Vamos a buscar parejas de colores!" },
     letter: ch => LETTERS_ES[ch.toLowerCase()] || ch,
     number: n => numberES(n),
   },

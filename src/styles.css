@@ -53,21 +53,43 @@ html,body{margin:0;height:100%;background:var(--page-bg);overflow:hidden;
 #langnote{max-width:min(90vw,520px);margin:1.4em 16px 0;text-align:center;
   font:600 14px/1.4 system-ui,sans-serif;color:#8a5a00}
 #langnote:empty{display:none}
-#start button{display:flex;align-items:center;gap:.45em;border:0;cursor:pointer;
+#start .go{display:flex;align-items:center;gap:.45em;border:0;cursor:pointer;
   font:700 clamp(36px,9vmin,84px)/1 "Andika","Nunito",system-ui,sans-serif;color:#fff;
   background:#3DAA5C;box-shadow:0 .12em 0 #2C7E44,0 .3em .6em rgba(47,58,74,.18);
   padding:.45em .9em .45em .75em;border-radius:999px;animation:breathe 2.2s ease-in-out infinite}
-#start button:active{translate:0 .08em;box-shadow:0 .04em 0 #2C7E44}
-#start svg{width:.9em;height:.9em}
+#start .go:active{translate:0 .08em;box-shadow:0 .04em 0 #2C7E44}
+#start .go svg{width:.9em;height:.9em}
 @keyframes breathe{50%{scale:1.05}}
-@media (prefers-reduced-motion:reduce){#start button{animation:none}}
+@media (prefers-reduced-motion:reduce){#start .go,#start .tile{animation:none}}
 #again{position:fixed;left:50%;bottom:8%;translate:-50% 0;width:96px;height:96px;border-radius:50%;
   border:0;background:#3DAA5C;color:#fff;box-shadow:0 5px 0 #2C7E44;cursor:pointer;
   display:none;align-items:center;justify-content:center;opacity:0;transition:opacity .6s}
-#again.show{display:flex}
+#again.show,#home.show{display:flex}
+#home{position:fixed;left:calc(50% - 132px);bottom:calc(8% + 12px);width:72px;height:72px;border-radius:50%;
+  border:0;background:#2F6FDB;color:#fff;box-shadow:0 5px 0 #23529F;cursor:pointer;
+  display:none;align-items:center;justify-content:center;opacity:0;transition:opacity .6s}
+#home svg{width:36px;height:36px}
 #again svg{width:52px;height:52px}
 .overlay{position:fixed;inset:16px;overflow:auto;background:#fff;border-radius:16px;padding:20px;
   font:14px/1.5 ui-monospace,Consolas,monospace;white-space:pre-wrap;box-shadow:0 10px 40px rgba(0,0,0,.15)}
 @media (prefers-reduced-motion:reduce){:root{--flip:1ms}.card.gone .inner{animation:none;opacity:0}}
 .overlay .voice{cursor:pointer;padding:2px 0}
 
+
+/* Game tiles on the Start screen: a fanned stack of three mini cards per game. */
+#start .themes{display:flex;flex-wrap:wrap;justify-content:center;gap:clamp(14px,3.5vmin,32px);
+  max-width:min(100%,1100px);padding:16px}
+#start .tile{position:relative;width:clamp(110px,min(26vmin,16vw),210px);aspect-ratio:1;border:0;padding:0;cursor:pointer;
+  border-radius:24%;background:var(--tint);box-shadow:0 .5vmin 0 rgba(47,58,74,.12),0 1.2vmin 2.4vmin rgba(47,58,74,.12);
+  animation:breathe 2.6s ease-in-out infinite;transition:translate .1s}
+#start .tile:active{translate:0 .6vmin}
+#start .mini{position:absolute;left:27%;top:24%;width:46%;aspect-ratio:1;border-radius:18%;background:#fff;
+  display:flex;align-items:center;justify-content:center;container-type:size;
+  box-shadow:0 2px 0 rgba(47,58,74,.1),0 3px 8px rgba(47,58,74,.12)}
+#start .m2{transform:translate(-44%,-12%) rotate(-16deg) scale(.82)}
+#start .m1{transform:translate(44%,-12%) rotate(14deg) scale(.82)}
+#start .m0{transform:translateY(12%) scale(1.06)}
+#start .m1>*,#start .m2>*{opacity:.75}
+#start .mini svg{width:76%;height:76%}
+#start .sym{font:700 72cqmin/1 "Andika","Nunito",system-ui,sans-serif}
+#start .emo{font-size:64cqmin;line-height:1}

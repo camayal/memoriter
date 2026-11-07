@@ -1,6 +1,6 @@
 "use strict";
 /* content.js: builds the list of card items for the chosen theme.
-   Each item: { kind: "text" | "shape" | "img" | "emoji", show, say }
+   Each item: { kind: "text" | "shape" | "swatch" | "img" | "emoji", show, say }
    "show" is what appears on the card, "say" is what the voice speaks (already in the game language). */
 
 /* "shown|spoken" → item. Without "|", numbers and single letters are spoken as words (see spoken()). */
@@ -31,6 +31,11 @@ const THEMES = {
   shapes(n) {
     const want = list("shapes").map(s => s.toLowerCase()).filter(s => SHAPES[s]);
     return (want.length ? want.slice(0, n) : pick(Object.keys(SHAPES), n)).map(s => ({ kind: "shape", show: s, say: W.shapes[s] }));
+  },
+
+  /* Colour swatches, spoken as the colour's name. Every card keeps its own colour here. */
+  colors(n) {
+    return pick(Object.keys(W.colors), n).map(c => ({ kind: "swatch", show: c === "black" ? INK : NAMED[c], say: W.colors[c] }));
   },
 
   images(n) {

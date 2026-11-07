@@ -62,31 +62,58 @@ html,body{margin:0;height:100%;background:var(--page-bg);overflow:hidden;
 #langnote{max-width:min(90vw,520px);margin:1.4em 16px 0;text-align:center;
   font:600 14px/1.4 system-ui,sans-serif;color:#8a5a00}
 #langnote:empty{display:none}
-#start button{display:flex;align-items:center;gap:.45em;border:0;cursor:pointer;
+#start .go{display:flex;align-items:center;gap:.45em;border:0;cursor:pointer;
   font:700 clamp(36px,9vmin,84px)/1 "Andika","Nunito",system-ui,sans-serif;color:#fff;
   background:#3DAA5C;box-shadow:0 .12em 0 #2C7E44,0 .3em .6em rgba(47,58,74,.18);
   padding:.45em .9em .45em .75em;border-radius:999px;animation:breathe 2.2s ease-in-out infinite}
-#start button:active{translate:0 .08em;box-shadow:0 .04em 0 #2C7E44}
-#start svg{width:.9em;height:.9em}
+#start .go:active{translate:0 .08em;box-shadow:0 .04em 0 #2C7E44}
+#start .go svg{width:.9em;height:.9em}
 @keyframes breathe{50%{scale:1.05}}
-@media (prefers-reduced-motion:reduce){#start button{animation:none}}
+@media (prefers-reduced-motion:reduce){#start .go,#start .tile{animation:none}}
 #again{position:fixed;left:50%;bottom:8%;translate:-50% 0;width:96px;height:96px;border-radius:50%;
   border:0;background:#3DAA5C;color:#fff;box-shadow:0 5px 0 #2C7E44;cursor:pointer;
   display:none;align-items:center;justify-content:center;opacity:0;transition:opacity .6s}
-#again.show{display:flex}
+#again.show,#home.show{display:flex}
+#home{position:fixed;left:calc(50% - 132px);bottom:calc(8% + 12px);width:72px;height:72px;border-radius:50%;
+  border:0;background:#2F6FDB;color:#fff;box-shadow:0 5px 0 #23529F;cursor:pointer;
+  display:none;align-items:center;justify-content:center;opacity:0;transition:opacity .6s}
+#home svg{width:36px;height:36px}
 #again svg{width:52px;height:52px}
 .overlay{position:fixed;inset:16px;overflow:auto;background:#fff;border-radius:16px;padding:20px;
   font:14px/1.5 ui-monospace,Consolas,monospace;white-space:pre-wrap;box-shadow:0 10px 40px rgba(0,0,0,.15)}
 @media (prefers-reduced-motion:reduce){:root{--flip:1ms}.card.gone .inner{animation:none;opacity:0}}
 .overlay .voice{cursor:pointer;padding:2px 0}
 
+
+/* Game tiles on the Start screen: a fanned stack of three mini cards per game. */
+#start .themes{display:flex;flex-wrap:wrap;justify-content:center;gap:clamp(14px,3.5vmin,32px);
+  max-width:min(100%,1100px);padding:16px}
+#start .tile{position:relative;width:clamp(110px,min(26vmin,16vw),210px);aspect-ratio:1;border:0;padding:0;cursor:pointer;
+  border-radius:24%;background:var(--tint);box-shadow:0 .5vmin 0 rgba(47,58,74,.12),0 1.2vmin 2.4vmin rgba(47,58,74,.12);
+  animation:breathe 2.6s ease-in-out infinite;transition:translate .1s}
+#start .tile:active{translate:0 .6vmin}
+#start .mini{position:absolute;left:27%;top:24%;width:46%;aspect-ratio:1;border-radius:18%;background:#fff;
+  display:flex;align-items:center;justify-content:center;container-type:size;
+  box-shadow:0 2px 0 rgba(47,58,74,.1),0 3px 8px rgba(47,58,74,.12)}
+#start .m2{transform:translate(-44%,-12%) rotate(-16deg) scale(.82)}
+#start .m1{transform:translate(44%,-12%) rotate(14deg) scale(.82)}
+#start .m0{transform:translateY(12%) scale(1.06)}
+#start .m1>*,#start .m2>*{opacity:.75}
+#start .mini svg{width:76%;height:76%}
+#start .sym{font:700 72cqmin/1 "Andika","Nunito",system-ui,sans-serif}
+#start .emo{font-size:64cqmin;line-height:1}
 </style>
 </head>
 <body>
 <div id="board"><div id="grid" role="grid" aria-label="Memory cards"></div></div>
-<div id="start"><button type="button"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5Z"/></svg><span></span></button><p id="langnote"></p></div>
+<div id="start">
+  <div class="themes"></div>
+  <button type="button" class="go"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5Z"/></svg><span></span></button>
+  <p id="langnote"></p>
+</div>
 <div id="night"></div>
 <canvas id="fx"></canvas>
+<button id="home" aria-label="Choose a game"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg></button>
 <button id="again" aria-label="Play again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg></button>
 
 <script>
@@ -108,7 +135,10 @@ const LANG = LANG_TAG.slice(0, 2).toLowerCase() === "es" ? "es" : "en";
 
 /* Theme: given with theme=…, or guessed from the other settings, so "?letters=vowels" alone
    already means the letters theme. */
-const THEME_ALIASES = { number: "numbers", numeros: "numbers", "números": "numbers", letter: "letters", letras: "letters", shape: "shapes", formas: "shapes", figuras: "shapes", image: "images", imagenes: "images", "imágenes": "images", animals: "images", animales: "images" };
+const THEME_ALIASES = { number: "numbers", numeros: "numbers", "números": "numbers", letter: "letters", letras: "letters", shape: "shapes", formas: "shapes", figuras: "shapes", image: "images", imagenes: "images", "imágenes": "images", animals: "images", animales: "images", animal: "images", color: "colors", colores: "colors" };
+/* True when the URL already chooses the game, so the Start screen shows one "Let's go!" button
+   instead of the theme tiles. */
+const THEME_GIVEN = ["theme", "letters", "shapes", "items"].some(k => Q.has(k));
 function guessTheme() {
   const t = (Q.get("theme") || "").trim().toLowerCase();
   if (t) return THEME_ALIASES[t] || t;
@@ -157,6 +187,9 @@ const TEXT = {
     shapes: { line: "line", circle: "circle", oval: "oval", square: "square", rectangle: "rectangle", triangle: "triangle", diamond: "diamond", pentagon: "pentagon", hexagon: "hexagon", heptagon: "heptagon", octagon: "octagon", star: "star", heart: "heart" },
     animals: ["🐶|dog", "🐱|cat", "🐮|cow", "🐷|pig", "🐸|frog", "🦁|lion", "🐵|monkey", "🐤|chick", "🦆|duck", "🐻|bear", "🐰|rabbit", "🐟|fish", "🐘|elephant", "🐴|horse"],
     alphabet: "abcdefghijklmnopqrstuvwxyz",
+    colors: { red: "red", blue: "blue", yellow: "yellow", green: "green", orange: "orange", purple: "purple", pink: "pink", brown: "brown", black: "black" },
+    // Spoken when the child taps a game tile on the Start screen.
+    themes: { numbers: "Let's find pairs of numbers!", letters: "Let's find pairs of letters!", images: "Let's find pairs of animals!", shapes: "Let's find pairs of shapes!", colors: "Let's find pairs of colors!" },
     // English voices read a single capital letter as its name, so letters are spoken as "A", "B" …
     letter: ch => ch.toUpperCase(),
     number: n => numberEN(n),
@@ -169,6 +202,8 @@ const TEXT = {
     shapes: { line: "línea", circle: "círculo", oval: "óvalo", square: "cuadrado", rectangle: "rectángulo", triangle: "triángulo", diamond: "rombo", pentagon: "pentágono", hexagon: "hexágono", heptagon: "heptágono", octagon: "octágono", star: "estrella", heart: "corazón" },
     animals: ["🐶|perro", "🐱|gato", "🐮|vaca", "🐷|cerdo", "🐸|rana", "🦁|león", "🐵|mono", "🐤|pollito", "🦆|pato", "🐻|oso", "🐰|conejo", "🐟|pez", "🐘|elefante", "🐴|caballo"],
     alphabet: "abcdefghijklmnñopqrstuvwxyz",
+    colors: { red: "rojo", blue: "azul", yellow: "amarillo", green: "verde", orange: "naranja", purple: "morado", pink: "rosa", brown: "café", black: "negro" },
+    themes: { numbers: "¡Vamos a buscar parejas de números!", letters: "¡Vamos a buscar parejas de letras!", images: "¡Vamos a buscar parejas de animales!", shapes: "¡Vamos a buscar parejas de figuras!", colors: "¡Vamos a buscar parejas de colores!" },
     letter: ch => LETTERS_ES[ch.toLowerCase()] || ch,
     number: n => numberES(n),
   },
@@ -326,7 +361,7 @@ const SHAPES = {
 
 /* ===== src/js/content.js ===== */
 /* content.js: builds the list of card items for the chosen theme.
-   Each item: { kind: "text" | "shape" | "img" | "emoji", show, say }
+   Each item: { kind: "text" | "shape" | "swatch" | "img" | "emoji", show, say }
    "show" is what appears on the card, "say" is what the voice speaks (already in the game language). */
 
 /* "shown|spoken" → item. Without "|", numbers and single letters are spoken as words (see spoken()). */
@@ -357,6 +392,11 @@ const THEMES = {
   shapes(n) {
     const want = list("shapes").map(s => s.toLowerCase()).filter(s => SHAPES[s]);
     return (want.length ? want.slice(0, n) : pick(Object.keys(SHAPES), n)).map(s => ({ kind: "shape", show: s, say: W.shapes[s] }));
+  },
+
+  /* Colour swatches, spoken as the colour's name. Every card keeps its own colour here. */
+  colors(n) {
+    return pick(Object.keys(W.colors), n).map(c => ({ kind: "swatch", show: c === "black" ? INK : NAMED[c], say: W.colors[c] }));
   },
 
   images(n) {
@@ -699,6 +739,7 @@ let cards = [], openCards = [], locked = false, matched = 0, total = 0;
 
 function faceHTML(item, color) {
   if (item.kind === "shape") return `<svg viewBox="0 0 100 100" aria-hidden="true">${SHAPES[item.show](color, darker(color, .85))}</svg>`;
+  if (item.kind === "swatch") return `<svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="40" fill="${item.show}" stroke="${darker(item.show, .85)}" stroke-width="4"/></svg>`;
   if (item.kind === "img") return `<img src="${encodeURI(item.show)}" alt="" draggable="false">`;
   const len = [...item.show].length;
   const size = item.kind === "emoji" ? 66 : Math.min(64, 150 / len);
@@ -795,7 +836,9 @@ function initBoard() {
 
 const HELP = `MEMORITER: a memory pairs game for toddlers. Every setting comes from the URL.
 
-theme    numbers | letters | shapes | images                    (default: numbers; also guessed from letters=, shapes=, items=)
+theme    numbers | letters | shapes | images | colors   (default: the child picks a tile on the Start screen;
+         also guessed from letters=, shapes=, items=)
+themes   which tiles the Start screen offers, in order, e.g. themes=numbers,colors (default: all five)
 cards    number of cards on the board, even number               (default: 8 = 4 pairs)
 from,to  numbers range, e.g. from=1&to=20 (random pick if the range has more numbers than pairs)
 letters  abc (whole alphabet) | a-d (range) | aeiou (exact list) | vowels
@@ -822,41 +865,80 @@ mark     0 = hide the white circle in the middle of the card back
 bg       page background pattern, same list as "back", drawn very faint (default: plain)
 bgcolor  page colour: a colour name (very light tint) or hex like FFF7EA   (default: cream)
 seed     number = same shuffle every time
-start    0 = skip the Start button (first card may then be silent: browsers need a tap to unlock sound)
-starttext text on the Start button, also spoken (default "Let's go!" / "¡Vamos!")
+start    0 = skip the Start screen (plays numbers; first card may be silent: browsers need a tap to unlock sound)
+starttext text of the "Let's go!" button, shown instead of the tiles when the URL already picks the game
 win      phrase spoken at the end (default "Good job!" / "¡Muy bien!")
 demo     end = skip the game and show the end fireworks (to try them, or win=)
 again    ms after the end before the "play again" button shows (default: when the celebration ends)
 
 (tap to close)`;
 
-const again = document.getElementById("again");
-function showAgain() { again.classList.add("show"); requestAnimationFrame(() => again.style.opacity = 1); }
+const again = document.getElementById("again"), home = document.getElementById("home");
+const endButtons = () => [again, ...(THEME_GIVEN || !startEl.isConnected ? [] : [home])];
+function showAgain() { for (const b of endButtons()) { b.classList.add("show"); requestAnimationFrame(() => b.style.opacity = 1); } }
+function hideEndButtons() { for (const b of [again, home]) { b.style.opacity = 0; b.classList.remove("show"); } }
 
+/* After the fireworks: "play again" (same game) and, when the child picked the game, "home"
+   (back to the game tiles). */
 function initAgainButton() {
-  again.addEventListener("click", () => {
-    sfx.tap(); stopFireworks();
-    again.style.opacity = 0; again.classList.remove("show");
-    newGame();
-  });
+  again.addEventListener("click", () => { sfx.tap(); stopFireworks(); hideEndButtons(); newGame(); });
+  home.addEventListener("click", () => { sfx.tap(); stopFireworks(); hideEndButtons(); newGame(); showStart(); });
 }
 
-/* Start screen: browsers only allow sound and speech after a tap, and the speech engine is slow
-   to wake up. Tapping it unlocks audio and says the word out loud, so the first card is heard. */
+/* ---------- Start screen ----------
+   Browsers only allow sound and speech after a tap, and the speech engine is slow to wake up, so
+   the game always begins with a tap here.
+   - Default: one tile per game (numbers, letters, animals, shapes, colors). Each tile shows a small
+     fanned stack of three cards with the game's symbols, so a toddler can choose by looking.
+     Tapping says e.g. "Let's find pairs of numbers!".
+   - When the URL already chooses the game (theme=, letters=, shapes=, items=): one "Let's go!" button.
+   themes= limits/orders the tiles, e.g. themes=numbers,colors. */
+const THEME_TILES = {
+  numbers: { tint: NAMED.blue,   faces: ["1", "2", "3"] },
+  letters: { tint: NAMED.red,    faces: ["A", "B", "C"] },
+  images:  { tint: NAMED.orange, faces: ["🐶", "🐱", "🐮"], emoji: true },
+  shapes:  { tint: NAMED.green,  faces: ["triangle", "circle", "square"], shape: true },
+  colors:  { tint: NAMED.purple, faces: [NAMED.red, NAMED.blue, NAMED.yellow], swatch: true },
+};
+const startEl = document.getElementById("start");
+
+function miniFace(tile, f) {
+  if (tile.shape) return `<svg viewBox="0 0 100 100">${SHAPES[f](tile.tint, darker(tile.tint, .85))}</svg>`;
+  if (tile.swatch) return `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="${f}" stroke="${darker(f, .85)}" stroke-width="4"/></svg>`;
+  return `<span class="${tile.emoji ? "emo" : "sym"}" style="color:${tile.tint}">${f}</span>`;
+}
+
+function beginGame(fromEl, label) {
+  audio(); sfx.pop(); say(label);
+  const r = fromEl.getBoundingClientRect();         // festive confetti pop from what was tapped
+  sparkle(r.left + r.width * .3, r.top + r.height / 2, Math.max(r.width, r.height) * 1.2, null);
+  sparkle(r.left + r.width * .7, r.top + r.height / 2, Math.max(r.width, r.height) * 1.2, null);
+  startEl.classList.add("hide");
+}
+function showStart() { startEl.classList.remove("hide"); }
+
 function initStartScreen() {
-  const el = document.getElementById("start");
-  if (Q.get("start") === "0") { el.remove(); return; }
-  const btn = el.querySelector("button"), label = Q.get("starttext") || W.start;
-  el.querySelector("span").textContent = label;
-  btn.setAttribute("aria-label", label);
-  btn.addEventListener("click", () => {
-    audio(); sfx.pop(); say(label);
-    const r = btn.getBoundingClientRect();         // festive confetti pop from the button
-    sparkle(r.left + r.width * .3, r.top + r.height / 2, r.height * 2.2, null);
-    sparkle(r.left + r.width * .7, r.top + r.height / 2, r.height * 2.2, null);
-    el.classList.add("hide");
-    setTimeout(() => el.remove(), 450);
-  }, { once: true });
+  if (Q.get("start") === "0") { startEl.remove(); return; }
+  const go = startEl.querySelector(".go"), tiles = startEl.querySelector(".themes");
+  if (THEME_GIVEN) {
+    tiles.remove();
+    const label = Q.get("starttext") || W.start;
+    go.querySelector("span").textContent = label;
+    go.setAttribute("aria-label", label);
+    go.addEventListener("click", () => beginGame(go, label));
+  } else {
+    go.remove();
+    const wanted = list("themes").map(t => THEME_ALIASES[t.toLowerCase()] || t.toLowerCase()).filter(t => THEME_TILES[t]);
+    (wanted.length ? wanted : Object.keys(THEME_TILES)).forEach((t, i) => {
+      const tile = THEME_TILES[t], b = document.createElement("button");
+      b.type = "button"; b.className = "tile"; b.dataset.theme = t; b.setAttribute("aria-label", W.themes[t]);
+      b.style.setProperty("--tint", lighten(tile.tint, .82)); b.style.animationDelay = (i * .25) + "s";
+      // Drawn back to front, so the first symbol (1, A, 🐶 …) sits on top.
+      b.innerHTML = [2, 1, 0].map(k => `<span class="mini m${k}">${miniFace(tile, tile.faces[k])}</span>`).join("");
+      b.addEventListener("click", () => { CFG.theme = t; newGame(); beginGame(b, W.themes[t]); });
+      tiles.appendChild(b);
+    });
+  }
   updateLangNotice();
 }
 

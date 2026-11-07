@@ -13,9 +13,14 @@
 </head>
 <body>
 <div id="board"><div id="grid" role="grid" aria-label="Memory cards"></div></div>
-<div id="start"><button type="button"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5Z"/></svg><span></span></button><p id="langnote"></p></div>
+<div id="start">
+  <div class="themes"></div>
+  <button type="button" class="go"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5Z"/></svg><span></span></button>
+  <p id="langnote"></p>
+</div>
 <div id="night"></div>
 <canvas id="fx"></canvas>
+<button id="home" aria-label="Choose a game"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg></button>
 <button id="again" aria-label="Play again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg></button>
 
 <!-- build:js  (order matters: each file may use names defined by the files above it) -->

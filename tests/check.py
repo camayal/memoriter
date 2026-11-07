@@ -93,8 +93,9 @@ class Page:
         self.say = [html.unescape(s) for s, _ in cards]
         self.faces = [html.unescape(m.group(1)) if (m := re.search(r'class="txt"[^>]*>([^<]*)<', body)) else
                       ("svg" if "<svg" in body else "img" if "<img" in body else "?") for _, body in cards]
-        self.colors = set(re.findall(r'class="txt" style="[^"]*color:(#[0-9a-fA-F]{6})', dom)) | \
-                      set(re.findall(r'<svg viewBox="0 0 100 100"[^>]*>.*?fill="(#[0-9a-fA-F]{6})"', dom, re.S))
+        bodies = "".join(body for _, body in cards)          # only the cards, not the Start screen tiles
+        self.colors = set(re.findall(r'class="txt" style="[^"]*color:(#[0-9a-fA-F]{6})', bodies)) | \
+                      set(re.findall(r'<svg viewBox="0 0 100 100"[^>]*>.*?fill="(#[0-9a-fA-F]{6})"', bodies, re.S))
         root = re.search(r'<html[^>]*style="([^"]*)"', dom)
         self.root_style = html.unescape(root.group(1)) if root else ""
 
@@ -141,9 +142,15 @@ CASES = [
     ("bgcolor=blue", "bgcolor=blue (light tint)", lambda p: re.search(r"--page-bg:\s*#[0-9a-f]{6}", p.root_style) is not None and "#fff7ea" not in p.root_style.lower()),
     ("demo=end&start=0", "end fireworks (night sky on)", lambda p: 'id="night" class="on"' in p.dom),
     ("start=0", "start=0 removes Start screen", lambda p: 'id="start"' not in p.dom),
-    ("", "Start screen shown", lambda p: 'id="start"' in p.dom and "Let's go!" in p.dom),
-    ("lang=es", "Spanish Start text", lambda p: "¡Vamos!" in p.dom),
-    ("starttext=Hola", "starttext=", lambda p: ">Hola<" in p.dom),
+    ("", "Start screen: 5 game tiles", lambda p: p.dom.count('class="tile"') == 5 and 'class="go"' not in p.dom),
+    ("themes=numbers,colors", "themes= limits the tiles", lambda p: re.findall(r'data-theme="(\w+)"', p.dom) == ["numbers", "colors"]),
+    ("lang=es", "Spanish tile phrase", lambda p: "¡Vamos a buscar parejas de números!" in p.dom),
+    ("", "English tile phrase", lambda p: "Let's find pairs of numbers!" in html.unescape(p.dom)),
+    ("theme=letters", "URL picks game → Let's go button", lambda p: "Let's go!" in html.unescape(p.dom) and 'class="tile"' not in p.dom),
+    ("theme=numbers&lang=es", "Spanish Let's go text", lambda p: "¡Vamos!" in p.dom),
+    ("theme=numbers&starttext=Hola", "starttext=", lambda p: ">Hola<" in p.dom),
+    ("theme=colors", "colors theme: swatches", lambda p: p.n == 8 and all(f == "svg" for f in p.faces) and subset(p.say, ["red", "blue", "yellow", "green", "orange", "purple", "pink", "brown", "black"])),
+    ("theme=colores&lang=es", "Spanish colour names", lambda p: subset(p.say, ["rojo", "azul", "amarillo", "verde", "naranja", "morado", "rosa", "café", "negro"])),
     ("help=1", "help overlay", lambda p: 'class="overlay"' in p.dom and "MEMORITER" in p.dom),
     ("voices=1", "voices overlay", lambda p: 'class="overlay"' in p.dom and "voices in this browser" in p.dom),
 ]

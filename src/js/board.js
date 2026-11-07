@@ -6,6 +6,7 @@ let cards = [], openCards = [], locked = false, matched = 0, total = 0;
 
 function faceHTML(item, color) {
   if (item.kind === "shape") return `<svg viewBox="0 0 100 100" aria-hidden="true">${SHAPES[item.show](color, darker(color, .85))}</svg>`;
+  if (item.kind === "swatch") return `<svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="40" fill="${item.show}" stroke="${darker(item.show, .85)}" stroke-width="4"/></svg>`;
   if (item.kind === "img") return `<img src="${encodeURI(item.show)}" alt="" draggable="false">`;
   const len = [...item.show].length;
   const size = item.kind === "emoji" ? 66 : Math.min(64, 150 / len);
