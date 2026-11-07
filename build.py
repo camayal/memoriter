@@ -1,6 +1,6 @@
 """Build the ready-to-publish folder dist/: the whole game in one self-contained dist/index.html,
 plus the installable-app files from app/ (manifest, icons, sw.js).
-Copy the CONTENTS of dist/ to the web folder, e.g. camayal.info/wa/pairs/.
+GitHub Pages serves dist/ at /memoriter/dist/; camayal.info/wa/pairs shows it in an iframe.
 
 Usage:  python build.py
 

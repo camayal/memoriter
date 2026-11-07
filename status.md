@@ -31,7 +31,7 @@ Works in a browser but has not been tested on real devices yet.
 | `src/js/main.js` | Start-up |
 | `app/` | Installable-app sources: `manifest.webmanifest`, `sw.js` (offline), `icon.svg` and the PNG icons made from it by `python app/make_icons.py` |
 | `build.py` | `python build.py` builds `dist/` |
-| `dist/` | **The folder to publish** (generated: edit `src/` / `app/` and rebuild): `index.html` (the whole game in one file) + manifest, icons, `sw.js`. Copy its contents to `camayal.info/wa/pairs/`. |
+| `dist/` | **The published build** (generated: edit `src/` / `app/` and rebuild): `index.html` (the whole game in one file) + manifest, icons, `sw.js`. Served by this repo's GitHub Pages at `/memoriter/dist/` and shown by the iframe at `camayal.info/wa/pairs`. |
 
 The scripts are plain `<script>` files rather than ES modules, so `index.html` also works when opened straight from disk (`file://`). Load order matters and is set in `index.html`.
 
@@ -58,7 +58,7 @@ To add a language, copy the `en` block in `src/js/i18n.js`, translate it, and ac
 | Parents' setup screen | ✅ Done | Open `index.html?setup`. A plain form: game (numbers, letters, animals, shapes, colors, own cards), its options (number range, which letters / lowercase, which shapes, own cards one per line with `shown\|spoken`, "these are pictures"), number of cards, language, voice, speech and sound on/off. **Start game** reloads the page with those settings; **Copy link** copies them for a bookmark. Opening `?setup` on an existing link pre-fills the form. |
 | Parent-made game: one big tile | ✅ Done | When the link picks the game (from setup, or `theme=` / `letters=` / `shapes=` / `items=`), the child sees one big tile previewing that exact game (e.g. A E I O U), with a green replay badge, at the start and again after the fireworks. |
 | Full screen | ✅ Done | Tapping a game tile switches to full screen (no address bar or browser buttons) on Android, desktop and iPad, also inside a same-site iframe. Not available on iPhone Safari. `fullscreen=0` or the setup screen turns it off. |
-| Install as an app (PWA) | ✅ Done (test on a phone) | `dist/` includes an app manifest (full-screen display, cream theme), icons (four cards: two cats face up, two star backs face down) and a service worker so the installed app also opens offline and picks up updates when online. Install from the published page with the browser's "Install app" / "Add to Home screen". Only works over https (GitHub Pages), not from disk. |
+| Install as an app (PWA) | ✅ Done (test on a phone) | `dist/` includes an app manifest (full-screen display, cream theme), icons (four cards: two cats face up, two star backs face down) and a service worker so the installed app also opens offline and picks up updates when online. Install from `camayal.info/wa/pairs` with the browser's "Install app" / "Add to Home screen" (needs the shell's manifest, see Publishing). Only works over https (GitHub Pages), not from disk. |
 | No pull-to-refresh, no zoom | ✅ Done | `overscroll-behavior:none` stops pull-down refresh and rubber-banding; `touch-action:none`, `maximum-scale=1` and blocked pinch / ctrl+wheel gestures stop zoom. The setup screen can still scroll. |
 | Cards react to every small tap | ✅ Done | Cards react on touch-down instead of "click" (which got cancelled when a small finger slid or held), long-press menus are blocked, and tapping a card while two wrong cards are still showing turns them back immediately instead of being ignored. |
 | Choose the next game after the fireworks | ✅ Done | The game just played appears as a big tile in the middle (most likely what the child wants again), with the other games as smaller tiles below (one row on wide screens, 2×2 on phones). Tapping any tile starts that game. For a parent-made game, only its tile. |
@@ -79,13 +79,11 @@ Removed: `starttext` (the "Let's go!" button became the big tile). Removed as re
 
 ## Publishing
 
-The public address is **https://camayal.info/wa/pairs/** (your GitHub Pages site with its custom domain).
+People play at **https://camayal.info/wa/pairs** (the GitHub Pages site with the custom domain).
 
-1. `python build.py` (the tests: `python tests/check.py` and `python tests/check.py --dist`).
-2. Copy the **contents** of `dist/` into the website repository's `wa/pairs/` folder (`index.html`, `manifest.webmanifest`, `sw.js`, the icons) and push the website.
-3. Visitors open `camayal.info/wa/pairs/` (any settings work: `?lang=es`, `?set=fruits`, `?setup`) and can install it as an app from there.
-
-The game has to be served from that folder itself (not shown in an iframe) for "Install app" to work there. Possible later: a GitHub Action in this repository that copies `dist/` to the website automatically on each push.
+- In the **website** repository, `wa/pairs/index.html` is only a full-screen iframe showing this repository's build at `/memoriter/dist/` (GitHub Pages of this repo), passing along any settings in the address (`?lang=es`, `?set=fruits`, `?setup`). Next to it, `wa/pairs/manifest.webmanifest` makes `camayal.info/wa/pairs` installable as an app (it reuses the icons from `/memoriter/dist/`). The shell also turns off pull-to-refresh and zoom, since the outer page handles those gestures.
+- To update the game: change `src/`, run `python build.py` (and `python tests/check.py`), commit and push this repository. Nothing needs copying: the iframe shows the new version.
+- The shell and its manifest only change if the game's address or the install details change.
 
 ## Open decisions
 
@@ -138,7 +136,7 @@ The game has to be served from that folder itself (not shown in an iframe) for "
 ### Technical
 - [ ] Message API so the hosting page can be notified when a game ends (`postMessage`)
 - [x] ~~Install as an app (PWA)~~, with offline play
-- [ ] GitHub Action: copy `dist/` to the website's `wa/pairs/` automatically on push
+- [ ] Offline play for the installed app from `camayal.info/wa/pairs` (needs a small service worker in the website's `wa/pairs/`)
 - [ ] Recorded voice clips as an alternative to TTS (`audio=url`)
 - [x] ~~Split into modules~~ (`src/` + `build.py`)
 - [x] ~~Automated checks~~ (`tests/check.py`)
