@@ -41,6 +41,7 @@ const CFG = {
   upper: (Q.get("case") || "upper").toLowerCase() !== "lower",
   // Letters: say the name ("bee"), the sound ("buh", phonics=1) or both ("B … buh", phonics=both).
   phonics: (Q.get("phonics") || "0").toLowerCase(),
+  fullscreen: Q.get("fullscreen") !== "0",            // go full screen when a game tile is tapped
 };
 
 /* Random numbers: optionally seeded (seed=…) so the same shuffle repeats. */

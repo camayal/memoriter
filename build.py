@@ -1,4 +1,6 @@
-"""Bundle index.html + src/ into one self-contained file: dist/memoriter.html
+"""Build the ready-to-publish folder dist/: the whole game in one self-contained dist/index.html,
+plus the installable-app files from app/ (manifest, icons, sw.js).
+Copy the CONTENTS of dist/ to the web folder, e.g. camayal.info/wa/pairs/.
 
 Usage:  python build.py
 
@@ -13,7 +15,7 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent
 SRC_HTML = ROOT / "index.html"
-OUT = ROOT / "dist" / "memoriter.html"
+OUT = ROOT / "dist" / "index.html"
 
 
 def read(rel: str) -> str:
@@ -55,10 +57,35 @@ def main() -> int:
     # 4. Drop the development-only comment.
     html = re.sub(r"<!-- Development page:.*?-->\n", "", html, flags=re.S)
 
+    # 5. Installable app (PWA): manifest, icons and the offline helper go next to the built page.
+    #    The service worker is only registered when served over http(s) (e.g. GitHub Pages), not from disk.
+    html = html.replace("</head>", PWA_HEAD + "</head>", 1)
+    import hashlib, shutil
     OUT.parent.mkdir(exist_ok=True)
     OUT.write_text(html, encoding="utf-8")
-    print(f"build: wrote {OUT.relative_to(ROOT)} ({len(html) // 1024} KB, {len(files)} scripts)")
+    build_id = hashlib.sha1(html.encode("utf-8")).hexdigest()[:10]
+    for f in APP_FILES:
+        shutil.copyfile(ROOT / "app" / f, OUT.parent / f)
+    sw = (ROOT / "app" / "sw.js").read_text(encoding="utf-8").replace("__BUILD__", build_id)
+    (OUT.parent / "sw.js").write_text(sw, encoding="utf-8")
+    print(f"build: wrote {OUT.relative_to(ROOT)} ({len(html) // 1024} KB, {len(files)} scripts) + app files (build {build_id})")
     return 0
+
+
+APP_FILES = ["manifest.webmanifest", "icon-192.png", "icon-512.png", "icon-maskable-512.png", "apple-touch-icon.png"]
+PWA_HEAD = """<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#FFF7EA">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Memoriter">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<script>
+  if ("serviceWorker" in navigator && location.protocol.startsWith("http"))
+    addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+</script>
+"""
 
 
 if __name__ == "__main__":

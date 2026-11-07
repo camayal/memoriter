@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
 <title>Memoriter</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Andika:wght@700&display=swap">
@@ -23,7 +23,10 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;background:var(--page-bg);overflow:hidden;
   font-family:"Andika","Nunito",system-ui,sans-serif;color:var(--ink);
-  user-select:none;-webkit-user-select:none;touch-action:manipulation}
+  user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+  /* No pull-down-to-refresh, no rubber-band scrolling, no pinch or double-tap zoom. */
+  overscroll-behavior:none;touch-action:none}
+#setup{touch-action:pan-y}                         /* the parents' form can still scroll */
 #board{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
   padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom))}
 #grid{display:grid;gap:var(--gap)}
@@ -141,6 +144,18 @@ html,body{margin:0;height:100%;background:var(--page-bg);overflow:hidden;
 #setup form::after{display:block;text-align:center;margin-top:28px;color:rgba(47,58,74,.3)}
 #start,#end{padding-bottom:26px}
 </style>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#FFF7EA">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Memoriter">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<script>
+  if ("serviceWorker" in navigator && location.protocol.startsWith("http"))
+    addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+</script>
 </head>
 <body>
 <div id="board"><div id="grid" role="grid" aria-label="Memory cards"></div></div>
@@ -198,6 +213,7 @@ const CFG = {
   upper: (Q.get("case") || "upper").toLowerCase() !== "lower",
   // Letters: say the name ("bee"), the sound ("buh", phonics=1) or both ("B … buh", phonics=both).
   phonics: (Q.get("phonics") || "0").toLowerCase(),
+  fullscreen: Q.get("fullscreen") !== "0",            // go full screen when a game tile is tapped
 };
 
 /* Random numbers: optionally seeded (seed=…) so the same shuffle repeats. */
@@ -821,6 +837,7 @@ function initFireworks() {
 
 const grid = document.getElementById("grid"), board = document.getElementById("board");
 let cards = [], openCards = [], locked = false, matched = 0, total = 0;
+let mismatch = null;                                // { a, b, timer } while two different cards are showing
 
 function faceHTML(item, color) {
   if (item.kind === "shape") return `<svg viewBox="0 0 100 100" aria-hidden="true">${SHAPES[item.show](color, darker(color, .85))}</svg>`;
@@ -834,7 +851,8 @@ function faceHTML(item, color) {
 function newGame() {
   applyPatterns();                                  // new random card back each game
   const items = buildItems();
-  total = items.length; matched = 0; openCards = []; locked = false;
+  if (mismatch) clearTimeout(mismatch.timer);
+  total = items.length; matched = 0; openCards = []; locked = false; mismatch = null;
   const colors = gameColors(items.length);
   const deck = shuffle(items.flatMap((it, i) => [{ ...it, id: i, color: colors[i] }, { ...it, id: i, color: colors[i] }]));
   grid.innerHTML = "";
@@ -843,7 +861,11 @@ function newGame() {
     el.className = "card"; el.setAttribute("aria-label", "card " + (idx + 1));
     el.dataset.say = d.say;                         // what this card speaks (used by tests/check.py)
     el.innerHTML = `<div class="inner"><div class="face back"></div><div class="face front">${faceHTML(d, d.color)}</div></div>`;
-    el.addEventListener("click", () => onTap(idx));
+    /* React the instant a finger touches the card. A "click" only fires if the finger lifts without
+       sliding or holding, which small fingers often don't manage, so some taps were lost. */
+    el.addEventListener("pointerdown", e => { if (e.button > 0) return; e.preventDefault(); onTap(idx); });
+    el.addEventListener("click", e => { if (e.detail === 0) onTap(idx); });   // keyboard (Enter/Space)
+    el.addEventListener("contextmenu", e => e.preventDefault());             // long press: no menu
     grid.appendChild(el);
     return { ...d, el, up: false, done: false };
   });
@@ -853,7 +875,10 @@ function newGame() {
 function onTap(i) {
   const c = cards[i];
   audio();                                          // make sure audio is unlocked
-  if (c.done || c.up || locked) return;
+  if (c.done || c.up) return;
+  // Two different cards still showing: a tap on another card turns them back right away instead of
+  // being ignored (a quick toddler felt the card "didn't work").
+  if (locked) flipBack();
   sfx.tap();
   c.up = true; c.el.classList.add("up"); c.el.setAttribute("aria-label", c.say);
   // The second card of a pair found right away isn't spoken again: the word was just said.
@@ -871,11 +896,15 @@ function onTap(i) {
     if (last) setTimeout(finale, CFG.vanish + 900);
   } else {
     locked = true;
-    setTimeout(() => {
-      for (const x of [a, b]) { x.up = false; x.el.classList.remove("up"); x.el.setAttribute("aria-label", "card"); }
-      locked = false;
-    }, CFG.delay);
+    mismatch = { a, b, timer: setTimeout(flipBack, CFG.delay) };
   }
+}
+
+function flipBack() {
+  if (!mismatch) return;
+  clearTimeout(mismatch.timer);
+  for (const x of [mismatch.a, mismatch.b]) { x.up = false; x.el.classList.remove("up"); x.el.setAttribute("aria-label", "card"); }
+  mismatch = null; locked = false;
 }
 
 /* End of the game: a short fireworks show. */
@@ -954,6 +983,8 @@ backcolor card back colour: random | a colour name (softened) | hex like 7FB2F0 
 mark     0 = hide the white circle in the middle of the card back
 bg       page background pattern, same list as "back", drawn very faint (default: plain)
 bgcolor  page colour: a colour name (very light tint) or hex like FFF7EA   (default: cream)
+(install: open the game on the web, e.g. camayal.info/wa/pairs/, then "Install app" / "Add to Home screen")
+fullscreen 0 = don't go full screen when a game tile is tapped (default: full screen where the browser allows it)
 seed     number = same shuffle every time
 start    0 = skip the Start screen (first card may be silent: browsers need a tap to unlock sound)
 win      phrase spoken at the end (default "Good job!" / "¡Muy bien!")
@@ -1034,7 +1065,21 @@ function makeTile(theme, i, extraClass = "") {
   return b;
 }
 
+/* Full screen on the child's tap, so the browser's address bar and buttons can't be pressed by
+   accident. Browsers only allow this right after a tap. Works on Android, desktop and iPad
+   (and inside a same-site iframe that allows fullscreen); iPhone Safari doesn't support it.
+   fullscreen=0 turns it off. On Android, the back gesture leaves full screen. */
+function goFullscreen() {
+  if (!CFG.fullscreen || document.fullscreenElement || document.webkitFullscreenElement) return;
+  const el = document.documentElement;
+  try {
+    if (el.requestFullscreen) el.requestFullscreen({ navigationUI: "hide" }).catch(() => {});
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+  } catch { /* not allowed here: keep playing normally */ }
+}
+
 function beginGame(fromEl, label) {
+  goFullscreen();
   audio(); sfx.pop(); say(label);
   const r = fromEl.getBoundingClientRect();         // festive confetti pop from what was tapped
   sparkle(r.left + r.width * .3, r.top + r.height / 2, Math.max(r.width, r.height) * 1.2, null);
@@ -1209,6 +1254,7 @@ function setupForm() {
   </div><div class="row" style="margin-top:8px">
     <label><input type="checkbox" name="tts"${checked(CFG.tts)}> say each card out loud</label>
     <label><input type="checkbox" name="sound"${checked(CFG.sound)}> sounds</label>
+    <label><input type="checkbox" name="fullscreen"${checked(CFG.fullscreen)}> full screen when the game starts</label>
   </div></fieldset>
 
   <div class="actions">
@@ -1245,6 +1291,7 @@ function setupParams(form) {
   if (f.get("voice") !== "auto") p.set("voice", f.get("voice"));
   if (!f.get("tts")) p.set("tts", "0");
   if (!f.get("sound")) p.set("sound", "0");
+  if (!f.get("fullscreen")) p.set("fullscreen", "0");
   // Keep the look-and-feel settings a link may already have (patterns, colours, timings …).
   for (const k of ["colors", "back", "backcolor", "mark", "bg", "bgcolor", "delay", "vanish", "rate", "pitch", "win"]) if (Q.has(k)) p.set(k, Q.get(k));
   return p;
@@ -1275,6 +1322,10 @@ function initSetup() {
 /* main.js: start-up. Loaded last, after every other file has defined its functions. */
 
 document.documentElement.lang = LANG_TAG;
+/* Block zoom gestures the viewport setting doesn't stop (iOS Safari pinch, ctrl+wheel on desktop). */
+for (const ev of ["gesturestart", "gesturechange"]) document.addEventListener(ev, e => e.preventDefault());
+document.addEventListener("touchmove", e => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
+addEventListener("wheel", e => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
 initSpeech();
 initFireworks();
 initBoard();

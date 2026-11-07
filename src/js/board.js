@@ -3,6 +3,7 @@
 
 const grid = document.getElementById("grid"), board = document.getElementById("board");
 let cards = [], openCards = [], locked = false, matched = 0, total = 0;
+let mismatch = null;                                // { a, b, timer } while two different cards are showing
 
 function faceHTML(item, color) {
   if (item.kind === "shape") return `<svg viewBox="0 0 100 100" aria-hidden="true">${SHAPES[item.show](color, darker(color, .85))}</svg>`;
@@ -16,7 +17,8 @@ function faceHTML(item, color) {
 function newGame() {
   applyPatterns();                                  // new random card back each game
   const items = buildItems();
-  total = items.length; matched = 0; openCards = []; locked = false;
+  if (mismatch) clearTimeout(mismatch.timer);
+  total = items.length; matched = 0; openCards = []; locked = false; mismatch = null;
   const colors = gameColors(items.length);
   const deck = shuffle(items.flatMap((it, i) => [{ ...it, id: i, color: colors[i] }, { ...it, id: i, color: colors[i] }]));
   grid.innerHTML = "";
@@ -25,7 +27,11 @@ function newGame() {
     el.className = "card"; el.setAttribute("aria-label", "card " + (idx + 1));
     el.dataset.say = d.say;                         // what this card speaks (used by tests/check.py)
     el.innerHTML = `<div class="inner"><div class="face back"></div><div class="face front">${faceHTML(d, d.color)}</div></div>`;
-    el.addEventListener("click", () => onTap(idx));
+    /* React the instant a finger touches the card. A "click" only fires if the finger lifts without
+       sliding or holding, which small fingers often don't manage, so some taps were lost. */
+    el.addEventListener("pointerdown", e => { if (e.button > 0) return; e.preventDefault(); onTap(idx); });
+    el.addEventListener("click", e => { if (e.detail === 0) onTap(idx); });   // keyboard (Enter/Space)
+    el.addEventListener("contextmenu", e => e.preventDefault());             // long press: no menu
     grid.appendChild(el);
     return { ...d, el, up: false, done: false };
   });
@@ -35,7 +41,10 @@ function newGame() {
 function onTap(i) {
   const c = cards[i];
   audio();                                          // make sure audio is unlocked
-  if (c.done || c.up || locked) return;
+  if (c.done || c.up) return;
+  // Two different cards still showing: a tap on another card turns them back right away instead of
+  // being ignored (a quick toddler felt the card "didn't work").
+  if (locked) flipBack();
   sfx.tap();
   c.up = true; c.el.classList.add("up"); c.el.setAttribute("aria-label", c.say);
   // The second card of a pair found right away isn't spoken again: the word was just said.
@@ -53,11 +62,15 @@ function onTap(i) {
     if (last) setTimeout(finale, CFG.vanish + 900);
   } else {
     locked = true;
-    setTimeout(() => {
-      for (const x of [a, b]) { x.up = false; x.el.classList.remove("up"); x.el.setAttribute("aria-label", "card"); }
-      locked = false;
-    }, CFG.delay);
+    mismatch = { a, b, timer: setTimeout(flipBack, CFG.delay) };
   }
+}
+
+function flipBack() {
+  if (!mismatch) return;
+  clearTimeout(mismatch.timer);
+  for (const x of [mismatch.a, mismatch.b]) { x.up = false; x.el.classList.remove("up"); x.el.setAttribute("aria-label", "card"); }
+  mismatch = null; locked = false;
 }
 
 /* End of the game: a short fireworks show. */

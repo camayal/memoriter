@@ -1,7 +1,7 @@
 """Automated checks: load the game with many URL settings in headless Edge/Chrome and verify the result.
 
 Usage:   python tests/check.py            (tests index.html, the development page)
-         python tests/check.py --dist     (tests dist/memoriter.html, the built file)
+         python tests/check.py --dist     (tests dist/index.html, the built file)
 
 No packages needed. It looks for Edge or Chrome in the usual Windows/macOS/Linux places;
 set BROWSER=/path/to/browser to choose one. Nothing is shown on screen (headless).
@@ -19,7 +19,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-PAGE = ROOT / ("dist/memoriter.html" if "--dist" in sys.argv else "index.html")
+PAGE = ROOT / ("dist/index.html" if "--dist" in sys.argv else "index.html")
 
 CANDIDATES = [
     os.environ.get("BROWSER", ""),
@@ -172,8 +172,8 @@ CASES = [
     ("", "English tile phrase", lambda p: "Let's find pairs of numbers!" in html.unescape(p.dom)),
     ("theme=letters&letters=aeiou", "parent-made game: one big tile + replay badge, previewing its letters",
      lambda p: 'class="tile big"' in p.dom and 'class="replay"' in p.dom and p.dom.count('class="tile') == 1
-               and subset(re.findall(r'class="sym"[^>]*>([^<]*)<', p.dom.split('id="start"')[1]), "AEIOU")),
-    ("items=cat,dog,fish", "own words: tile previews them", lambda p: subset(re.findall(r'class="sym"[^>]*>([^<]*)<', p.dom.split('id="start"')[1]), ["cat", "dog", "fish"])),
+               and subset(re.findall(r'class="sym"[^>]*>([^<]*)<', p.dom.split('id="start"')[1].split('id="night"')[0]), "AEIOU")),
+    ("items=cat,dog,fish", "own words: tile previews them", lambda p: subset(re.findall(r'class="sym"[^>]*>([^<]*)<', p.dom.split('id="start"')[1].split('id="night"')[0]), ["cat", "dog", "fish"])),
     ("theme=numbers&lang=es", "Spanish phrase on parent-made tile", lambda p: "¡Vamos a buscar parejas de números!" in p.dom),
     ("setup", "?setup opens the parents' form", lambda p: 'id="setup"' in p.dom and 'name="theme"' in p.dom),
     ("setup&theme=shapes&shapes=circle,star&cards=12&lang=es", "setup form is pre-filled from the link",

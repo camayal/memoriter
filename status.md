@@ -29,8 +29,9 @@ Works in a browser but has not been tested on real devices yet.
 | `src/js/screens.js` | Game tiles, Start screen, end screen, `?help=1`, `?voices=1` |
 | `src/js/setup.js` | Parents' setup screen (`?setup`) |
 | `src/js/main.js` | Start-up |
-| `build.py` | `python build.py` bundles everything into `dist/memoriter.html` |
-| `dist/memoriter.html` | **The single file to embed or share.** Generated: don't edit it, edit `src/` and rebuild. |
+| `app/` | Installable-app sources: `manifest.webmanifest`, `sw.js` (offline), `icon.svg` and the PNG icons made from it by `python app/make_icons.py` |
+| `build.py` | `python build.py` builds `dist/` |
+| `dist/` | **The folder to publish** (generated: edit `src/` / `app/` and rebuild): `index.html` (the whole game in one file) + manifest, icons, `sw.js`. Copy its contents to `camayal.info/wa/pairs/`. |
 
 The scripts are plain `<script>` files rather than ES modules, so `index.html` also works when opened straight from disk (`file://`). Load order matters and is set in `index.html`.
 
@@ -40,7 +41,7 @@ To add a language, copy the `en` block in `src/js/i18n.js`, translate it, and ac
 
 | Idea | Status | Notes |
 |---|---|---|
-| Pairs game in one embeddable HTML file | ✅ Done | `dist/memoriter.html`, built from `src/`. No dependencies except the Andika font (Google Fonts, with a system fallback). Works in an `<iframe>`. |
+| Pairs game in one embeddable HTML file | ✅ Done | `dist/index.html`, built from `src/`. No dependencies except the Andika font (Google Fonts, with a system fallback). Works in an `<iframe>`. |
 | All settings controlled from the URL | ✅ Done | See the parameter list below and `?help=1`. |
 | 8 cards (4 pairs) by default | ✅ Done | `cards=` sets the number of cards (even). |
 | Card back patterns, set from the URL | ✅ Done | Pattern and color are both **random by default** and change each game, never repeating the previous one. `back=` random, plain, dots, polka, stripes, diagonal, checks, grid, zigzag, waves, stars, hearts, bubbles. `backcolor=` (random, color name or hex). `mark=0` hides the center circle. |
@@ -56,6 +57,10 @@ To add a language, copy the `en` block in `src/js/i18n.js`, translate it, and ac
 | Start screen: the toddler picks the game | ✅ Done | One big tile per game: numbers **1**, letters **A**, animals 🐶, shapes ▲, colors (crayons). Each tile shows a small fanned stack of three cards, so the child can choose by looking. Tapping says "Let's find pairs of numbers!" / "¡Vamos a buscar parejas de números!" (etc.), pops confetti and starts. The tap also unlocks sound and speech, so the first card is heard. Tiles are sized to fill the screen; the layout picks the column count that gives the biggest tiles, preferring even rows (3 + 2). `themes=` limits or orders the tiles. `start=0` skips the screen. If the device has no voice for the language, a note for the grown-up appears. |
 | Parents' setup screen | ✅ Done | Open `index.html?setup`. A plain form: game (numbers, letters, animals, shapes, colors, own cards), its options (number range, which letters / lowercase, which shapes, own cards one per line with `shown\|spoken`, "these are pictures"), number of cards, language, voice, speech and sound on/off. **Start game** reloads the page with those settings; **Copy link** copies them for a bookmark. Opening `?setup` on an existing link pre-fills the form. |
 | Parent-made game: one big tile | ✅ Done | When the link picks the game (from setup, or `theme=` / `letters=` / `shapes=` / `items=`), the child sees one big tile previewing that exact game (e.g. A E I O U), with a green replay badge, at the start and again after the fireworks. |
+| Full screen | ✅ Done | Tapping a game tile switches to full screen (no address bar or browser buttons) on Android, desktop and iPad, also inside a same-site iframe. Not available on iPhone Safari. `fullscreen=0` or the setup screen turns it off. |
+| Install as an app (PWA) | ✅ Done (test on a phone) | `dist/` includes an app manifest (full-screen display, cream theme), icons (four cards: two cats face up, two star backs face down) and a service worker so the installed app also opens offline and picks up updates when online. Install from the published page with the browser's "Install app" / "Add to Home screen". Only works over https (GitHub Pages), not from disk. |
+| No pull-to-refresh, no zoom | ✅ Done | `overscroll-behavior:none` stops pull-down refresh and rubber-banding; `touch-action:none`, `maximum-scale=1` and blocked pinch / ctrl+wheel gestures stop zoom. The setup screen can still scroll. |
+| Cards react to every small tap | ✅ Done | Cards react on touch-down instead of "click" (which got cancelled when a small finger slid or held), long-press menus are blocked, and tapping a card while two wrong cards are still showing turns them back immediately instead of being ignored. |
 | Choose the next game after the fireworks | ✅ Done | The game just played appears as a big tile in the middle (most likely what the child wants again), with the other games as smaller tiles below (one row on wide screens, 2×2 on phones). Tapping any tile starts that game. For a parent-made game, only its tile. |
 | Theme 5: colors | ✅ Done | Colour swatches (red, blue, yellow, green, orange, purple, pink, brown, black), spoken as their names in English or Spanish. |
 | Theme 1: numbers (range from the URL) | ✅ Done | `from` / `to`. Picks at random when the range is bigger than `pairs`. Spoken as words in the game language. |
@@ -68,9 +73,19 @@ To add a language, copy the `en` block in `src/js/i18n.js`, translate it, and ac
 ## URL parameters
 
 `setup` · `theme` · `themes` · `cards` · `from` · `to` · `letters` · `case` · `phonics` · `shapes` · `set` · `items` · `lang` · `voice` · `voices` ·
-`rate` · `pitch` · `tts` · `sound` · `colors` · `delay` · `vanish` · `back` · `backcolor` · `mark` · `bg` · `bgcolor` · `seed` · `start` · `win` · `again` · `demo` · `help`
+`rate` · `pitch` · `tts` · `sound` · `colors` · `delay` · `vanish` · `back` · `backcolor` · `mark` · `bg` · `bgcolor` · `fullscreen` · `seed` · `start` · `win` · `again` · `demo` · `help`
 
 Removed: `starttext` (the "Let's go!" button became the big tile). Removed as redundant: `pairs` (use `cards`), `img` (use `items` with `theme=images`), `theme=custom` (guessed from `items`), `vol` (use `sound=0`). Kept `rate` / `pitch` as fine-tuning on top of the `voice=` presets.
+
+## Publishing
+
+The public address is **https://camayal.info/wa/pairs/** (your GitHub Pages site with its custom domain).
+
+1. `python build.py` (the tests: `python tests/check.py` and `python tests/check.py --dist`).
+2. Copy the **contents** of `dist/` into the website repository's `wa/pairs/` folder (`index.html`, `manifest.webmanifest`, `sw.js`, the icons) and push the website.
+3. Visitors open `camayal.info/wa/pairs/` (any settings work: `?lang=es`, `?set=fruits`, `?setup`) and can install it as an app from there.
+
+The game has to be served from that folder itself (not shown in an iframe) for "Install app" to work there. Possible later: a GitHub Action in this repository that copies `dist/` to the website automatically on each push.
 
 ## Open decisions
 
@@ -89,6 +104,7 @@ Removed: `starttext` (the "Let's go!" button became the big tile). Removed as re
 - Spanish (or any language) only sounds right if the device or browser has a voice for it. Otherwise the default voice reads the Spanish words with a foreign accent, and the Start screen shows a note. `lang=` also accepts `spanish` / `español`.
 - `python tests/check.py --dist` falls back to slower one-page-at-a-time loading (~20 s); the development page uses the fast path (~5 s).
 - Phonics sounds are approximations spelled for the voice ("sss", "buh"). Some voices may read a stretched sound letter by letter ("ess ess ess"). Recorded clips would sound best.
+- Android tip for parents: Settings → Security → App pinning (screen pinning) keeps the toddler inside the browser/app.
 - Emoji look different on each operating system.
 - Not tested yet on iOS Safari, Android Chrome or inside third-party iframes. Iframe hosts may need `allow="autoplay"`.
 - The font comes from Google Fonts, so it falls back to the system font when offline.
@@ -121,7 +137,8 @@ Removed: `starttext` (the "Let's go!" button became the big tile). Removed as re
 
 ### Technical
 - [ ] Message API so the hosting page can be notified when a game ends (`postMessage`)
-- [ ] PWA / offline install
+- [x] ~~Install as an app (PWA)~~, with offline play
+- [ ] GitHub Action: copy `dist/` to the website's `wa/pairs/` automatically on push
 - [ ] Recorded voice clips as an alternative to TTS (`audio=url`)
 - [x] ~~Split into modules~~ (`src/` + `build.py`)
 - [x] ~~Automated checks~~ (`tests/check.py`)

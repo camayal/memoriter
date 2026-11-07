@@ -14,7 +14,10 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;background:var(--page-bg);overflow:hidden;
   font-family:"Andika","Nunito",system-ui,sans-serif;color:var(--ink);
-  user-select:none;-webkit-user-select:none;touch-action:manipulation}
+  user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+  /* No pull-down-to-refresh, no rubber-band scrolling, no pinch or double-tap zoom. */
+  overscroll-behavior:none;touch-action:none}
+#setup{touch-action:pan-y}                         /* the parents' form can still scroll */
 #board{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
   padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom))}
 #grid{display:grid;gap:var(--gap)}

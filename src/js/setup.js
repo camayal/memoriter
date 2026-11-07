@@ -60,6 +60,7 @@ function setupForm() {
   </div><div class="row" style="margin-top:8px">
     <label><input type="checkbox" name="tts"${checked(CFG.tts)}> say each card out loud</label>
     <label><input type="checkbox" name="sound"${checked(CFG.sound)}> sounds</label>
+    <label><input type="checkbox" name="fullscreen"${checked(CFG.fullscreen)}> full screen when the game starts</label>
   </div></fieldset>
 
   <div class="actions">
@@ -96,6 +97,7 @@ function setupParams(form) {
   if (f.get("voice") !== "auto") p.set("voice", f.get("voice"));
   if (!f.get("tts")) p.set("tts", "0");
   if (!f.get("sound")) p.set("sound", "0");
+  if (!f.get("fullscreen")) p.set("fullscreen", "0");
   // Keep the look-and-feel settings a link may already have (patterns, colours, timings …).
   for (const k of ["colors", "back", "backcolor", "mark", "bg", "bgcolor", "delay", "vanish", "rate", "pitch", "win"]) if (Q.has(k)) p.set(k, Q.get(k));
   return p;

@@ -35,6 +35,8 @@ backcolor card back colour: random | a colour name (softened) | hex like 7FB2F0 
 mark     0 = hide the white circle in the middle of the card back
 bg       page background pattern, same list as "back", drawn very faint (default: plain)
 bgcolor  page colour: a colour name (very light tint) or hex like FFF7EA   (default: cream)
+(install: open the game on the web, e.g. camayal.info/wa/pairs/, then "Install app" / "Add to Home screen")
+fullscreen 0 = don't go full screen when a game tile is tapped (default: full screen where the browser allows it)
 seed     number = same shuffle every time
 start    0 = skip the Start screen (first card may be silent: browsers need a tap to unlock sound)
 win      phrase spoken at the end (default "Good job!" / "¡Muy bien!")
@@ -115,7 +117,21 @@ function makeTile(theme, i, extraClass = "") {
   return b;
 }
 
+/* Full screen on the child's tap, so the browser's address bar and buttons can't be pressed by
+   accident. Browsers only allow this right after a tap. Works on Android, desktop and iPad
+   (and inside a same-site iframe that allows fullscreen); iPhone Safari doesn't support it.
+   fullscreen=0 turns it off. On Android, the back gesture leaves full screen. */
+function goFullscreen() {
+  if (!CFG.fullscreen || document.fullscreenElement || document.webkitFullscreenElement) return;
+  const el = document.documentElement;
+  try {
+    if (el.requestFullscreen) el.requestFullscreen({ navigationUI: "hide" }).catch(() => {});
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+  } catch { /* not allowed here: keep playing normally */ }
+}
+
 function beginGame(fromEl, label) {
+  goFullscreen();
   audio(); sfx.pop(); say(label);
   const r = fromEl.getBoundingClientRect();         // festive confetti pop from what was tapped
   sparkle(r.left + r.width * .3, r.top + r.height / 2, Math.max(r.width, r.height) * 1.2, null);

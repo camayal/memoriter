@@ -1,0 +1,17 @@
+{
+  "name": "Memoriter",
+  "short_name": "Memoriter",
+  "description": "A memory pairs game for toddlers: numbers, letters, pictures, shapes and colors.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "any",
+  "background_color": "#FFF7EA",
+  "theme_color": "#FFF7EA",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
