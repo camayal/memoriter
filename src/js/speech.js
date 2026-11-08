@@ -13,8 +13,8 @@ const VOICE_PRESETS = {
   female: { gender: "female", rate: 1,   pitch: 1    },
   male:   { gender: "male",   rate: 1,   pitch: .95  },
 };
-const FEMALE = /aria|jenny|ana\b|michelle|emma|ava|sonia|libby|maisie|natasha|clara|zira|hazel|susan|samantha|karen|moira|tessa|victoria|allison|serena|fiona|catherine|nicky|joanna|salli|kimberly|ivy|elvira|dalia|paloma|helena|laura|sabina|monica|mónica|paulina|marisol|esperanza|elena|lucia|lucía|camila|valentina|ximena|larissa|female|mujer/i;
-const MALE   = /guy|davis|tony|jason|brian|andrew|christopher|eric|roger|steffan|ryan|thomas|george|david|mark|james|daniel|alex\b|fred|tom\b|arthur|aaron|oliver|rishi|gordon|matthew|joey|justin|alvaro|álvaro|jorge|pablo|raul|raúl|gerardo|liberto|diego|tomas|tomás|juan|carlos|male|hombre/i;
+const FEMALE = /aria|jenny|ana\b|michelle|emma|ava|sonia|libby|maisie|natasha|clara|zira|hazel|susan|samantha|karen|moira|tessa|victoria|allison|serena|fiona|catherine|nicky|joanna|salli|kimberly|ivy|elvira|dalia|paloma|helena|laura|sabina|monica|mónica|paulina|marisol|esperanza|elena|lucia|lucía|camila|valentina|ximena|larissa|salome|salomé|paloma|sofia|sofía|catalina|maria|maría|belkys|ramona|andrea|teresa|marta|karla|yolanda|margarita|karina|tania|lorena|paola|female|mujer/i;
+const MALE   = /guy|davis|tony|jason|brian|andrew|christopher|eric|roger|steffan|ryan|thomas|george|david|mark|james|daniel|alex\b|fred|tom\b|arthur|aaron|oliver|rishi|gordon|matthew|joey|justin|alvaro|álvaro|jorge|pablo|raul|raúl|gerardo|liberto|diego|tomas|tomás|juan|carlos|gonzalo|alonso|manuel|emilio|luis|andres|andrés|federico|roberto|mario|rodrigo|mateo|sebastian|sebastián|victor|víctor|lorenzo|marcelo|javier|male|hombre/i;
 const VOICE_Q = (Q.get("voice") || "auto").toLowerCase();
 const PRESET = VOICE_PRESETS[VOICE_Q] || VOICE_PRESETS.auto;
 
@@ -34,6 +34,13 @@ const voiceLang = v => v.lang.toLowerCase().replace("_", "-");
 const speaksLang = v => voiceLang(v).startsWith(LANG_TAG.toLowerCase()) || voiceLang(v).startsWith(LANG);
 
 let voice = null, onlineFailed = false, noLangVoice = false;
+/* Preferred accents when lang= gives no region: Spanish → Colombia first, then United States. */
+const REGION_PREF = { es: ["es-co", "es-us"] };
+const regionBonus = v => {
+  if (LANG_TAG.includes("-")) return 0;                 // lang=es-MX etc. was asked for explicitly
+  const i = (REGION_PREF[LANG] || []).indexOf(voiceLang(v));
+  return i < 0 ? 0 : 40 - i * 10;
+};
 
 function chooseVoice() {
   if (!synth) return;
@@ -51,7 +58,8 @@ function chooseVoice() {
   }
   const score = v => quality(v) + (PRESET.gender ? (genderOf(v) === PRESET.gender ? 100 : genderOf(v) ? -100 : 0) : 0)
                    + (voiceLang(v).startsWith(LANG_TAG.toLowerCase()) ? 20 : 0)    // exact region match (lang=es-MX)
-                   + ((navigator.languages || []).some(l => l.toLowerCase() === voiceLang(v)) ? 10 : 0);   // the browser's own locale
+                   + ((navigator.languages || []).some(l => l.toLowerCase() === voiceLang(v)) ? 10 : 0)    // the browser's own locale
+                   + regionBonus(v);
   voice = pool.slice().sort((a, b) => score(b) - score(a))[0] || null;
 }
 

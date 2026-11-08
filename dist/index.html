@@ -315,7 +315,7 @@ const TEXT = {
       animals:  { name: "animals",  items: ["🐶|dog", "🐱|cat", "🐮|cow", "🐷|pig", "🐸|frog", "🦁|lion", "🐵|monkey", "🐤|chick", "🦆|duck", "🐻|bear", "🐰|rabbit", "🐟|fish", "🐘|elephant", "🐴|horse"] },
       fruits:   { name: "fruits",   items: ["🍎|apple", "🍌|banana", "🍇|grapes", "🍓|strawberry", "🍊|orange", "🍉|watermelon", "🍐|pear", "🍒|cherries", "🍍|pineapple", "🍋|lemon", "🥝|kiwi", "🍑|peach"] },
       vehicles: { name: "vehicles", items: ["🚗|car", "🚌|bus", "🚒|fire truck", "🚓|police car", "🚑|ambulance", "🚜|tractor", "🚂|train", "✈️|airplane", "🚁|helicopter", "🚀|rocket", "🚢|boat", "🚲|bike"] },
-      nature:   { name: "nature",   items: ["☀️|sun", "🌙|moon", "⭐|star", "☁️|cloud", "🌈|rainbow", "🌸|flower", "🌳|tree", "🍄|mushroom", "🍂|leaf", "❄️|snowflake", "🌊|wave", "🌵|cactus"] },
+      nature:   { name: "things in nature",   items: ["☀️|sun", "🌙|moon", "⭐|star", "☁️|cloud", "🌈|rainbow", "🌸|flower", "🌳|tree", "🍄|mushroom", "🍂|leaf", "❄️|snowflake", "🌊|wave", "🌵|cactus"] },
     },
     findPairs: what => `Let's find pairs of ${what}!`,
     alphabet: "abcdefghijklmnopqrstuvwxyz",
@@ -338,12 +338,12 @@ const TEXT = {
     sets: {
       animals:  { name: "animales",   items: ["🐶|perro", "🐱|gato", "🐮|vaca", "🐷|cerdo", "🐸|rana", "🦁|león", "🐵|mono", "🐤|pollito", "🦆|pato", "🐻|oso", "🐰|conejo", "🐟|pez", "🐘|elefante", "🐴|caballo"] },
       fruits:   { name: "frutas",     items: ["🍎|manzana", "🍌|banano", "🍇|uvas", "🍓|fresa", "🍊|naranja", "🍉|sandía", "🍐|pera", "🍒|cerezas", "🍍|piña", "🍋|limón", "🥝|kiwi", "🍑|durazno"] },
-      vehicles: { name: "vehículos",  items: ["🚗|carro", "🚌|autobús", "🚒|camión de bomberos", "🚓|patrulla", "🚑|ambulancia", "🚜|tractor", "🚂|tren", "✈️|avión", "🚁|helicóptero", "🚀|cohete", "🚢|barco", "🚲|bicicleta"] },
-      nature:   { name: "naturaleza", items: ["☀️|sol", "🌙|luna", "⭐|estrella", "☁️|nube", "🌈|arcoíris", "🌸|flor", "🌳|árbol", "🍄|hongo", "🍂|hoja", "❄️|copo de nieve", "🌊|ola", "🌵|cactus"] },
+      vehicles: { name: "vehículos",  items: ["🚗|carro", "🚌|bus", "🚒|carro de bomberos", "🚓|carro de policía", "🚑|ambulancia", "🚜|tractor", "🚂|tren", "✈️|avión", "🚁|helicóptero", "🚀|cohete", "🚢|barco", "🚲|bicicleta"] },
+      nature:   { name: "cosas de la naturaleza", items: ["☀️|sol", "🌙|luna", "⭐|estrella", "☁️|nube", "🌈|arcoíris", "🌸|flor", "🌳|árbol", "🍄|hongo", "🍂|hoja", "❄️|copo de nieve", "🌊|ola", "🌵|cactus"] },
     },
     findPairs: what => `¡Vamos a buscar parejas de ${what}!`,
     alphabet: "abcdefghijklmnñopqrstuvwxyz",
-    colors: { red: "rojo", blue: "azul", yellow: "amarillo", green: "verde", orange: "naranja", purple: "morado", pink: "rosa", brown: "café", black: "negro" },
+    colors: { red: "rojo", blue: "azul", yellow: "amarillo", green: "verde", orange: "naranja", purple: "morado", pink: "rosado", brown: "café", black: "negro" },
     themes: { numbers: "¡Vamos a buscar parejas de números!", letters: "¡Vamos a buscar parejas de letras!", shapes: "¡Vamos a buscar parejas de figuras!", colors: "¡Vamos a buscar parejas de colores!" },
     letter: ch => LETTERS_ES[ch.toLowerCase()] || ch,
     phonics: ch => PHONICS_ES[ch],
@@ -675,8 +675,8 @@ const VOICE_PRESETS = {
   female: { gender: "female", rate: 1,   pitch: 1    },
   male:   { gender: "male",   rate: 1,   pitch: .95  },
 };
-const FEMALE = /aria|jenny|ana\b|michelle|emma|ava|sonia|libby|maisie|natasha|clara|zira|hazel|susan|samantha|karen|moira|tessa|victoria|allison|serena|fiona|catherine|nicky|joanna|salli|kimberly|ivy|elvira|dalia|paloma|helena|laura|sabina|monica|mónica|paulina|marisol|esperanza|elena|lucia|lucía|camila|valentina|ximena|larissa|female|mujer/i;
-const MALE   = /guy|davis|tony|jason|brian|andrew|christopher|eric|roger|steffan|ryan|thomas|george|david|mark|james|daniel|alex\b|fred|tom\b|arthur|aaron|oliver|rishi|gordon|matthew|joey|justin|alvaro|álvaro|jorge|pablo|raul|raúl|gerardo|liberto|diego|tomas|tomás|juan|carlos|male|hombre/i;
+const FEMALE = /aria|jenny|ana\b|michelle|emma|ava|sonia|libby|maisie|natasha|clara|zira|hazel|susan|samantha|karen|moira|tessa|victoria|allison|serena|fiona|catherine|nicky|joanna|salli|kimberly|ivy|elvira|dalia|paloma|helena|laura|sabina|monica|mónica|paulina|marisol|esperanza|elena|lucia|lucía|camila|valentina|ximena|larissa|salome|salomé|paloma|sofia|sofía|catalina|maria|maría|belkys|ramona|andrea|teresa|marta|karla|yolanda|margarita|karina|tania|lorena|paola|female|mujer/i;
+const MALE   = /guy|davis|tony|jason|brian|andrew|christopher|eric|roger|steffan|ryan|thomas|george|david|mark|james|daniel|alex\b|fred|tom\b|arthur|aaron|oliver|rishi|gordon|matthew|joey|justin|alvaro|álvaro|jorge|pablo|raul|raúl|gerardo|liberto|diego|tomas|tomás|juan|carlos|gonzalo|alonso|manuel|emilio|luis|andres|andrés|federico|roberto|mario|rodrigo|mateo|sebastian|sebastián|victor|víctor|lorenzo|marcelo|javier|male|hombre/i;
 const VOICE_Q = (Q.get("voice") || "auto").toLowerCase();
 const PRESET = VOICE_PRESETS[VOICE_Q] || VOICE_PRESETS.auto;
 
@@ -696,6 +696,13 @@ const voiceLang = v => v.lang.toLowerCase().replace("_", "-");
 const speaksLang = v => voiceLang(v).startsWith(LANG_TAG.toLowerCase()) || voiceLang(v).startsWith(LANG);
 
 let voice = null, onlineFailed = false, noLangVoice = false;
+/* Preferred accents when lang= gives no region: Spanish → Colombia first, then United States. */
+const REGION_PREF = { es: ["es-co", "es-us"] };
+const regionBonus = v => {
+  if (LANG_TAG.includes("-")) return 0;                 // lang=es-MX etc. was asked for explicitly
+  const i = (REGION_PREF[LANG] || []).indexOf(voiceLang(v));
+  return i < 0 ? 0 : 40 - i * 10;
+};
 
 function chooseVoice() {
   if (!synth) return;
@@ -713,7 +720,8 @@ function chooseVoice() {
   }
   const score = v => quality(v) + (PRESET.gender ? (genderOf(v) === PRESET.gender ? 100 : genderOf(v) ? -100 : 0) : 0)
                    + (voiceLang(v).startsWith(LANG_TAG.toLowerCase()) ? 20 : 0)    // exact region match (lang=es-MX)
-                   + ((navigator.languages || []).some(l => l.toLowerCase() === voiceLang(v)) ? 10 : 0);   // the browser's own locale
+                   + ((navigator.languages || []).some(l => l.toLowerCase() === voiceLang(v)) ? 10 : 0)    // the browser's own locale
+                   + regionBonus(v);
   voice = pool.slice().sort((a, b) => score(b) - score(a))[0] || null;
 }
 
@@ -1154,7 +1162,7 @@ case     upper | lower                                           (default: upper
 phonics  letters say their name (0, default) | their sound, e.g. "buh" (1) | both, "bee … buh" (both)
 shapes   comma list: circle,oval,square,rectangle,triangle,diamond,
          pentagon,hexagon,heptagon,octagon,star,heart,semicircle (default: random pick)
-set      pictures game: animals | fruits | vehicles | nature | random (default: random, a new set each game)
+set      pictures game: animals | fruits | vehicles | nature (things in nature) | random (default: random, a new set each game)
 items    your own cards, comma list or repeated; "shown|spoken" to say something else
          e.g. items=A|Apple,B|Ball      with theme=images: emoji or image links, e.g. items=https://…/cat.png|cat
 lang     language of every spoken/shown word: en | es (also es-MX, spanish, español)  (default: en)

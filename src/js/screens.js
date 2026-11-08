@@ -15,7 +15,7 @@ case     upper | lower                                           (default: upper
 phonics  letters say their name (0, default) | their sound, e.g. "buh" (1) | both, "bee … buh" (both)
 shapes   comma list: circle,oval,square,rectangle,triangle,diamond,
          pentagon,hexagon,heptagon,octagon,star,heart,semicircle (default: random pick)
-set      pictures game: animals | fruits | vehicles | nature | random (default: random, a new set each game)
+set      pictures game: animals | fruits | vehicles | nature (things in nature) | random (default: random, a new set each game)
 items    your own cards, comma list or repeated; "shown|spoken" to say something else
          e.g. items=A|Apple,B|Ball      with theme=images: emoji or image links, e.g. items=https://…/cat.png|cat
 lang     language of every spoken/shown word: en | es (also es-MX, spanish, español)  (default: en)
