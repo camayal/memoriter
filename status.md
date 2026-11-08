@@ -27,6 +27,7 @@ _Last updated: 2026-11-08_
 | `src/js/setup.js` | Parents' setup screen (`?setup`) |
 | `src/js/main.js` | Start-up |
 | `app/` | Installable-app sources: `manifest.webmanifest`, `sw.js` (offline), `icon.svg` and the PNG icons I make from it with `python app/make_icons.py` |
+| `assets/fonts/` | The Andika Bold font (`andika-700-latin.woff2`, 19 KB, Latin subset: English and Spanish) with its license `OFL.txt` |
 | `assets/openmoji/` | OpenMoji drawings (SVG) for every emoji the game uses (88 files, ~250 KB), with `LICENSE.txt`. I refresh them with `python app/fetch_openmoji.py` after adding emoji to a set. |
 | `screenshots/` | The two screenshots used in `README.md` |
 | `build.py` | `python build.py` builds `dist/` |
@@ -40,7 +41,7 @@ To add a language, I copy the `en` block in `src/js/i18n.js`, translate it, and 
 
 | Idea | Status | Notes |
 |---|---|---|
-| Pairs game in one embeddable HTML file | ✅ Done | `dist/index.html`, built from `src/`. No dependencies except the Andika font (Google Fonts, with a system fallback). Works in an `<iframe>`. |
+| Pairs game in one embeddable HTML file | ✅ Done | `dist/index.html`, built from `src/`. No outside dependencies: the Andika font is stored in the project (`assets/fonts/`, preloaded). Works in an `<iframe>`. |
 | All settings controlled from the URL | ✅ Done | See the parameter list below and `?help=1`. |
 | 8 cards (4 pairs) by default | ✅ Done | `cards=` sets the number of cards (even). |
 | Card back patterns, set from the URL | ✅ Done | I made pattern and color **random by default**: they change each game and never repeat the previous one. `back=` random, plain, dots, polka, stripes, diagonal, checks, grid, zigzag, waves, stars, hearts, bubbles. `backcolor=` (random, color name or hex). `mark=0` hides the center circle. |
@@ -64,7 +65,7 @@ To add a language, I copy the `en` block in `src/js/i18n.js`, translate it, and 
 | Theme symbol in the final firework | ✅ Done | The big final burst draws the **outline** of one of the cards just matched in evenly spaced sparks: a letter, number or word as itself, a shape as its outline; the colors game ends with a rainbow arc of coloured sparks (red outside → purple inside). Pictures use their outline when it reads clearly (cat, rabbit, fish, elephant, duck, apple, banana, pear, cherries, car, airplane, bike, helicopter, moon, star, cloud, flower, tree); the rest (round heads like dog/pig/frog, boxes like bus/train) get the happy-face firework (list in `CLEAR_OUTLINES`, `fireworks.js`). The other bursts (flowers, rings…) stay. |
 | No idle animations | ✅ Done | I stopped the tiles from "breathing": nothing moves on screen until it is touched (the rest screen's slow moon and stars are the only gentle motion). |
 | Full screen | ✅ Done | Tapping a game tile switches to full screen (no address bar or browser buttons) on Android, desktop and iPad, also inside a same-site iframe. Not available on iPhone Safari. `fullscreen=0` or the setup screen turns it off. |
-| Install as an app (PWA) | ✅ Done (I still need to test it on a phone) | `dist/` includes an app manifest (full-screen display, cream theme), icons (four cards: two cats face up, two star backs face down) and a service worker, so the installed app also opens offline and picks up updates when online. It installs from `camayal.info/wa/pairs` with the browser's "Install app" / "Add to Home screen" (needs the shell's manifest, see Publishing). Only works over https (GitHub Pages), not from disk. |
+| Install as an app (PWA) | ✅ Done (I still need to test it on a phone) | `dist/` includes an app manifest (full-screen display, cream theme), icons (four cards: two cats face up, two star backs face down) and a service worker, so the installed app opens instantly from the saved copy (also offline) and picks up updates in the background, shown on the next open. It installs from `camayal.info/wa/pairs` with the browser's "Install app" / "Add to Home screen" (needs the shell's manifest, see Publishing). Only works over https (GitHub Pages), not from disk. |
 | No pull-to-refresh, no zoom | ✅ Done | `overscroll-behavior:none` stops pull-down refresh and rubber-banding; `touch-action:none`, `maximum-scale=1` and blocked pinch / ctrl+wheel gestures stop zoom. The setup screen can still scroll. |
 | Cards react to every small tap | ✅ Done | I made cards react on touch-down instead of "click" (which got cancelled when a small finger slid or held), blocked long-press menus, and made a tap while two wrong cards are still showing turn them back immediately instead of being ignored. |
 | Choose the next game after the fireworks | ✅ Done | The game just played appears as a big tile in the middle (most likely what the child wants again), with the other games as smaller tiles below (one row on wide screens, 2×2 on phones). Tapping any tile starts that game. For a parent-made game, only its tile. |
@@ -98,7 +99,7 @@ People play at **https://camayal.info/wa/pairs** (my GitHub Pages site with the 
 ## Open decisions
 
 - ~~Where images come from~~: decided. I use OpenMoji drawings stored in the project (CC BY-SA, credited). Image links with `items=` and `theme=images` still work for own cards.
-- ~~Single file vs. multiple files~~: decided. I develop in `src/` and ship one file built with `build.py`.
+- ~~Single file vs. multiple files~~: decided. I develop in `src/` and ship one file built with `build.py`. I checked load time (2026-11-08): the built page is only 40 KB compressed, so splitting it wouldn't help; the slow part was the offline helper waiting for the network and the Google Fonts request (both fixed).
 - **Languages:** only `en` and `es` have built-in words today. Do I need more?
 
 ## Known issues / limits
@@ -110,16 +111,16 @@ People play at **https://camayal.info/wa/pairs** (my GitHub Pages site with the 
 - Phonics sounds are approximations I spelled for the voice ("sss", "buh"). Some voices may read a stretched sound letter by letter ("ess ess ess"). Recorded clips would sound best.
 - Android tip for parents: Settings → Security → App pinning (screen pinning) keeps the toddler inside the browser/app.
 - With `emoji=native`, emoji look different on each operating system (OpenMoji, the default, looks the same everywhere).
-- I haven't tested it yet on iOS Safari, Android Chrome or inside third-party iframes. Iframe hosts may need `allow="autoplay"`.
-- The font comes from Google Fonts, so it falls back to the system font when offline.
+- I've tested it on desktop, an Android tablet and an Android phone. I haven't tested it yet on iPad / iPhone (Safari) or inside third-party iframes. Iframe hosts may need `allow="autoplay"`.
 
 ## Future development
 
 ### Near term
-- [ ] Test on real devices: iPad, Android tablet, phone, desktop, and embedded in an iframe
+- [x] ~~Test on real devices: desktop, Android tablet, Android phone~~ (done)
+- [ ] Test on iPad / iPhone (Safari) and embedded in a third-party iframe
 - [x] ~~Decide where images come from and build theme 4 properly~~ (OpenMoji)
 - [x] ~~Optional soft chime on a match~~ (I replaced it with the pop and small firework)
-- [ ] Bundle the font in the file so it works fully offline
+- [x] ~~Bundle the font so it works fully offline~~ (stored in `assets/fonts/`, no Google Fonts)
 - [x] ~~Pick a more predictable default voice~~ (voice presets + quality ranking)
 - [ ] Consider recorded audio or a cloud TTS service if browser voices stay too robotic on my target devices
 
@@ -150,6 +151,7 @@ People play at **https://camayal.info/wa/pairs** (my GitHub Pages site with the 
 ### Technical
 - [ ] Message API so the hosting page can be notified when a game ends (`postMessage`)
 - [x] ~~Install as an app (PWA)~~, with offline play
+- [x] ~~Faster start~~: the offline helpers (`app/sw.js` and the shell's `sw.js`) open everything from the saved copy straight away and refresh it in the background, instead of waiting for the network first (which was slow on a weak signal). An update now shows on the **next** open. On the first visit, the pictures are saved after the first screen, not before.
 - [x] ~~Offline play for the installed app from `camayal.info/wa/pairs`~~ (`site/wa/pairs/sw.js`)
 - [ ] Recorded voice clips as an alternative to TTS (`audio=url`)
 - [x] ~~Split into modules~~ (`src/` + `build.py`)

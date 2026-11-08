@@ -1,5 +1,5 @@
 """Build the ready-to-publish folder dist/: the whole game in one self-contained dist/index.html,
-plus the installable-app files from app/ (manifest, icons, sw.js).
+plus the installable-app files from app/ (manifest, icons, sw.js), the OpenMoji pictures and the font.
 GitHub Pages serves dist/ at /memoriter/dist/; camayal.info/wa/pairs shows it in an iframe.
 
 Usage:  python build.py
@@ -54,6 +54,7 @@ def main() -> int:
         return '"data:%s;base64,%s"' % (mime, base64.b64encode(path.read_bytes()).decode())
     html = re.sub(r'"(assets/[^"/]+\.[a-z0-9]+)"', embed, html)                    # single files only
     html = html.replace('"assets/openmoji/"', '"openmoji/"')               # OpenMoji folder next to the page
+    html = html.replace("../assets/fonts/", "fonts/").replace('"assets/fonts/', '"fonts/')  # font folder next to the page
 
     # 4. Drop the development-only comment.
     html = re.sub(r"<!-- Development page:.*?-->\n", "", html, flags=re.S)
@@ -73,7 +74,11 @@ def main() -> int:
     for stale in set(p.name for p in om_out.iterdir()) - set(p.name for p in om_src.iterdir()):
         (om_out / stale).unlink()
     om_files = sorted(p.name for p in om_out.glob("*.svg"))
+    fonts_out = OUT.parent / "fonts"
+    shutil.copytree(ROOT / "assets" / "fonts", fonts_out, dirs_exist_ok=True)
+    font_files = sorted(p.name for p in fonts_out.glob("*.woff2"))
     sw = (ROOT / "app" / "sw.js").read_text(encoding="utf-8").replace("__BUILD__", build_id)
+    sw = sw.replace("const FONT_FILES = [];", "const FONT_FILES = " + repr(["./fonts/" + f for f in font_files]).replace("'", '"') + ";")
     sw = sw.replace("const OPENMOJI_FILES = [];", "const OPENMOJI_FILES = " + repr(["./openmoji/" + f for f in om_files]).replace("'", '"') + ";")
     (OUT.parent / "sw.js").write_text(sw, encoding="utf-8")
     print(f"build: wrote {OUT.relative_to(ROOT)} ({len(html) // 1024} KB, {len(files)} scripts) + app files (build {build_id})")

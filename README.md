@@ -20,4 +20,4 @@ It is also made to be calm. There is no score and no timer, and the colors are s
 
 ---
 
-Pictures by [OpenMoji](https://openmoji.org) (CC BY-SA 4.0). Code under CC0 (see `LICENSE`). AI supported development.
+Pictures by [OpenMoji](https://openmoji.org) (CC BY-SA 4.0). Font: [Andika](https://software.sil.org/andika/) by SIL (OFL 1.1). Code under CC0 (see `LICENSE`). AI supported development.

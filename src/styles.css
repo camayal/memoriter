@@ -1,3 +1,6 @@
+/* Andika Bold, stored in the project (assets/fonts/, SIL OFL 1.1), Latin subset: covers English and Spanish. */
+@font-face{font-family:"Andika";font-style:normal;font-weight:700;font-display:swap;
+  src:url("../assets/fonts/andika-700-latin.woff2") format("woff2")}
 :root{
   --bg:#FFF7EA;
   --card:#FFFFFF;
