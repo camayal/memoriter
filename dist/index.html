@@ -1158,10 +1158,23 @@ function makeTile(theme, i, extraClass = "") {
       navigator.vibrate?.(30);
     }, LONG_PRESS_MS);
   });
+  // After a long hold, touch screens often send no "click" when the finger lifts (and some cancel
+  // the pointer), so the locked game starts on the lift itself: pointerup, or touchend as a backup.
+  // Both still count as a real touch, so sound and full screen are allowed.
+  let suppressClick = false;
+  const releaseArmed = e => {
+    if (!armed) return;
+    armed = false; suppressClick = true; setTimeout(() => { suppressClick = false; }, 600);
+    if (e.cancelable) e.preventDefault();
+    lockTheme(theme); start();
+  };
+  b.addEventListener("pointerup", e => { if (armed) releaseArmed(e); else if (timer) cancel(); });
+  b.addEventListener("touchend", releaseArmed);
   b.addEventListener("pointerleave", () => { if (!armed) cancel(); });
-  b.addEventListener("pointercancel", () => { cancel(); armed = false; b.classList.remove("armed"); });
+  b.addEventListener("pointercancel", () => { if (!armed) cancel(); });   // armed: wait for touchend
   b.addEventListener("contextmenu", e => e.preventDefault());
   b.addEventListener("click", () => {
+    if (suppressClick) { suppressClick = false; return; }   // the locked game already started
     if (timer) cancel();
     if (armed) { armed = false; lockTheme(theme); }
     start();
