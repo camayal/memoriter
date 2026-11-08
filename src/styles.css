@@ -165,3 +165,10 @@ html,body{margin:0;height:100%;background:var(--page-bg);overflow:hidden;
 .langsw span{opacity:.7}
 #end .langsw{color:rgba(255,255,255,.3)}
 #end .langsw button.on{color:rgba(255,255,255,.6)}
+.front svg.crayon{width:92%;height:92%}              /* colour cards: the diagonal crayon can use more of the card */
+
+/* Hidden grown-up door: an invisible strip over the credit line; holding it darkens the text over 4 s. */
+.credit-hold{position:absolute;left:50%;bottom:0;translate:-50% 0;width:min(260px,50vw);height:40px;touch-action:none}  /* narrow enough to never cover EN · ES */
+#start::after,#end::after{transition:color .3s}
+#start.credit-holding::after{color:rgba(47,58,74,.75);transition:color 4s linear}
+#end.credit-holding::after{color:rgba(255,255,255,.8);transition:color 4s linear}

@@ -64,13 +64,15 @@ function updateLangNotice() {
 /* Speak right away: cut off anything still talking (a queue makes the voice lag behind the cards).
    If a voice doesn't start within 1.2 s, retry once (with an installed voice if it was an online one). */
 let current = null;                                       // kept referenced: Chrome can drop utterances that get garbage-collected
-function say(text, retry = true) {
+/* opts: { pitch, rate } multipliers for this one utterance (e.g. a cheerful "Good job!"). */
+function say(text, retry = true, opts = {}) {
   if (!synth || !text) return;
   const u = new SpeechSynthesisUtterance(text);
   // Always tag the utterance with the game language, so the engine pronounces it that way.
   u.lang = voice && speaksLang(voice) ? voice.lang : LANG_TAG;
   if (voice) u.voice = voice;
-  u.rate = CFG.rate ?? PRESET.rate; u.pitch = CFG.pitch ?? PRESET.pitch;
+  u.rate = (CFG.rate ?? PRESET.rate) * (opts.rate || 1);
+  u.pitch = Math.min(2, (CFG.pitch ?? PRESET.pitch) * (opts.pitch || 1));
   let started = false;
   u.onstart = () => { started = true; };
   current = u;
@@ -83,7 +85,7 @@ function say(text, retry = true) {
   if (retry) setTimeout(() => {
     if (started || current !== u) return;
     if (voice && !voice.localService) { onlineFailed = true; chooseVoice(); }
-    synth.cancel(); say(text, false);
+    synth.cancel(); say(text, false, opts);
   }, 1200);
 }
 

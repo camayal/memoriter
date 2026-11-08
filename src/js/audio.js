@@ -53,7 +53,7 @@ const sfx = {
     if (!audio()) return; const t = AC.currentTime;
     noise(t, { dur: big ? .9 : .6, peak: big ? .2 : .14, f0: 700, f1: 120, pan });
     const penta = [1047, 1175, 1319, 1568, 1760, 2093, 2349, 2637];                          // C major pentatonic, high
-    if (kind === "heart" || kind === "smile" || kind === "symbol") {                                              // happy arpeggio C-E-G-C
+    if (kind === "heart" || kind === "smile" || kind === "symbol" || kind === "rainbow") {                                              // happy arpeggio C-E-G-C
       [1047, 1319, 1568, 2093, 2637].forEach((f, i) => tone(f, t + .08 + i * .09, { type: "triangle", peak: .06, decay: .7, pan }));
     } else if (kind === "willow") {                                                           // long soft shimmer
       noise(t + .1, { dur: 2, peak: .035, filter: "highpass", f0: 5000, attack: .25, pan });

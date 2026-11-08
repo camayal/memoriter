@@ -174,6 +174,13 @@ html,body{margin:0;height:100%;background:var(--page-bg);overflow:hidden;
 .langsw span{opacity:.7}
 #end .langsw{color:rgba(255,255,255,.3)}
 #end .langsw button.on{color:rgba(255,255,255,.6)}
+.front svg.crayon{width:92%;height:92%}              /* colour cards: the diagonal crayon can use more of the card */
+
+/* Hidden grown-up door: an invisible strip over the credit line; holding it darkens the text over 4 s. */
+.credit-hold{position:absolute;left:50%;bottom:0;translate:-50% 0;width:min(260px,50vw);height:40px;touch-action:none}  /* narrow enough to never cover EN · ES */
+#start::after,#end::after{transition:color .3s}
+#start.credit-holding::after{color:rgba(47,58,74,.75);transition:color 4s linear}
+#end.credit-holding::after{color:rgba(255,255,255,.8);transition:color 4s linear}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#FFF7EA">
@@ -299,6 +306,7 @@ const TEXT = {
     start: "Let's go!",
     rest: "Time for a break. See you soon!",
     win: "Good job!",
+    wins: ["Yay! Good job!", "You did it!", "Great job!", "Well done!", "Hooray! Good job!"],   // cheerful end phrases, rotated
     sample: "Hello, one, two, three",
     noVoice: "No English voice on this device/browser.",
     shapes: { circle: "circle", oval: "oval", square: "square", rectangle: "rectangle", triangle: "triangle", diamond: "diamond", pentagon: "pentagon", hexagon: "hexagon", heptagon: "heptagon", octagon: "octagon", star: "star", heart: "heart", semicircle: "semicircle" },
@@ -323,6 +331,7 @@ const TEXT = {
     start: "¡Vamos!",
     rest: "¡Hora de descansar! Hasta pronto.",
     win: "¡Muy bien!",
+    wins: ["¡Bravo! ¡Muy bien!", "¡Lo lograste!", "¡Excelente!", "¡Bien hecho!", "¡Yupi! ¡Muy bien!"],
     sample: "Hola, uno, dos, tres",
     noVoice: "No hay voz en español en este dispositivo/navegador.",
     shapes: { circle: "círculo", oval: "óvalo", square: "cuadrado", rectangle: "rectángulo", triangle: "triángulo", diamond: "rombo", pentagon: "pentágono", hexagon: "hexágono", heptagon: "heptágono", octagon: "octágono", star: "estrella", heart: "corazón", semicircle: "semicírculo" },
@@ -639,7 +648,7 @@ const sfx = {
     if (!audio()) return; const t = AC.currentTime;
     noise(t, { dur: big ? .9 : .6, peak: big ? .2 : .14, f0: 700, f1: 120, pan });
     const penta = [1047, 1175, 1319, 1568, 1760, 2093, 2349, 2637];                          // C major pentatonic, high
-    if (kind === "heart" || kind === "smile" || kind === "symbol") {                                              // happy arpeggio C-E-G-C
+    if (kind === "heart" || kind === "smile" || kind === "symbol" || kind === "rainbow") {                                              // happy arpeggio C-E-G-C
       [1047, 1319, 1568, 2093, 2637].forEach((f, i) => tone(f, t + .08 + i * .09, { type: "triangle", peak: .06, decay: .7, pan }));
     } else if (kind === "willow") {                                                           // long soft shimmer
       noise(t + .1, { dur: 2, peak: .035, filter: "highpass", f0: 5000, attack: .25, pan });
@@ -717,13 +726,15 @@ function updateLangNotice() {
 /* Speak right away: cut off anything still talking (a queue makes the voice lag behind the cards).
    If a voice doesn't start within 1.2 s, retry once (with an installed voice if it was an online one). */
 let current = null;                                       // kept referenced: Chrome can drop utterances that get garbage-collected
-function say(text, retry = true) {
+/* opts: { pitch, rate } multipliers for this one utterance (e.g. a cheerful "Good job!"). */
+function say(text, retry = true, opts = {}) {
   if (!synth || !text) return;
   const u = new SpeechSynthesisUtterance(text);
   // Always tag the utterance with the game language, so the engine pronounces it that way.
   u.lang = voice && speaksLang(voice) ? voice.lang : LANG_TAG;
   if (voice) u.voice = voice;
-  u.rate = CFG.rate ?? PRESET.rate; u.pitch = CFG.pitch ?? PRESET.pitch;
+  u.rate = (CFG.rate ?? PRESET.rate) * (opts.rate || 1);
+  u.pitch = Math.min(2, (CFG.pitch ?? PRESET.pitch) * (opts.pitch || 1));
   let started = false;
   u.onstart = () => { started = true; };
   current = u;
@@ -736,7 +747,7 @@ function say(text, retry = true) {
   if (retry) setTimeout(() => {
     if (started || current !== u) return;
     if (voice && !voice.localService) { onlineFailed = true; chooseVoice(); }
-    synth.cancel(); say(text, false);
+    synth.cancel(); say(text, false, opts);
   }, 1200);
 }
 
@@ -799,6 +810,7 @@ function prepareSymbol(item, color) {
   finaleSymbol = null;
   if (!item) return;
   if (item.kind === "img" || (item.kind === "emoji" && !CLEAR_OUTLINES.has(item.show))) { finaleSymbol = { smile: true }; return; }
+  if (item.kind === "swatch") { finaleSymbol = { rainbow: true }; return; }   // colours: a rainbow arc reads better than a crayon
   const N = 160, cv = document.createElement("canvas"); cv.width = cv.height = N;
   const g = cv.getContext("2d");
   const done = () => { const points = outlinePoints(g, N); if (points) finaleSymbol = { points, color }; };
@@ -870,6 +882,19 @@ function explode(r) {
   else if (k === "heart") {
     shape(130, t => [Math.sin(t) ** 3, -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) / 16], S * 4.4, lighten(NAMED.pink, .2));
     ring(30, S * 1.4, "#FFFFFF", { size: 1.8, fade: .02 });
+  } else if (k === "rainbow") {
+    // Rainbow arc: six bands of sparks (red outside → purple inside) that fly out and settle along
+    // the top half of circles, like the symbol bursts (drag .92 → a spark travels 12.5 × its speed).
+    const R = Math.min(innerWidth, innerHeight) * .27;
+    const bands = ["#FF7A7A", "#FFB15C", "#FFE066", "#7EE08F", "#7FB2FF", "#C79BFF"];
+    bands.forEach((col, i) => {
+      const rad = R * (1 - i * .09), n = Math.round(46 - i * 3);
+      for (let j = 0; j < n; j++) {
+        const a = Math.PI + (j / (n - 1)) * Math.PI;            // left → over the top → right
+        const tx = Math.cos(a) * rad, ty = Math.sin(a) * rad + R * .45;   // shifted down so the arc is centred
+        spark({ x, y, vx: tx / 12.5, vy: ty / 12.5, drag: .92, grav: .003, fade: .0075, size: 3, color: Math.random() < .08 ? "#FFFFFF" : col });
+      }
+    });
   } else if (k === "symbol" && r.points) {
     // Sparks fly to the symbol's points: with drag .92 a spark travels v / (1 - .92) = 12.5 v in total.
     const R = Math.min(innerWidth, innerHeight) * .24;
@@ -937,7 +962,10 @@ function frame() {
 
 /* Fireworks end show. onReady fires when the "play again" button may appear (to practise patience). */
 function fireworksShow(onReady, round = 1) {
-  running = true; night.classList.add("on"); say(Q.get("win") || W.win);
+  running = true; night.classList.add("on");
+  // Cheerful end phrase: a different one each round (win= fixes it), spoken a little higher and a
+  // touch slower so it sounds happy and sing-song.
+  say(Q.get("win") || freshPick("win-" + LANG, W.wins || [W.win]), true, { pitch: 1.25, rate: .92 });
   const Wd = innerWidth, H = innerHeight, reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
   let t = 400;
   // 1. Two single rockets.
@@ -958,7 +986,7 @@ function fireworksShow(onReady, round = 1) {
   // The big final burst: a symbol from the game just played (see prepareSymbol), else heart/smiley.
   later(() => {
     const sym = finaleSymbol;
-    const kind = sym && sym.points ? "symbol" : sym && sym.smile ? "smile" : (Math.random() < .5 ? "heart" : "smile");
+    const kind = sym && sym.points ? "symbol" : sym && sym.rainbow ? "rainbow" : sym && sym.smile ? "smile" : (Math.random() < .5 ? "heart" : "smile");
     const r = launch(kind, Wd / 2, H * .32);
     r.big = true;
     if (kind === "symbol") { r.points = sym.points; r.symbolColor = sym.color; }
@@ -989,7 +1017,7 @@ let mismatch = null;                                // { a, b, timer } while two
 
 function faceHTML(item, color) {
   if (item.kind === "shape") return `<svg viewBox="0 0 100 100" aria-hidden="true">${SHAPES[item.show](color, darker(color, .85))}</svg>`;
-  if (item.kind === "swatch") return `<svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="40" fill="${item.show}" stroke="${darker(item.show, .85)}" stroke-width="4"/></svg>`;
+  if (item.kind === "swatch") return crayonSVG(item.show);      // colours: a crayon in that colour (same drawing as the tile)
   if (item.kind === "img") return `<img src="${encodeURI(item.show)}" alt="" draggable="false">`;
   const len = [...item.show].length;
   const size = item.kind === "emoji" ? 66 : Math.min(64, 150 / len);
@@ -1115,7 +1143,7 @@ function initBoard() {
 
 const HELP = `MEMORITER: a memory pairs game for toddlers. Every setting comes from the URL.
 
-setup    open the parents' setup screen (…/index.html?setup): choose the game, then Start game
+setup    open the parents' setup screen (…/index.html?setup), or hold the faint credit line 4 s on the start/end screen
 theme    numbers | letters | shapes | images (pictures) | colors   (default: the child picks a tile on the Start screen;
          also guessed from letters=, shapes=, items=; then one big tile with a replay badge)
 themes   which tiles the Start screen offers, in order, e.g. themes=numbers,colors (default: all five)
@@ -1420,6 +1448,28 @@ function initStartScreen() {
   if (Q.get("start") === "0") { startEl.remove(); return; }
   renderStartTiles();
 }
+/* Grown-up door to the setup screen: hold the faint credit line at the bottom for 4 s (it darkens
+   slowly while held). A short touch does nothing. Opens ?setup with the current settings, so the
+   form starts from the game being played. */
+function creditHold(container) {
+  container.querySelector(".credit-hold")?.remove();
+  const el = document.createElement("div"); el.className = "credit-hold"; el.setAttribute("aria-hidden", "true");
+  let timer = null;
+  const cancel = () => { clearTimeout(timer); timer = null; container.classList.remove("credit-holding"); };
+  el.addEventListener("pointerdown", e => {
+    if (e.button > 0) return;
+    e.preventDefault(); e.stopPropagation();
+    container.classList.add("credit-holding");
+    timer = setTimeout(() => {
+      const p = new URLSearchParams(location.search); p.set("setup", "");
+      location.href = location.pathname + "?" + p.toString().replace(/setup=(&|$)/, "setup$1");
+    }, 4000);
+  });
+  for (const ev of ["pointerup", "pointerleave", "pointercancel"]) el.addEventListener(ev, cancel);
+  el.addEventListener("contextmenu", e => e.preventDefault());
+  container.appendChild(el);
+}
+
 /* Start screen tiles + EN · ES switch (also redrawn when the language changes). */
 function renderStartTiles() {
   const tiles = startEl.querySelector(".themes");
@@ -1428,6 +1478,7 @@ function renderStartTiles() {
   else tileThemes().forEach((theme, i) => tiles.appendChild(makeTile(theme, i)));
   startEl.querySelector(".langsw")?.remove();
   startEl.appendChild(langSwitch());
+  creditHold(startEl);
   updateLangNotice();
   fitTiles();
 }
@@ -1448,6 +1499,7 @@ function showAgain() {
     endEl.appendChild(others);
   }
   endEl.appendChild(langSwitch());
+  creditHold(endEl);
   fitTiles();
   endEl.classList.add("show");
 }

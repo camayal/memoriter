@@ -51,6 +51,7 @@ function prepareSymbol(item, color) {
   finaleSymbol = null;
   if (!item) return;
   if (item.kind === "img" || (item.kind === "emoji" && !CLEAR_OUTLINES.has(item.show))) { finaleSymbol = { smile: true }; return; }
+  if (item.kind === "swatch") { finaleSymbol = { rainbow: true }; return; }   // colours: a rainbow arc reads better than a crayon
   const N = 160, cv = document.createElement("canvas"); cv.width = cv.height = N;
   const g = cv.getContext("2d");
   const done = () => { const points = outlinePoints(g, N); if (points) finaleSymbol = { points, color }; };
@@ -122,6 +123,19 @@ function explode(r) {
   else if (k === "heart") {
     shape(130, t => [Math.sin(t) ** 3, -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) / 16], S * 4.4, lighten(NAMED.pink, .2));
     ring(30, S * 1.4, "#FFFFFF", { size: 1.8, fade: .02 });
+  } else if (k === "rainbow") {
+    // Rainbow arc: six bands of sparks (red outside → purple inside) that fly out and settle along
+    // the top half of circles, like the symbol bursts (drag .92 → a spark travels 12.5 × its speed).
+    const R = Math.min(innerWidth, innerHeight) * .27;
+    const bands = ["#FF7A7A", "#FFB15C", "#FFE066", "#7EE08F", "#7FB2FF", "#C79BFF"];
+    bands.forEach((col, i) => {
+      const rad = R * (1 - i * .09), n = Math.round(46 - i * 3);
+      for (let j = 0; j < n; j++) {
+        const a = Math.PI + (j / (n - 1)) * Math.PI;            // left → over the top → right
+        const tx = Math.cos(a) * rad, ty = Math.sin(a) * rad + R * .45;   // shifted down so the arc is centred
+        spark({ x, y, vx: tx / 12.5, vy: ty / 12.5, drag: .92, grav: .003, fade: .0075, size: 3, color: Math.random() < .08 ? "#FFFFFF" : col });
+      }
+    });
   } else if (k === "symbol" && r.points) {
     // Sparks fly to the symbol's points: with drag .92 a spark travels v / (1 - .92) = 12.5 v in total.
     const R = Math.min(innerWidth, innerHeight) * .24;
@@ -189,7 +203,10 @@ function frame() {
 
 /* Fireworks end show. onReady fires when the "play again" button may appear (to practise patience). */
 function fireworksShow(onReady, round = 1) {
-  running = true; night.classList.add("on"); say(Q.get("win") || W.win);
+  running = true; night.classList.add("on");
+  // Cheerful end phrase: a different one each round (win= fixes it), spoken a little higher and a
+  // touch slower so it sounds happy and sing-song.
+  say(Q.get("win") || freshPick("win-" + LANG, W.wins || [W.win]), true, { pitch: 1.25, rate: .92 });
   const Wd = innerWidth, H = innerHeight, reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
   let t = 400;
   // 1. Two single rockets.
@@ -210,7 +227,7 @@ function fireworksShow(onReady, round = 1) {
   // The big final burst: a symbol from the game just played (see prepareSymbol), else heart/smiley.
   later(() => {
     const sym = finaleSymbol;
-    const kind = sym && sym.points ? "symbol" : sym && sym.smile ? "smile" : (Math.random() < .5 ? "heart" : "smile");
+    const kind = sym && sym.points ? "symbol" : sym && sym.rainbow ? "rainbow" : sym && sym.smile ? "smile" : (Math.random() < .5 ? "heart" : "smile");
     const r = launch(kind, Wd / 2, H * .32);
     r.big = true;
     if (kind === "symbol") { r.points = sym.points; r.symbolColor = sym.color; }

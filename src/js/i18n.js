@@ -9,6 +9,7 @@ const TEXT = {
     start: "Let's go!",
     rest: "Time for a break. See you soon!",
     win: "Good job!",
+    wins: ["Yay! Good job!", "You did it!", "Great job!", "Well done!", "Hooray! Good job!"],   // cheerful end phrases, rotated
     sample: "Hello, one, two, three",
     noVoice: "No English voice on this device/browser.",
     shapes: { circle: "circle", oval: "oval", square: "square", rectangle: "rectangle", triangle: "triangle", diamond: "diamond", pentagon: "pentagon", hexagon: "hexagon", heptagon: "heptagon", octagon: "octagon", star: "star", heart: "heart", semicircle: "semicircle" },
@@ -33,6 +34,7 @@ const TEXT = {
     start: "¡Vamos!",
     rest: "¡Hora de descansar! Hasta pronto.",
     win: "¡Muy bien!",
+    wins: ["¡Bravo! ¡Muy bien!", "¡Lo lograste!", "¡Excelente!", "¡Bien hecho!", "¡Yupi! ¡Muy bien!"],
     sample: "Hola, uno, dos, tres",
     noVoice: "No hay voz en español en este dispositivo/navegador.",
     shapes: { circle: "círculo", oval: "óvalo", square: "cuadrado", rectangle: "rectángulo", triangle: "triángulo", diamond: "rombo", pentagon: "pentágono", hexagon: "hexágono", heptagon: "heptágono", octagon: "octágono", star: "estrella", heart: "corazón", semicircle: "semicírculo" },

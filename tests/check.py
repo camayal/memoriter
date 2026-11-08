@@ -185,6 +185,7 @@ CASES = [
                and subset(re.findall(r'class="sym"[^>]*>([^<]*)<', p.dom.split('id="start"')[1].split('id="night"')[0]), "AEIOU")),
     ("items=cat,dog,fish", "own words: tile previews them", lambda p: subset(re.findall(r'class="sym"[^>]*>([^<]*)<', p.dom.split('id="start"')[1].split('id="night"')[0]), ["cat", "dog", "fish"])),
     ("theme=numbers&lang=es", "Spanish phrase on parent-made tile", lambda p: "¡Vamos a buscar parejas de números!" in p.dom),
+    ("", "hidden grown-up door (credit line) on start screen", lambda p: 'class="credit-hold"' in p.dom.split('id="start"')[1].split('id="night"')[0]),
     ("setup", "?setup opens the parents' form", lambda p: 'id="setup"' in p.dom and 'name="theme"' in p.dom),
     ("setup&theme=shapes&shapes=circle,star&cards=12&lang=es", "setup form is pre-filled from the link",
      lambda p: re.search(r'value="shapes" checked', p.dom) and re.search(r'value="circle" checked', p.dom)
