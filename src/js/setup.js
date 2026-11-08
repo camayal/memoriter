@@ -129,7 +129,9 @@ function defaultsForm() {
     <label><input type="checkbox" name="tts"${checked(D.tts !== "0")}> say each card out loud</label>
     <label><input type="checkbox" name="sound"${checked(D.sound !== "0")}> sounds</label>
     <label><input type="checkbox" name="fullscreen"${checked(D.fullscreen !== "0")}> full screen</label>
+  </div><div class="row" style="margin-top:8px">
     <label><input type="checkbox" name="pace"${checked(D.pace === "fast")}> fast pace</label>
+    <small>Off (calm): taps are ignored while two cards are open, so rushing does nothing. On: quick players can go on at once.</small>
   </div><div class="row" style="margin-top:8px">
     <label>Rest after <input type="number" name="rest" min="0" max="50" value="${escapeHTML(D.rest ?? "6")}"> games</label>
   </div></fieldset>
