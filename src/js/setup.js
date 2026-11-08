@@ -66,6 +66,9 @@ ${defaultsForm()}
     <label><input type="checkbox" name="sound"${checked(CFG.sound)}> sounds</label>
     <label><input type="checkbox" name="fullscreen"${checked(CFG.fullscreen)}> full screen when the game starts</label>
   </div><div class="row" style="margin-top:8px">
+    <label><input type="checkbox" name="pace"${checked(CFG.fast)}> fast pace</label>
+    <small>Off (calm): taps are ignored while two cards are open, so rushing does nothing. On: quick players can go on at once.</small>
+  </div><div class="row" style="margin-top:8px">
     <label>Rest after <input type="number" name="rest" min="0" max="50" value="${CFG.rest}"> games</label>
     <small>A sleepy moon says it's time for a break; a grown-up holds the small star at the top right 4 s to unlock. 0 = never.</small>
   </div></fieldset>
@@ -83,7 +86,7 @@ ${defaultsForm()}
 /* ---------- Defaults (this device) ----------
    What the child gets when picking a tile alone, e.g. numbers 10–20 once 1–8 are known. Saved on
    this device (localStorage), used whenever the address doesn't say otherwise. */
-const DEFAULT_KEYS = ["from", "to", "letters", "case", "phonics", "shapes", "set", "emoji", "cards", "voice", "tts", "sound", "fullscreen", "rest"];
+const DEFAULT_KEYS = ["from", "to", "letters", "case", "phonics", "shapes", "set", "emoji", "cards", "voice", "tts", "sound", "fullscreen", "pace", "rest"];
 function defaultsForm() {
   const D = SAVED_DEFAULTS, has = Object.keys(D).length > 0;
   const opt = (v, label, sel) => `<option value="${v}"${sel ? " selected" : ""}>${label}</option>`;
@@ -126,6 +129,7 @@ function defaultsForm() {
     <label><input type="checkbox" name="tts"${checked(D.tts !== "0")}> say each card out loud</label>
     <label><input type="checkbox" name="sound"${checked(D.sound !== "0")}> sounds</label>
     <label><input type="checkbox" name="fullscreen"${checked(D.fullscreen !== "0")}> full screen</label>
+    <label><input type="checkbox" name="pace"${checked(D.pace === "fast")}> fast pace</label>
   </div><div class="row" style="margin-top:8px">
     <label>Rest after <input type="number" name="rest" min="0" max="50" value="${escapeHTML(D.rest ?? "6")}"> games</label>
   </div></fieldset>
@@ -155,6 +159,7 @@ function collectDefaults(form) {
   if (!f.get("tts")) d.tts = "0";
   if (!f.get("sound")) d.sound = "0";
   if (!f.get("fullscreen")) d.fullscreen = "0";
+  if (f.get("pace")) d.pace = "fast";
   const rest = String(Math.max(0, parseInt(f.get("rest"), 10) || 0));
   if (rest !== "6") d.rest = rest;
   return d;
@@ -203,6 +208,7 @@ function setupParams(form) {
   if (!f.get("tts")) p.set("tts", "0");
   if (!f.get("sound")) p.set("sound", "0");
   if (!f.get("fullscreen")) p.set("fullscreen", "0");
+  if (f.get("pace")) p.set("pace", "fast");
   if (String(f.get("rest")) !== "6") p.set("rest", String(Math.max(0, parseInt(f.get("rest"), 10) || 0)));
   // Keep the look-and-feel settings a link may already have (patterns, colours, timings …).
   for (const k of ["emoji", "grow", "colors", "back", "backcolor", "mark", "bg", "bgcolor", "delay", "vanish", "rate", "pitch", "win"]) if (URLQ.has(k)) p.set(k, URLQ.get(k));

@@ -54,9 +54,10 @@ function onTap(i) {
   const c = cards[i];
   audio();                                          // make sure audio is unlocked
   if (c.done || c.up) return;
-  // Two different cards still showing: a tap on another card turns them back right away instead of
-  // being ignored (a quick toddler felt the card "didn't work").
-  if (locked) flipBack();
+  // Two cards still open. Calm pace (default): the tap is ignored completely (no sound, no movement),
+  // so tapping fast gets nothing and the child learns to watch the cards. pace=fast: a tap turns the
+  // wrong pair back right away and goes on.
+  if (locked) { if (!CFG.fast) return; flipBack(); }
   sfx.tap();
   c.up = true; c.el.classList.add("up"); c.el.setAttribute("aria-label", c.say);
   // The second card of a pair found right away isn't spoken again: the word was just said.
@@ -71,6 +72,8 @@ function onTap(i) {
     // Let the child see and hear the pair, then pop them away one after the other.
     setTimeout(() => vanish(a), CFG.vanish);
     setTimeout(() => vanish(b), CFG.vanish + 160);
+    // Calm pace: wait until both cards have popped away (pop animation .3 s) before taking taps again.
+    if (!CFG.fast) { locked = true; setTimeout(() => { if (!mismatch) locked = false; }, CFG.vanish + 160 + 300); }
     if (last) setTimeout(finale, CFG.vanish + 900);
   } else {
     locked = true;

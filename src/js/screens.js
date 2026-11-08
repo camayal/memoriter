@@ -31,6 +31,8 @@ colors   one = one random colour for all cards, new each game (default)
          0 = dark ink
 delay    ms before a non-matching pair flips back (default 1200)
 vanish   ms a matched pair stays visible before it pops away (default 900)
+pace     fast = a tap while two cards are open moves on at once (for quick players).
+         Default (calm): those taps are ignored until the wrong pair turns back or the pair pops away.
 back     card back pattern (default: random, new each game, never plain)
          random | plain | dots | polka | stripes | diagonal | checks | grid | zigzag | waves | stars | hearts | bubbles
 backcolor card back colour: random | a colour name (softened) | hex like 7FB2F0   (default: random)

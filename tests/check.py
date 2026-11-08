@@ -179,6 +179,11 @@ CASES = [
     ("start=0&_play=1&again=0&rest=0", "rest=0: game tiles, no moon",
      lambda p: re.search(r'id="end" class="show"', p.dom) and not re.search(r'id="rest"[^>]*class="show"', p.dom)),
     ("setup&rest=3", "setup: rest field pre-filled", lambda p: re.search(r'name="rest"[^>]*value="3"', p.dom)),
+    ("setup&pace=fast", "setup: fast pace ticked", lambda p: re.search(r'name="pace" checked', p.dom)),
+    ("_play=1&_rush=1&start=0&rest=0", "calm pace: a third tap while two cards are open is ignored",
+     lambda p: len(re.findall(r'class="card up"', p.dom)) == 2),
+    ("_play=1&_rush=1&start=0&rest=0&pace=fast", "pace=fast: a third tap turns the pair back and opens the card",
+     lambda p: len(re.findall(r'class="card up"', p.dom)) == 1),
     ("_play=1&start=0&rest=0", "end fireworks (night sky on)", lambda p: 'id="night" class="on"' in p.dom),
     ("start=0&_play=1&again=0&rest=0", "end screen: current game big, others small",
      lambda p: re.search(r'id="end" class="show"', p.dom) and re.findall(r'class="tile big" data-theme="(\w+)"', p.dom) == ["numbers"]

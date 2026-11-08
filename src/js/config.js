@@ -54,6 +54,9 @@ const CFG = {
   colors: (Q.get("colors") || "one").toLowerCase(),   // one | pair | 0 | <name> | <hex>
   delay: num("delay", 1200),
   vanish: num("vanish", 900),
+  // Pace: calm (default) ignores taps while two cards are open, until the wrong pair has turned back or
+  // the found pair has popped away, so rushing does nothing. pace=fast lets a tap move on at once.
+  fast: (Q.get("pace") || "").trim().toLowerCase() === "fast",
   upper: (Q.get("case") || "upper").toLowerCase() !== "lower",
   // Letters: say the name ("bee"), the sound ("buh", phonics=1) or both ("B … buh", phonics=both).
   phonics: (Q.get("phonics") || "0").toLowerCase(),

@@ -22,15 +22,24 @@ function next() {
         const d = f.contentDocument, groups = {};
         for (const c of d.querySelectorAll(".card")) (groups[c.dataset.say] ||= []).push(c);
         const tap = el => el.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, cancelable: true, pointerType: "touch", isPrimary: true, button: 0 }));
-        for (const [a, b] of Object.values(groups)) { tap(a); tap(b); await new Promise(r => setTimeout(r, 60)); }
-        await new Promise(r => setTimeout(r, 2600));
+        if (/[?&]_rush=1/.test(f.src)) {
+          // _rush=1: a quick child: two different cards, then a third one at once; captured right away.
+          const [g1, g2] = Object.values(groups);
+          tap(g1[0]); tap(g2[0]); tap(g1[1]);
+        } else {
+          for (const [a, b] of Object.values(groups)) { tap(a); tap(b); await new Promise(r => setTimeout(r, 60)); }
+          await new Promise(r => setTimeout(r, 2600));
+        }
       } catch (e) { /* page not ready: captured as it is */ }
     }
     let dom = "";
     try { dom = f.contentDocument.documentElement.outerHTML; } catch (e) { dom = "ERROR " + e; }
     results.push(dom); i++; save(); next();
   }, 450);
-  f.src = page + "?" + (queries[i] ? queries[i] + "&" : "") + "_run=" + i;   // unique query so every load is a real page load
+  // Rounds are played by fast taps, so they use pace=fast (calm pace would ignore them), unless the query sets a pace.
+  let q = queries[i] || "";
+  if (/(^|&)_play=1/.test(q) && !/(^|&)(_rush|pace)=/.test(q)) q += "&pace=fast";
+  f.src = page + "?" + (q ? q + "&" : "") + "_run=" + i;   // unique query so every load is a real page load
 }
 next();
 </script>

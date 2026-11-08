@@ -67,7 +67,8 @@ To add a language, I copy the `en` block in `src/js/i18n.js`, translate it, and 
 | Full screen | ✅ Done | Tapping a game tile switches to full screen (no address bar or browser buttons) on Android, desktop and iPad, also inside a same-site iframe. Not available on iPhone Safari. `fullscreen=0` or the setup screen turns it off. |
 | Install as an app (PWA) | ✅ Done (I still need to test it on a phone) | `dist/` includes an app manifest (full-screen display, cream theme), icons (four cards: two cats face up, two star backs face down) and a service worker, so the installed app opens instantly from the saved copy (also offline) and picks up updates in the background, shown on the next open. It installs from `camayal.info/wa/pairs` with the browser's "Install app" / "Add to Home screen" (needs the shell's manifest, see Publishing). Only works over https (GitHub Pages), not from disk. |
 | No pull-to-refresh, no zoom | ✅ Done | `overscroll-behavior:none` stops pull-down refresh and rubber-banding; `touch-action:none`, `maximum-scale=1` and blocked pinch / ctrl+wheel gestures stop zoom. The setup screen can still scroll. |
-| Cards react to every small tap | ✅ Done | I made cards react on touch-down instead of "click" (which got cancelled when a small finger slid or held), blocked long-press menus, and made a tap while two wrong cards are still showing turn them back immediately instead of being ignored. |
+| Cards react to every small tap | ✅ Done | I made cards react on touch-down instead of "click" (which got cancelled when a small finger slid or held), and blocked long-press menus. (A tap while two cards are open is handled by the pace setting, below.) |
+| Calm pace: rushing does nothing | ✅ Done | My child sometimes tapped wildly. Now, while two cards are open, every tap is **ignored completely** (no sound, no movement, no word, nothing saved for later) until the wrong pair has turned back (`delay=`, 1.2 s) or the found pair has fully popped away (~1.4 s). I chose to ignore rather than react: any reaction (a sink, a sound, a "slow down" phrase) would reward fast tapping, while nothing happening takes the fun out of it, and the child learns to watch the cards. A short burst of harder tapping at first is normal. **Fast pace** (`pace=fast`, or "fast pace" in setup, both in Defaults and in a link) brings back the quick behaviour for children with a good memory, since speed is a good skill too: a tap turns a wrong pair back at once and goes on. |
 | Choose the next game after the fireworks | ✅ Done | The game just played appears as a big tile in the middle (most likely what the child wants again), with the other games as smaller tiles below (one row on wide screens, 2×2 on phones). Tapping any tile starts that game. For a parent-made game, only its tile. |
 | Theme 5: colors | ✅ Done | Colour swatches (red, blue, yellow, green, orange, purple, pink, brown, black), spoken as their names in English or Spanish. |
 | Theme 1: numbers (range from the URL) | ✅ Done | `from` / `to`. Picks at random when the range is bigger than the number of pairs. Spoken as words in the game language. |
@@ -82,7 +83,7 @@ To add a language, I copy the `en` block in `src/js/i18n.js`, translate it, and 
 
 ## URL parameters
 
-`setup` · `theme` · `themes` · `cards` · `from` · `to` · `letters` · `case` · `phonics` · `shapes` · `set` · `items` · `lang` · `voice` · `voices` ·
+`setup` · `pace` · `theme` · `themes` · `cards` · `from` · `to` · `letters` · `case` · `phonics` · `shapes` · `set` · `items` · `lang` · `voice` · `voices` ·
 `rate` · `pitch` · `tts` · `sound` · `colors` · `delay` · `vanish` · `back` · `backcolor` · `mark` · `bg` · `bgcolor` · `fullscreen` · `grow` · `rest` · `emoji` · `seed` · `start` · `win` · `again` · `help`
 
 I removed `demo` (the tests now play the round for real) and `starttext` (the "Let's go!" button became the big tile). I also removed some as redundant: `pairs` (use `cards`), `img` (use `items` with `theme=images`), `theme=custom` (guessed from `items`), `vol` (use `sound=0`). I kept `rate` / `pitch` as fine-tuning on top of the `voice=` presets.
@@ -137,7 +138,7 @@ People play at **https://camayal.info/wa/pairs** (my GitHub Pages site with the 
 - [ ] Calm mode (`calm=1`, also in setup): slower flips and pops, quieter and fewer sounds, softer sparkles, fireworks become a gentle star shower
 - [ ] Quiet transition between games: the screen dims and a slow "breathing" circle grows and shrinks three times before the tiles appear
 - [ ] Fewer rewards per match: matched pairs fade away softly (no sparkle or pop); excitement kept for the end only
-- [ ] Slower pace in the game: wrong pairs stay visible a little longer, encouraging looking before tapping again
+- [x] ~~Slower pace in the game~~: calm pace ignores taps while two cards are open (default). If needed, `delay=` makes wrong pairs stay longer.
 - [ ] Gentle cooldown on the end tiles: they fade in slowly and ignore taps for the first 2 seconds
 - [ ] Session limits for parents in setup: rest length in minutes (auto-unlock after the break) and a daily maximum of games
 
