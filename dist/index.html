@@ -135,13 +135,13 @@ html,body{margin:0;height:100%;background:var(--page-bg);overflow:hidden;
 
 /* Credit: very subtle, drawn by CSS (not real text, so it can't be selected or copied) and only on
    the start, end and setup screens; never while playing. */
-#start::after,#end::after,#setup form::after{content:"By: C. A. Maya-Lastra - 2026";
+#start::after,#end::after,#setup .defaults-form::after{content:"By: C. A. Maya-Lastra - 2026";
   font:500 12px/1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.06em;
   pointer-events:none;user-select:none;-webkit-user-select:none;white-space:nowrap}
 #start::after,#end::after{position:absolute;left:50%;bottom:max(10px,env(safe-area-inset-bottom));translate:-50% 0}
 #start::after{color:rgba(47,58,74,.28)}
 #end::after{color:rgba(255,255,255,.32)}
-#setup form::after{display:block;text-align:center;margin-top:28px;color:rgba(47,58,74,.3)}
+#setup .defaults-form::after{display:block;text-align:center;margin-top:28px;color:rgba(47,58,74,.3)}
 #start,#end{padding-bottom:26px}
 
 /* Grown-up long press on a tile: it sinks slowly while held, then shows the replay badge (locked). */
@@ -182,6 +182,20 @@ html,body{margin:0;height:100%;background:var(--page-bg);overflow:hidden;
 #start::after,#end::after{transition:color .3s}
 #start.credit-holding::after{color:rgba(47,58,74,.75);transition:color 4s linear}
 #end.credit-holding::after{color:rgba(255,255,255,.8);transition:color 4s linear}
+
+/* Setup: collapsible "Defaults (this device)" section below "Create a game". */
+#setup .defaults-form{max-width:640px;margin:0 auto;padding:0 16px 40px}
+#setup .defaults-form details{background:#F6F3EC;border-radius:14px;padding:12px 14px}
+#setup .defaults-form summary{font-weight:700;font-size:18px;cursor:pointer;padding:6px 2px}
+#setup .defaults-form .lead{margin:8px 0 14px}
+#setup .reset{background:#F1EEE8;color:#5b6573}
+#setup .saved{color:#2C7E44;font-weight:600}
+#setup > form:first-child{padding-bottom:16px}
+
+/* OpenMoji drawings sit in the text like an emoji glyph (their artwork has a margin, so a bit larger). */
+img.emoji,.front img.emoji{width:1.2em;height:1.2em;object-fit:contain;vertical-align:middle;pointer-events:none}
+#setup .credits{margin:14px 2px 0;font-size:13px;color:#5b6573}
+#setup .credits a{color:inherit}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#FFF7EA">
@@ -236,7 +250,18 @@ html,body{margin:0;height:100%;background:var(--page-bg);overflow:hidden;
 /* config.js: everything read from the URL, plus small shared helpers.
    Loaded first; every other file may use these names. */
 
-const Q = new URLSearchParams(location.search);
+/* Settings = the address (URLQ) on top of the defaults saved on this device in the setup screen
+   (localStorage "memoriter-defaults"). Everything reads Q, so a saved default such as from=10 applies
+   whenever the address doesn't say otherwise. Whether the game is fixed (THEME_GIVEN) is decided by
+   the address only: saved defaults never lock the game, they only shape what each tile plays. */
+const URLQ = new URLSearchParams(location.search);
+const SAVED_DEFAULTS = (() => { try { return JSON.parse(localStorage.getItem("memoriter-defaults") || "{}") || {}; } catch { return {}; } })();
+const Q = (() => {
+  const q = new URLSearchParams();
+  for (const [k, v] of Object.entries(SAVED_DEFAULTS)) if (v !== "" && v != null) q.set(k, String(v));
+  for (const k of new Set(URLQ.keys())) { q.delete(k); for (const v of URLQ.getAll(k)) q.append(k, v); }
+  return q;
+})();
 const num = (k, d) => { const v = parseFloat(Q.get(k)); return Number.isFinite(v) ? v : d; };
 const list = k => Q.getAll(k).flatMap(v => v.split(",")).map(s => s.trim()).filter(Boolean);
 
@@ -256,14 +281,14 @@ let LANG = LANG_TAG.slice(0, 2).toLowerCase() === "es" ? "es" : "en";
 const THEME_ALIASES = { number: "numbers", numeros: "numbers", "números": "numbers", letter: "letters", letras: "letters", shape: "shapes", formas: "shapes", figuras: "shapes", image: "images", imagenes: "images", "imágenes": "images", animals: "images", animales: "images", animal: "images", pictures: "images", dibujos: "images", color: "colors", colores: "colors" };
 /* True when the URL already chooses the game, so the Start screen shows one "Let's go!" button
    instead of the theme tiles. */
-const THEME_GIVEN = ["theme", "letters", "shapes", "items", "set"].some(k => Q.has(k));
+const THEME_GIVEN = ["theme", "letters", "shapes", "items", "set"].some(k => URLQ.has(k));
 function guessTheme() {
-  const t = (Q.get("theme") || "").trim().toLowerCase();
+  const t = (URLQ.get("theme") || "").trim().toLowerCase();
   if (t) return THEME_ALIASES[t] || t;
-  if (Q.has("letters")) return "letters";
-  if (Q.has("shapes")) return "shapes";
-  if (Q.has("items")) return "custom";
-  if (Q.has("set")) return "images";
+  if (URLQ.has("letters")) return "letters";
+  if (URLQ.has("shapes")) return "shapes";
+  if (URLQ.has("items")) return "custom";
+  if (URLQ.has("set")) return "images";
   return "numbers";
 }
 
@@ -281,6 +306,8 @@ const CFG = {
   // Letters: say the name ("bee"), the sound ("buh", phonics=1) or both ("B … buh", phonics=both).
   phonics: (Q.get("phonics") || "0").toLowerCase(),
   fullscreen: Q.get("fullscreen") !== "0",
+  // Picture emoji: OpenMoji drawings (same on every device, default) or the device's own emoji.
+  emoji: (Q.get("emoji") || "").toLowerCase() === "native" ? "native" : "openmoji",
   rest: Q.get("rest") === "0" ? 0 : Math.max(0, Math.round(num("rest", 6))),   // games before the rest screen (0 = never)
   calmMax: Q.get("grow") === "0" ? 0 : Math.max(0, Math.round(num("grow", 10))),   // extra calm rockets, max            // go full screen when a game tile is tapped
 };
@@ -556,10 +583,12 @@ const SET_ALIASES = {
   mar: "sea", ocean: "sea", oceano: "sea", "océano": "sea", "sea animals": "sea",
   frutas: "fruits", fruta: "fruits", fruit: "fruits", naturaleza: "nature",
 };
-const SET_WANTED = (() => { const v = (Q.get("set") || "random").toLowerCase(); return SET_ALIASES[v] || v; })();
+/* set= can name one set or several (set=farm,wild,sea); empty, "random" or "all" = every set. */
+const SET_WANTED = [...new Set(list("set").map(v => SET_ALIASES[v.toLowerCase()] || v.toLowerCase()))].filter(k => W.sets[k]);
 let chosenSet = null;
 function chooseSet() {
-  chosenSet = W.sets[SET_WANTED] ? SET_WANTED : freshPick("set", Object.keys(W.sets));
+  const pool = SET_WANTED.length ? SET_WANTED : Object.keys(W.sets);
+  chosenSet = pool.length === 1 ? pool[0] : freshPick("set", pool);   // never the same set twice in a row
   return chosenSet;
 }
 const currentSet = () => chosenSet || chooseSet();
@@ -843,7 +872,12 @@ function prepareSymbol(item, color) {
   const g = cv.getContext("2d");
   const done = () => { const points = outlinePoints(g, N); if (points) finaleSymbol = { points, color }; };
   g.fillStyle = "#000"; g.textAlign = "center"; g.textBaseline = "middle";
-  if (item.kind === "text" || item.kind === "emoji") {
+  if (item.kind === "emoji" && CFG.emoji === "openmoji") {
+    const img = new Image();
+    img.onload = () => { g.drawImage(img, 0, 0, N, N); done(); };
+    img.onerror = () => { finaleSymbol = { smile: true }; };
+    img.src = openmojiURL(item.show);
+  } else if (item.kind === "text" || item.kind === "emoji") {
     let size = item.kind === "emoji" ? 128 : 140;
     const font = s => item.kind === "emoji" ? `${s}px sans-serif` : `700 ${s}px Andika, Nunito, system-ui, sans-serif`;
     g.font = font(size);
@@ -1043,7 +1077,16 @@ const grid = document.getElementById("grid"), board = document.getElementById("b
 let cards = [], openCards = [], locked = false, matched = 0, total = 0;
 let mismatch = null;                                // { a, b, timer } while two different cards are showing
 
-const emojiHTML = e => escapeHTML(e);
+/* Emoji as HTML. Default: the OpenMoji drawing (https://openmoji.org, CC BY-SA 4.0), identical on
+   every device, from assets/openmoji/ (dist/openmoji/ once built). emoji=native uses the device's
+   own emoji. If a drawing is missing, the device emoji is shown instead. */
+const OPENMOJI_DIR = "openmoji/";
+const openmojiCode = e => [...e].filter(c => c !== "\uFE0F").map(c => c.codePointAt(0).toString(16).toUpperCase()).join("-");
+const openmojiURL = e => OPENMOJI_DIR + openmojiCode(e) + ".svg";
+function emojiHTML(e) {
+  if (CFG.emoji === "native") return escapeHTML(e);
+  return `<img class="emoji" src="${openmojiURL(e)}" alt="${escapeHTML(e)}" draggable="false" onerror="this.replaceWith(this.alt)">`;
+}
 
 function faceHTML(item, color) {
   if (item.kind === "shape") return `<svg viewBox="0 0 100 100" aria-hidden="true">${SHAPES[item.show](color, darker(color, .85))}</svg>`;
@@ -1185,7 +1228,9 @@ case     upper | lower                                           (default: upper
 phonics  letters say their name (0, default) | their sound, e.g. "buh" (1) | both, "bee … buh" (both)
 shapes   comma list: circle,oval,square,rectangle,triangle,diamond,
          pentagon,hexagon,heptagon,octagon,star,heart,semicircle (default: random pick)
-set      pictures game: farm | wild | bugs | birds | sea | fruits | nature (things in nature) | random (default: random, a new set each game)
+emoji    openmoji (default: OpenMoji drawings, same on every device; CC BY-SA 4.0, openmoji.org) | native (the device's own emoji)
+set      pictures game: farm | wild | bugs | birds | sea | fruits | nature (things in nature), one or several
+         (set=farm,wild,sea: each game picks one of them); random / none = all sets (default: random, a new set each game)
 items    your own cards, comma list or repeated; "shown|spoken" to say something else
          e.g. items=A|Apple,B|Ball      with theme=images: emoji or image links, e.g. items=https://…/cat.png|cat
 lang     language of every spoken/shown word: en | es (also es-MX, spanish, español)  (default: en)
@@ -1579,7 +1624,7 @@ function initVoiceList() {
    Opening ?setup on a link that already has settings pre-fills the form, so it can be edited. */
 
 const SETUP_THEMES = [
-  ["numbers", "Numbers 1 2 3"], ["letters", "Letters A B C"], ["images", "Pictures 🐶🍎🚗"],
+  ["numbers", "Numbers 1 2 3"], ["letters", "Letters A B C"], ["images", "Pictures 🐶🍎🐠"],
   ["shapes", "Shapes ▲"], ["colors", "Colors 🖍️"], ["custom", "My own cards"],
 ];
 const CARD_COUNTS = [4, 6, 8, 10, 12, 16, 20];
@@ -1618,7 +1663,7 @@ function setupForm() {
   </div></fieldset>
 
   <fieldset data-for="images"><legend>Pictures</legend><div class="row">
-    <label>Set <select name="set">${opt("random", "a different one each game", !Q.has("set") || SET_WANTED === "random")}${Object.keys(W.sets).map(k => opt(k, W.sets[k].items.slice(0, 3).map(v => v.split("|")[0]).join(" ") + " " + k, SET_WANTED === k)).join("")}</select></label>
+    <label>Set <select name="set">${opt("random", "a different one each game", SET_WANTED.length !== 1)}${Object.keys(W.sets).map(k => opt(k, W.sets[k].items.slice(0, 3).map(v => v.split("|")[0]).join(" ") + " " + k, SET_WANTED.length === 1 && SET_WANTED[0] === k)).join("")}</select></label>
   </div></fieldset>
 
   <fieldset data-for="custom"><legend>My own cards</legend>
@@ -1645,7 +1690,104 @@ function setupForm() {
     <button type="button" class="cancel">Cancel</button>
     <div class="link"></div>
   </div>
-</form>`;
+</form>
+${defaultsForm()}`;
+}
+
+/* ---------- Defaults (this device) ----------
+   What the child gets when picking a tile alone, e.g. numbers 10–20 once 1–8 are known. Saved on
+   this device (localStorage), used whenever the address doesn't say otherwise. */
+const DEFAULT_KEYS = ["from", "to", "letters", "case", "phonics", "shapes", "set", "emoji", "cards", "voice", "tts", "sound", "fullscreen", "rest"];
+function defaultsForm() {
+  const D = SAVED_DEFAULTS, has = Object.keys(D).length > 0;
+  const opt = (v, label, sel) => `<option value="${v}"${sel ? " selected" : ""}>${label}</option>`;
+  const checked = b => b ? " checked" : "";
+  const dShapes = String(D.shapes || "").split(",").filter(Boolean);
+  const dSets = String(D.set || "").split(",").filter(Boolean);
+  const dCards = parseInt(D.cards || "8", 10), dPh = D.phonics || "0";
+  return `<form class="defaults-form" autocomplete="off"><details${has ? " open" : ""}>
+  <summary>Defaults (this device)${has ? " · custom" : ""}</summary>
+  <p class="lead">What your child gets when choosing a game on their own. Change them as they learn,
+    e.g. numbers 10 to 20 once 1 to 8 are known. Saved on this device only; a game made above still wins.</p>
+
+  <fieldset><legend>Numbers</legend><div class="row">
+    <label>From <input type="number" name="from" value="${escapeHTML(D.from || "1")}"></label>
+    <label>to <input type="number" name="to" value="${escapeHTML(D.to || "")}" placeholder="auto"></label>
+  </div></fieldset>
+
+  <fieldset><legend>Letters</legend><div class="row">
+    <label>Which <input type="text" name="letters" value="${escapeHTML(D.letters || "")}" placeholder="abc"></label>
+    <label><input type="checkbox" name="lower"${checked(D.case === "lower")}> lowercase</label>
+    <label>Say <select name="phonics">${opt("0", "the letter name (bee)", dPh === "0")}${opt("1", "the letter sound (buh)", dPh === "1")}${opt("both", "both (bee … buh)", dPh === "both")}</select></label>
+  </div></fieldset>
+
+  <fieldset><legend>Shapes</legend><div class="row">
+    ${Object.keys(SHAPES).map(s => `<label><input type="checkbox" name="shape" value="${s}"${checked(dShapes.includes(s))}> ${s}</label>`).join("")}
+    <small>None ticked = all shapes.</small>
+  </div></fieldset>
+
+  <fieldset><legend>Pictures</legend><div class="row">
+    <label>Emoji <select name="emoji">${opt("openmoji", "OpenMoji (same on every device)", D.emoji !== "native")}${opt("native", "this device's own emoji", D.emoji === "native")}</select></label>
+  </div><div class="row" style="margin-top:8px">
+    ${Object.keys(W.sets).map(k => `<label><input type="checkbox" name="set" value="${k}"${checked(dSets.includes(k))}> ${W.sets[k].items.slice(0, 3).map(v => v.split("|")[0]).join(" ")} ${k}</label>`).join("")}
+    <small>Tick one set or several; each game uses one of them at random. None ticked = all sets.</small>
+  </div></fieldset>
+
+  <fieldset><legend>Cards and voice</legend><div class="row">
+    <label>Cards <select name="cards">${CARD_COUNTS.map(n => opt(n, `${n} (${n / 2} pairs)`, n === dCards)).join("")}</select></label>
+    <label>Voice <select name="voice">${["auto", "soft", "female", "male"].map(v => opt(v, v, v === (D.voice || "auto"))).join("")}</select></label>
+  </div><div class="row" style="margin-top:8px">
+    <label><input type="checkbox" name="tts"${checked(D.tts !== "0")}> say each card out loud</label>
+    <label><input type="checkbox" name="sound"${checked(D.sound !== "0")}> sounds</label>
+    <label><input type="checkbox" name="fullscreen"${checked(D.fullscreen !== "0")}> full screen</label>
+  </div><div class="row" style="margin-top:8px">
+    <label>Rest after <input type="number" name="rest" min="0" max="50" value="${escapeHTML(D.rest ?? "6")}"> games</label>
+  </div></fieldset>
+
+  <div class="actions">
+    <button type="submit" class="start">Save defaults</button>
+    <button type="button" class="reset">Reset to original</button>
+    <span class="saved" aria-live="polite"></span>
+  </div>
+  <p class="credits">Emoji graphics: <a href="https://openmoji.org" target="_blank" rel="noopener">OpenMoji</a>, the open-source emoji project, CC BY-SA 4.0.</p>
+</details></form>`;
+}
+/* Defaults form → only what differs from the built-in defaults. */
+function collectDefaults(form) {
+  const f = new FormData(form), d = {};
+  if (f.get("from") && f.get("from") !== "1") d.from = f.get("from");
+  if (f.get("to")) d.to = f.get("to");
+  if (String(f.get("letters") || "").trim()) d.letters = String(f.get("letters")).trim();
+  if (f.get("lower")) d.case = "lower";
+  if (f.get("phonics") !== "0") d.phonics = f.get("phonics");
+  if (f.getAll("shape").length) d.shapes = f.getAll("shape").join(",");
+  const sets = f.getAll("set");
+  if (sets.length && sets.length < Object.keys(W.sets).length) d.set = sets.join(",");   // all or none ticked = all sets
+  if (f.get("emoji") === "native") d.emoji = "native";
+  if (f.get("cards") !== "8") d.cards = f.get("cards");
+  if (f.get("voice") !== "auto") d.voice = f.get("voice");
+  if (!f.get("tts")) d.tts = "0";
+  if (!f.get("sound")) d.sound = "0";
+  if (!f.get("fullscreen")) d.fullscreen = "0";
+  const rest = String(Math.max(0, parseInt(f.get("rest"), 10) || 0));
+  if (rest !== "6") d.rest = rest;
+  return d;
+}
+function initDefaultsForm(box) {
+  const form = box.querySelector(".defaults-form"), msg = form.querySelector(".saved");
+  form.addEventListener("submit", e => {
+    e.preventDefault();
+    const d = collectDefaults(form);
+    try {
+      if (Object.keys(d).length) localStorage.setItem("memoriter-defaults", JSON.stringify(d));
+      else localStorage.removeItem("memoriter-defaults");
+      msg.textContent = "Saved ✓ (used when your child picks a game on this device)";
+    } catch { msg.textContent = "Couldn't save on this device (storage blocked)."; }
+  });
+  form.querySelector(".reset").addEventListener("click", () => {
+    try { localStorage.removeItem("memoriter-defaults"); } catch { /* storage blocked */ }
+    location.reload();                                   // redraw the form with the original values
+  });
 }
 
 /* Form → URL settings. Only what differs from the defaults is written, to keep links short. */
@@ -1677,7 +1819,7 @@ function setupParams(form) {
   if (!f.get("fullscreen")) p.set("fullscreen", "0");
   if (String(f.get("rest")) !== "6") p.set("rest", String(Math.max(0, parseInt(f.get("rest"), 10) || 0)));
   // Keep the look-and-feel settings a link may already have (patterns, colours, timings …).
-  for (const k of ["grow", "colors", "back", "backcolor", "mark", "bg", "bgcolor", "delay", "vanish", "rate", "pitch", "win"]) if (Q.has(k)) p.set(k, Q.get(k));
+  for (const k of ["emoji", "grow", "colors", "back", "backcolor", "mark", "bg", "bgcolor", "delay", "vanish", "rate", "pitch", "win"]) if (URLQ.has(k)) p.set(k, URLQ.get(k));
   return p;
 }
 
@@ -1686,7 +1828,7 @@ function initSetup() {
   const box = document.createElement("div"); box.id = "setup";
   box.innerHTML = setupForm();
   document.body.appendChild(box);
-  const form = box.querySelector("form"), link = box.querySelector(".link");
+  const form = box.querySelector("form"), link = box.querySelector(".link");   // the first form: create a game
   const urlFor = () => location.href.split(/[?#]/)[0] + "?" + setupParams(form).toString();
   const refresh = () => {
     const theme = new FormData(form).get("theme");
@@ -1701,6 +1843,7 @@ function initSetup() {
     const q = p.toString();
     location.href = location.pathname + (q ? "?" + q : "") + location.hash;
   });
+  initDefaultsForm(box);
   box.querySelector(".copy").addEventListener("click", async e => {
     try { await navigator.clipboard.writeText(urlFor()); e.target.textContent = "Copied ✓"; }
     catch { e.target.textContent = "Select the link below to copy"; }

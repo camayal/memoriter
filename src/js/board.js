@@ -5,7 +5,16 @@ const grid = document.getElementById("grid"), board = document.getElementById("b
 let cards = [], openCards = [], locked = false, matched = 0, total = 0;
 let mismatch = null;                                // { a, b, timer } while two different cards are showing
 
-const emojiHTML = e => escapeHTML(e);
+/* Emoji as HTML. Default: the OpenMoji drawing (https://openmoji.org, CC BY-SA 4.0), identical on
+   every device, from assets/openmoji/ (dist/openmoji/ once built). emoji=native uses the device's
+   own emoji. If a drawing is missing, the device emoji is shown instead. */
+const OPENMOJI_DIR = "assets/openmoji/";
+const openmojiCode = e => [...e].filter(c => c !== "\uFE0F").map(c => c.codePointAt(0).toString(16).toUpperCase()).join("-");
+const openmojiURL = e => OPENMOJI_DIR + openmojiCode(e) + ".svg";
+function emojiHTML(e) {
+  if (CFG.emoji === "native") return escapeHTML(e);
+  return `<img class="emoji" src="${openmojiURL(e)}" alt="${escapeHTML(e)}" draggable="false" onerror="this.replaceWith(this.alt)">`;
+}
 
 function faceHTML(item, color) {
   if (item.kind === "shape") return `<svg viewBox="0 0 100 100" aria-hidden="true">${SHAPES[item.show](color, darker(color, .85))}</svg>`;

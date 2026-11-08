@@ -3,7 +3,8 @@
    and falls back to the saved copy when offline. Icons and the font are served from the cache.
    build.py replaces __BUILD__ with a hash of the game, so each new build replaces the old cache. */
 const CACHE = "memoriter-__BUILD__";
-const SHELL = ["./", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png"];
+const OPENMOJI_FILES = [];   // filled by build.py: every OpenMoji drawing, so pictures work offline
+const SHELL = ["./", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", ...OPENMOJI_FILES];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));

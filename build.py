@@ -52,7 +52,8 @@ def main() -> int:
         if not path.exists(): return m.group(0)
         mime = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
         return '"data:%s;base64,%s"' % (mime, base64.b64encode(path.read_bytes()).decode())
-    html = re.sub(r'"(assets/[^"]+)"', embed, html)
+    html = re.sub(r'"(assets/[^"/]+\.[a-z0-9]+)"', embed, html)                    # single files only
+    html = html.replace('"assets/openmoji/"', '"openmoji/"')               # OpenMoji folder next to the page
 
     # 4. Drop the development-only comment.
     html = re.sub(r"<!-- Development page:.*?-->\n", "", html, flags=re.S)
@@ -66,7 +67,14 @@ def main() -> int:
     build_id = hashlib.sha1(html.encode("utf-8")).hexdigest()[:10]
     for f in APP_FILES:
         shutil.copyfile(ROOT / "app" / f, OUT.parent / f)
+    om_src, om_out = ROOT / "assets" / "openmoji", OUT.parent / "openmoji"
+    # Update in place (OneDrive can lock a folder, so it isn't deleted): copy new files, drop stale ones.
+    shutil.copytree(om_src, om_out, dirs_exist_ok=True)
+    for stale in set(p.name for p in om_out.iterdir()) - set(p.name for p in om_src.iterdir()):
+        (om_out / stale).unlink()
+    om_files = sorted(p.name for p in om_out.glob("*.svg"))
     sw = (ROOT / "app" / "sw.js").read_text(encoding="utf-8").replace("__BUILD__", build_id)
+    sw = sw.replace("const OPENMOJI_FILES = [];", "const OPENMOJI_FILES = " + repr(["./openmoji/" + f for f in om_files]).replace("'", '"') + ";")
     (OUT.parent / "sw.js").write_text(sw, encoding="utf-8")
     print(f"build: wrote {OUT.relative_to(ROOT)} ({len(html) // 1024} KB, {len(files)} scripts) + app files (build {build_id})")
     return 0

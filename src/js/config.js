@@ -2,7 +2,18 @@
 /* config.js: everything read from the URL, plus small shared helpers.
    Loaded first; every other file may use these names. */
 
-const Q = new URLSearchParams(location.search);
+/* Settings = the address (URLQ) on top of the defaults saved on this device in the setup screen
+   (localStorage "memoriter-defaults"). Everything reads Q, so a saved default such as from=10 applies
+   whenever the address doesn't say otherwise. Whether the game is fixed (THEME_GIVEN) is decided by
+   the address only: saved defaults never lock the game, they only shape what each tile plays. */
+const URLQ = new URLSearchParams(location.search);
+const SAVED_DEFAULTS = (() => { try { return JSON.parse(localStorage.getItem("memoriter-defaults") || "{}") || {}; } catch { return {}; } })();
+const Q = (() => {
+  const q = new URLSearchParams();
+  for (const [k, v] of Object.entries(SAVED_DEFAULTS)) if (v !== "" && v != null) q.set(k, String(v));
+  for (const k of new Set(URLQ.keys())) { q.delete(k); for (const v of URLQ.getAll(k)) q.append(k, v); }
+  return q;
+})();
 const num = (k, d) => { const v = parseFloat(Q.get(k)); return Number.isFinite(v) ? v : d; };
 const list = k => Q.getAll(k).flatMap(v => v.split(",")).map(s => s.trim()).filter(Boolean);
 
@@ -22,14 +33,14 @@ let LANG = LANG_TAG.slice(0, 2).toLowerCase() === "es" ? "es" : "en";
 const THEME_ALIASES = { number: "numbers", numeros: "numbers", "números": "numbers", letter: "letters", letras: "letters", shape: "shapes", formas: "shapes", figuras: "shapes", image: "images", imagenes: "images", "imágenes": "images", animals: "images", animales: "images", animal: "images", pictures: "images", dibujos: "images", color: "colors", colores: "colors" };
 /* True when the URL already chooses the game, so the Start screen shows one "Let's go!" button
    instead of the theme tiles. */
-const THEME_GIVEN = ["theme", "letters", "shapes", "items", "set"].some(k => Q.has(k));
+const THEME_GIVEN = ["theme", "letters", "shapes", "items", "set"].some(k => URLQ.has(k));
 function guessTheme() {
-  const t = (Q.get("theme") || "").trim().toLowerCase();
+  const t = (URLQ.get("theme") || "").trim().toLowerCase();
   if (t) return THEME_ALIASES[t] || t;
-  if (Q.has("letters")) return "letters";
-  if (Q.has("shapes")) return "shapes";
-  if (Q.has("items")) return "custom";
-  if (Q.has("set")) return "images";
+  if (URLQ.has("letters")) return "letters";
+  if (URLQ.has("shapes")) return "shapes";
+  if (URLQ.has("items")) return "custom";
+  if (URLQ.has("set")) return "images";
   return "numbers";
 }
 
@@ -47,6 +58,8 @@ const CFG = {
   // Letters: say the name ("bee"), the sound ("buh", phonics=1) or both ("B … buh", phonics=both).
   phonics: (Q.get("phonics") || "0").toLowerCase(),
   fullscreen: Q.get("fullscreen") !== "0",
+  // Picture emoji: OpenMoji drawings (same on every device, default) or the device's own emoji.
+  emoji: (Q.get("emoji") || "").toLowerCase() === "native" ? "native" : "openmoji",
   rest: Q.get("rest") === "0" ? 0 : Math.max(0, Math.round(num("rest", 6))),   // games before the rest screen (0 = never)
   calmMax: Q.get("grow") === "0" ? 0 : Math.max(0, Math.round(num("grow", 10))),   // extra calm rockets, max            // go full screen when a game tile is tapped
 };

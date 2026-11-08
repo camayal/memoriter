@@ -91,7 +91,8 @@ class Page:
         self.dom = dom
         cards = re.findall(r'<button class="card"[^>]*data-say="([^"]*)"[^>]*>(.*?)</button>', dom, re.S)
         self.say = [html.unescape(s) for s, _ in cards]
-        self.faces = [html.unescape(m.group(1)) if (m := re.search(r'class="txt"[^>]*>([^<]*)<', body)) else
+        self.faces = [html.unescape(m.group(1)) if (m := re.search(r'<img class="emoji"[^>]*alt="([^"]*)"', body)) else
+                      html.unescape(m.group(1)) if (m := re.search(r'class="txt"[^>]*>([^<]*)<', body)) else
                       ("svg" if "<svg" in body else "img" if "<img" in body else "?") for _, body in cards]
         bodies = "".join(body for _, body in cards)          # only the cards, not the Start screen tiles
         self.colors = set(re.findall(r'class="txt" style="[^"]*color:(#[0-9a-fA-F]{6})', bodies)) | \
@@ -143,9 +144,13 @@ CASES = [
     ("shapes=circle,triangle", "shapes list without theme", lambda p: p.n == 4 and subset(p.say, ["circle", "triangle"])),
     ("shapes=circle,triangle&lang=es", "Spanish shape names", lambda p: subset(p.say, ["círculo", "triángulo"])),
     ("theme=images", "pictures: one random set per game", lambda p: p.n == 8 and any(subset(p.faces, s) for s in SETS.values())),
+    ("set=fruits", "pictures use OpenMoji drawings by default", lambda p: p.dom.count('<img class="emoji"') >= 8 and "openmoji/" in p.dom),
+    ("set=fruits&emoji=native", "emoji=native uses the device's emoji", lambda p: '<img class="emoji"' not in p.dom.split('id="grid"')[1].split('id="start"')[0] and subset(p.faces, SETS["fruits"])),
     ("set=fruits", "set=fruits (theme guessed)", lambda p: p.n == 8 and subset(p.faces, SETS["fruits"])),
     ("theme=images&set=sea&lang=es", "Spanish sea animals + phrase", lambda p: subset(p.faces, SETS["sea"]) and "¡Vamos a buscar parejas de animales del mar!" in p.dom),
     ("set=bichos&lang=es", "bugs set by its Spanish name", lambda p: subset(p.faces, SETS["bugs"])),
+    ("set=farm,sea", "several sets: each game uses one of them", lambda p: subset(p.faces, SETS["farm"]) or subset(p.faces, SETS["sea"])),
+    ("setup&set=farm,sea", "Defaults shows set checkboxes", lambda p: p.dom.count('name="set" value=') >= 7),
     ("set=animals", "old set=animals still works (farm)", lambda p: subset(p.faces, SETS["farm"])),
     ("set=nature&cards=20", "nature set, 10 pairs", lambda p: p.n == 20 and subset(p.faces, SETS["nature"])),
     ("", "pictures tile shows mixed sets", lambda p: all(e in p.dom for e in ["🐶", "🍎", "🐠"])),
@@ -189,6 +194,7 @@ CASES = [
     ("theme=numbers&lang=es", "Spanish phrase on parent-made tile", lambda p: "¡Vamos a buscar parejas de números!" in p.dom),
     ("", "hidden grown-up door (credit line) on start screen", lambda p: 'class="credit-hold"' in p.dom.split('id="start"')[1].split('id="night"')[0]),
     ("setup&theme=letters", "setup has a Cancel button", lambda p: 'class="cancel"' in p.dom),
+    ("setup", "setup has the Defaults section", lambda p: 'class="defaults-form"' in p.dom and "Defaults (this device)" in p.dom),
     ("setup", "?setup opens the parents' form", lambda p: 'id="setup"' in p.dom and 'name="theme"' in p.dom),
     ("setup&theme=shapes&shapes=circle,star&cards=12&lang=es", "setup form is pre-filled from the link",
      lambda p: re.search(r'value="shapes" checked', p.dom) and re.search(r'value="circle" checked', p.dom)

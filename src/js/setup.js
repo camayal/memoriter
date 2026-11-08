@@ -6,7 +6,7 @@
    Opening ?setup on a link that already has settings pre-fills the form, so it can be edited. */
 
 const SETUP_THEMES = [
-  ["numbers", "Numbers 1 2 3"], ["letters", "Letters A B C"], ["images", "Pictures 🐶🍎🚗"],
+  ["numbers", "Numbers 1 2 3"], ["letters", "Letters A B C"], ["images", "Pictures 🐶🍎🐠"],
   ["shapes", "Shapes ▲"], ["colors", "Colors 🖍️"], ["custom", "My own cards"],
 ];
 const CARD_COUNTS = [4, 6, 8, 10, 12, 16, 20];
@@ -45,7 +45,7 @@ function setupForm() {
   </div></fieldset>
 
   <fieldset data-for="images"><legend>Pictures</legend><div class="row">
-    <label>Set <select name="set">${opt("random", "a different one each game", !Q.has("set") || SET_WANTED === "random")}${Object.keys(W.sets).map(k => opt(k, W.sets[k].items.slice(0, 3).map(v => v.split("|")[0]).join(" ") + " " + k, SET_WANTED === k)).join("")}</select></label>
+    <label>Set <select name="set">${opt("random", "a different one each game", SET_WANTED.length !== 1)}${Object.keys(W.sets).map(k => opt(k, W.sets[k].items.slice(0, 3).map(v => v.split("|")[0]).join(" ") + " " + k, SET_WANTED.length === 1 && SET_WANTED[0] === k)).join("")}</select></label>
   </div></fieldset>
 
   <fieldset data-for="custom"><legend>My own cards</legend>
@@ -72,7 +72,104 @@ function setupForm() {
     <button type="button" class="cancel">Cancel</button>
     <div class="link"></div>
   </div>
-</form>`;
+</form>
+${defaultsForm()}`;
+}
+
+/* ---------- Defaults (this device) ----------
+   What the child gets when picking a tile alone, e.g. numbers 10–20 once 1–8 are known. Saved on
+   this device (localStorage), used whenever the address doesn't say otherwise. */
+const DEFAULT_KEYS = ["from", "to", "letters", "case", "phonics", "shapes", "set", "emoji", "cards", "voice", "tts", "sound", "fullscreen", "rest"];
+function defaultsForm() {
+  const D = SAVED_DEFAULTS, has = Object.keys(D).length > 0;
+  const opt = (v, label, sel) => `<option value="${v}"${sel ? " selected" : ""}>${label}</option>`;
+  const checked = b => b ? " checked" : "";
+  const dShapes = String(D.shapes || "").split(",").filter(Boolean);
+  const dSets = String(D.set || "").split(",").filter(Boolean);
+  const dCards = parseInt(D.cards || "8", 10), dPh = D.phonics || "0";
+  return `<form class="defaults-form" autocomplete="off"><details${has ? " open" : ""}>
+  <summary>Defaults (this device)${has ? " · custom" : ""}</summary>
+  <p class="lead">What your child gets when choosing a game on their own. Change them as they learn,
+    e.g. numbers 10 to 20 once 1 to 8 are known. Saved on this device only; a game made above still wins.</p>
+
+  <fieldset><legend>Numbers</legend><div class="row">
+    <label>From <input type="number" name="from" value="${escapeHTML(D.from || "1")}"></label>
+    <label>to <input type="number" name="to" value="${escapeHTML(D.to || "")}" placeholder="auto"></label>
+  </div></fieldset>
+
+  <fieldset><legend>Letters</legend><div class="row">
+    <label>Which <input type="text" name="letters" value="${escapeHTML(D.letters || "")}" placeholder="abc"></label>
+    <label><input type="checkbox" name="lower"${checked(D.case === "lower")}> lowercase</label>
+    <label>Say <select name="phonics">${opt("0", "the letter name (bee)", dPh === "0")}${opt("1", "the letter sound (buh)", dPh === "1")}${opt("both", "both (bee … buh)", dPh === "both")}</select></label>
+  </div></fieldset>
+
+  <fieldset><legend>Shapes</legend><div class="row">
+    ${Object.keys(SHAPES).map(s => `<label><input type="checkbox" name="shape" value="${s}"${checked(dShapes.includes(s))}> ${s}</label>`).join("")}
+    <small>None ticked = all shapes.</small>
+  </div></fieldset>
+
+  <fieldset><legend>Pictures</legend><div class="row">
+    <label>Emoji <select name="emoji">${opt("openmoji", "OpenMoji (same on every device)", D.emoji !== "native")}${opt("native", "this device's own emoji", D.emoji === "native")}</select></label>
+  </div><div class="row" style="margin-top:8px">
+    ${Object.keys(W.sets).map(k => `<label><input type="checkbox" name="set" value="${k}"${checked(dSets.includes(k))}> ${W.sets[k].items.slice(0, 3).map(v => v.split("|")[0]).join(" ")} ${k}</label>`).join("")}
+    <small>Tick one set or several; each game uses one of them at random. None ticked = all sets.</small>
+  </div></fieldset>
+
+  <fieldset><legend>Cards and voice</legend><div class="row">
+    <label>Cards <select name="cards">${CARD_COUNTS.map(n => opt(n, `${n} (${n / 2} pairs)`, n === dCards)).join("")}</select></label>
+    <label>Voice <select name="voice">${["auto", "soft", "female", "male"].map(v => opt(v, v, v === (D.voice || "auto"))).join("")}</select></label>
+  </div><div class="row" style="margin-top:8px">
+    <label><input type="checkbox" name="tts"${checked(D.tts !== "0")}> say each card out loud</label>
+    <label><input type="checkbox" name="sound"${checked(D.sound !== "0")}> sounds</label>
+    <label><input type="checkbox" name="fullscreen"${checked(D.fullscreen !== "0")}> full screen</label>
+  </div><div class="row" style="margin-top:8px">
+    <label>Rest after <input type="number" name="rest" min="0" max="50" value="${escapeHTML(D.rest ?? "6")}"> games</label>
+  </div></fieldset>
+
+  <div class="actions">
+    <button type="submit" class="start">Save defaults</button>
+    <button type="button" class="reset">Reset to original</button>
+    <span class="saved" aria-live="polite"></span>
+  </div>
+  <p class="credits">Emoji graphics: <a href="https://openmoji.org" target="_blank" rel="noopener">OpenMoji</a>, the open-source emoji project, CC BY-SA 4.0.</p>
+</details></form>`;
+}
+/* Defaults form → only what differs from the built-in defaults. */
+function collectDefaults(form) {
+  const f = new FormData(form), d = {};
+  if (f.get("from") && f.get("from") !== "1") d.from = f.get("from");
+  if (f.get("to")) d.to = f.get("to");
+  if (String(f.get("letters") || "").trim()) d.letters = String(f.get("letters")).trim();
+  if (f.get("lower")) d.case = "lower";
+  if (f.get("phonics") !== "0") d.phonics = f.get("phonics");
+  if (f.getAll("shape").length) d.shapes = f.getAll("shape").join(",");
+  const sets = f.getAll("set");
+  if (sets.length && sets.length < Object.keys(W.sets).length) d.set = sets.join(",");   // all or none ticked = all sets
+  if (f.get("emoji") === "native") d.emoji = "native";
+  if (f.get("cards") !== "8") d.cards = f.get("cards");
+  if (f.get("voice") !== "auto") d.voice = f.get("voice");
+  if (!f.get("tts")) d.tts = "0";
+  if (!f.get("sound")) d.sound = "0";
+  if (!f.get("fullscreen")) d.fullscreen = "0";
+  const rest = String(Math.max(0, parseInt(f.get("rest"), 10) || 0));
+  if (rest !== "6") d.rest = rest;
+  return d;
+}
+function initDefaultsForm(box) {
+  const form = box.querySelector(".defaults-form"), msg = form.querySelector(".saved");
+  form.addEventListener("submit", e => {
+    e.preventDefault();
+    const d = collectDefaults(form);
+    try {
+      if (Object.keys(d).length) localStorage.setItem("memoriter-defaults", JSON.stringify(d));
+      else localStorage.removeItem("memoriter-defaults");
+      msg.textContent = "Saved ✓ (used when your child picks a game on this device)";
+    } catch { msg.textContent = "Couldn't save on this device (storage blocked)."; }
+  });
+  form.querySelector(".reset").addEventListener("click", () => {
+    try { localStorage.removeItem("memoriter-defaults"); } catch { /* storage blocked */ }
+    location.reload();                                   // redraw the form with the original values
+  });
 }
 
 /* Form → URL settings. Only what differs from the defaults is written, to keep links short. */
@@ -104,7 +201,7 @@ function setupParams(form) {
   if (!f.get("fullscreen")) p.set("fullscreen", "0");
   if (String(f.get("rest")) !== "6") p.set("rest", String(Math.max(0, parseInt(f.get("rest"), 10) || 0)));
   // Keep the look-and-feel settings a link may already have (patterns, colours, timings …).
-  for (const k of ["grow", "colors", "back", "backcolor", "mark", "bg", "bgcolor", "delay", "vanish", "rate", "pitch", "win"]) if (Q.has(k)) p.set(k, Q.get(k));
+  for (const k of ["emoji", "grow", "colors", "back", "backcolor", "mark", "bg", "bgcolor", "delay", "vanish", "rate", "pitch", "win"]) if (URLQ.has(k)) p.set(k, URLQ.get(k));
   return p;
 }
 
@@ -113,7 +210,7 @@ function initSetup() {
   const box = document.createElement("div"); box.id = "setup";
   box.innerHTML = setupForm();
   document.body.appendChild(box);
-  const form = box.querySelector("form"), link = box.querySelector(".link");
+  const form = box.querySelector("form"), link = box.querySelector(".link");   // the first form: create a game
   const urlFor = () => location.href.split(/[?#]/)[0] + "?" + setupParams(form).toString();
   const refresh = () => {
     const theme = new FormData(form).get("theme");
@@ -128,6 +225,7 @@ function initSetup() {
     const q = p.toString();
     location.href = location.pathname + (q ? "?" + q : "") + location.hash;
   });
+  initDefaultsForm(box);
   box.querySelector(".copy").addEventListener("click", async e => {
     try { await navigator.clipboard.writeText(urlFor()); e.target.textContent = "Copied ✓"; }
     catch { e.target.textContent = "Select the link below to copy"; }

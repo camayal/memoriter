@@ -20,10 +20,12 @@ const SET_ALIASES = {
   mar: "sea", ocean: "sea", oceano: "sea", "océano": "sea", "sea animals": "sea",
   frutas: "fruits", fruta: "fruits", fruit: "fruits", naturaleza: "nature",
 };
-const SET_WANTED = (() => { const v = (Q.get("set") || "random").toLowerCase(); return SET_ALIASES[v] || v; })();
+/* set= can name one set or several (set=farm,wild,sea); empty, "random" or "all" = every set. */
+const SET_WANTED = [...new Set(list("set").map(v => SET_ALIASES[v.toLowerCase()] || v.toLowerCase()))].filter(k => W.sets[k]);
 let chosenSet = null;
 function chooseSet() {
-  chosenSet = W.sets[SET_WANTED] ? SET_WANTED : freshPick("set", Object.keys(W.sets));
+  const pool = SET_WANTED.length ? SET_WANTED : Object.keys(W.sets);
+  chosenSet = pool.length === 1 ? pool[0] : freshPick("set", pool);   // never the same set twice in a row
   return chosenSet;
 }
 const currentSet = () => chosenSet || chooseSet();

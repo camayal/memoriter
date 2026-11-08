@@ -58,7 +58,12 @@ function prepareSymbol(item, color) {
   const g = cv.getContext("2d");
   const done = () => { const points = outlinePoints(g, N); if (points) finaleSymbol = { points, color }; };
   g.fillStyle = "#000"; g.textAlign = "center"; g.textBaseline = "middle";
-  if (item.kind === "text" || item.kind === "emoji") {
+  if (item.kind === "emoji" && CFG.emoji === "openmoji") {
+    const img = new Image();
+    img.onload = () => { g.drawImage(img, 0, 0, N, N); done(); };
+    img.onerror = () => { finaleSymbol = { smile: true }; };
+    img.src = openmojiURL(item.show);
+  } else if (item.kind === "text" || item.kind === "emoji") {
     let size = item.kind === "emoji" ? 128 : 140;
     const font = s => item.kind === "emoji" ? `${s}px sans-serif` : `700 ${s}px Andika, Nunito, system-ui, sans-serif`;
     g.font = font(size);
