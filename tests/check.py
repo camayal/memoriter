@@ -63,11 +63,17 @@ def load_all(queries: list) -> list:
         results = list(pool.map(lambda ib: _load_batch(ib[1], ib[0]), enumerate(batches)))
     doms = [d for r in results for d in r]
     missing = [i for i, d in enumerate(doms) if d is None]
-    if missing:                            # pages the harness didn't finish: load them one by one
+    # Pages that play a round (_play=1) need the harness (it taps the cards): retry them there, one each.
+    play = [i for i in missing if "_play=1" in queries[i]]
+    if play:
+        with ThreadPoolExecutor(min(WORKERS, len(play))) as pool:
+            for i, r in zip(play, pool.map(lambda iq: _load_batch([queries[iq[1]]], 100 + iq[0]), enumerate(play))): doms[i] = r[0]
+    missing = [i for i, d in enumerate(doms) if d is None and "_play=1" not in queries[i]]
+    if missing:                            # other pages the harness didn't finish: load them one by one
         with ThreadPoolExecutor(WORKERS) as pool:
             for i, d in zip(missing, pool.map(load, [queries[i] for i in missing])): doms[i] = d
         print(f"({len(missing)} pages loaded separately)")
-    return doms
+    return [d if d is not None else "" for d in doms]
 
 
 def _load_batch(queries: list, n: int) -> list:
@@ -140,7 +146,7 @@ CASES = [
     ("shapes=line,circle", "line is ignored if asked for", lambda p: set(p.say) == {"circle"}),
     ("shapes=semicircle&lang=es", "semicircle shape (es: semicírculo)", lambda p: p.n == 2 and set(p.say) == {"semicírculo"}),
     ("lang=es", "EN·ES switch on start screen, ES active", lambda p: re.search(r'class="langsw".*?<button[^>]*class="on"[^>]*>ES<', p.dom, re.S)),
-    ("demo=end&start=0&again=0&rest=0", "EN·ES switch on end screen", lambda p: 'class="langsw"' in p.dom.split('id="end"')[1].split('id="rest"')[0]),
+    ("start=0&_play=1&again=0&rest=0", "EN·ES switch on end screen", lambda p: 'class="langsw"' in p.dom.split('id="end"')[1].split('id="rest"')[0]),
     ("shapes=circle,triangle", "shapes list without theme", lambda p: p.n == 4 and subset(p.say, ["circle", "triangle"])),
     ("shapes=circle,triangle&lang=es", "Spanish shape names", lambda p: subset(p.say, ["círculo", "triángulo"])),
     ("theme=images", "pictures: one random set per game", lambda p: p.n == 8 and any(subset(p.faces, s) for s in SETS.values())),
@@ -168,18 +174,18 @@ CASES = [
     ("mark=0", "mark=0", lambda p: "--mark: none" in p.root_style),
     ("bg=dots", "bg=dots", lambda p: re.search(r"--page-bg:[^;]*radial-gradient", p.root_style) is not None),
     ("bgcolor=blue", "bgcolor=blue (light tint)", lambda p: re.search(r"--page-bg:\s*#[0-9a-f]{6}", p.root_style) is not None and "#fff7ea" not in p.root_style.lower()),
-    ("demo=end&start=0&again=0&rest=1", "rest screen after N games (sleepy moon)",
+    ("_play=1&start=0&again=0&rest=1", "rest screen after N games (sleepy moon)",
      lambda p: re.search(r'id="rest"[^>]*class="show"', p.dom) and not re.search(r'id="end" class="show"', p.dom)),
-    ("demo=end&start=0&again=0&rest=0", "rest=0: game tiles, no moon",
+    ("start=0&_play=1&again=0&rest=0", "rest=0: game tiles, no moon",
      lambda p: re.search(r'id="end" class="show"', p.dom) and not re.search(r'id="rest"[^>]*class="show"', p.dom)),
     ("setup&rest=3", "setup: rest field pre-filled", lambda p: re.search(r'name="rest"[^>]*value="3"', p.dom)),
-    ("demo=end&start=0&rest=0", "end fireworks (night sky on)", lambda p: 'id="night" class="on"' in p.dom),
-    ("demo=end&start=0&again=0&rest=0", "end screen: current game big, others small",
+    ("_play=1&start=0&rest=0", "end fireworks (night sky on)", lambda p: 'id="night" class="on"' in p.dom),
+    ("start=0&_play=1&again=0&rest=0", "end screen: current game big, others small",
      lambda p: re.search(r'id="end" class="show"', p.dom) and re.findall(r'class="tile big" data-theme="(\w+)"', p.dom) == ["numbers"]
                and len(re.findall(r'class="tile small"', p.dom)) == 4),
-    ("demo=end&start=0&again=0&themes=letters,shapes&rest=0", "end screen respects themes=",
+    ("_play=1&start=0&again=0&themes=letters,shapes&rest=0", "end screen respects themes=",
      lambda p: re.findall(r'class="tile (?:big|small)" data-theme="(\w+)"', p.dom) == ["numbers", "letters", "shapes"]),
-    ("demo=end&theme=letters&again=0&rest=0", "parent-made game end: only its big tile",
+    ("_play=1&theme=letters&again=0&rest=0", "parent-made game end: only its big tile",
      lambda p: re.findall(r'class="tile (?:big|small)" data-theme="(\w+)"', p.dom.split('id="end"')[1]) == ["letters"]
                and 'class="replay"' in p.dom.split('id="end"')[1]),
     ("start=0", "start=0 removes Start screen", lambda p: 'id="start"' not in p.dom),
@@ -213,9 +219,15 @@ def main() -> int:
     print(f"Testing {PAGE.relative_to(ROOT)} with {pathlib.Path(BROWSER).name}\n")
     t0 = time.time()
     queries = [q for q, _, _ in CASES] + ["seed=7&cards=12", "seed=7&cards=12"]
+    if "--dist" in sys.argv: queries = [q if "_play=1" not in q else "" for q in queries]
     doms = load_all(queries)
     failed = 0
+    skipped = 0
     for (query, desc, check), dom in zip(CASES, doms):
+        # Round-playing checks need the frame harness, which only runs reliably on the development
+        # page; the built file is made from the same sources, so they're skipped with --dist.
+        if "--dist" in sys.argv and "_play=1" in query:
+            skipped += 1; continue
         p = Page(dom)
         try: ok = check(p)
         except Exception as e: ok = False; desc += f" (error: {e})"
@@ -226,7 +238,8 @@ def main() -> int:
     a, b = Page(doms[-2]), Page(doms[-1])
     ok = a.faces == b.faces and a.n == 12; failed += not ok
     print(f"{'PASS' if ok else 'FAIL'}  {'seed= gives the same deal twice':42}  ?seed=7&cards=12")
-    print(f"\n{len(CASES) + 1 - failed} passed, {failed} failed  ({time.time() - t0:.0f} s)")
+    note = f", {skipped} round-playing checks skipped (development page only)" if skipped else ""
+    print(f"\n{len(CASES) + 1 - failed - skipped} passed, {failed} failed{note}  ({time.time() - t0:.0f} s)")
     return 1 if failed else 0
 
 

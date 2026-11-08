@@ -110,7 +110,7 @@ html,body{margin:0;height:100%;background:var(--page-bg);overflow:hidden;
 /* Parents' setup screen (?setup): plain grown-up form. */
 #setup{position:fixed;inset:0;overflow:auto;background:var(--bg);z-index:10;
   font:16px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink)}
-#setup form{max-width:640px;margin:0 auto;padding:24px 16px 48px}
+#setup .setup-wrap{max-width:640px;margin:0 auto;padding:24px 16px 48px}
 #setup h1{font-size:24px;margin:0 0 4px}
 #setup p.lead{margin:0 0 20px;color:#5b6573}
 #setup fieldset{border:0;background:#fff;border-radius:14px;padding:14px 16px;margin:0 0 14px;
@@ -129,19 +129,19 @@ html,body{margin:0;height:100%;background:var(--page-bg);overflow:hidden;
 #setup button{font:700 18px/1 system-ui,sans-serif;border:0;border-radius:12px;padding:14px 22px;cursor:pointer}
 #setup .start{background:#3DAA5C;color:#fff;box-shadow:0 3px 0 #2C7E44}
 #setup .copy{background:#E6ECF7;color:#23529F}
-#setup .cancel{background:#F1EEE8;color:#5b6573}
+#setup .cancel{background:#E6ECF7;color:#23529F}
 #setup .link{width:100%;font:13px/1.4 ui-monospace,Consolas,monospace;word-break:break-all;color:#5b6573}
 #setup [hidden]{display:none!important}
 
 /* Credit: very subtle, drawn by CSS (not real text, so it can't be selected or copied) and only on
    the start, end and setup screens; never while playing. */
-#start::after,#end::after,#setup .defaults-form::after{content:"By: C. A. Maya-Lastra - 2026";
+#start::after,#end::after,#setup .setup-wrap::after{content:"By: C. A. Maya-Lastra - 2026";
   font:500 12px/1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.06em;
   pointer-events:none;user-select:none;-webkit-user-select:none;white-space:nowrap}
 #start::after,#end::after{position:absolute;left:50%;bottom:max(10px,env(safe-area-inset-bottom));translate:-50% 0}
 #start::after{color:rgba(47,58,74,.28)}
 #end::after{color:rgba(255,255,255,.32)}
-#setup .defaults-form::after{display:block;text-align:center;margin-top:28px;color:rgba(47,58,74,.3)}
+#setup .setup-wrap::after{display:block;text-align:center;margin-top:28px;color:rgba(47,58,74,.3)}
 #start,#end{padding-bottom:26px}
 
 /* Grown-up long press on a tile: it sinks slowly while held, then shows the replay badge (locked). */
@@ -155,14 +155,21 @@ html,body{margin:0;height:100%;background:var(--page-bg);overflow:hidden;
 #rest .tw{animation:twinkle 4s ease-in-out infinite;opacity:.3}
 #rest .t2{animation-delay:1.3s}#rest .t3{animation-delay:2.6s}
 @keyframes twinkle{50%{opacity:.9}}
-#rest .moon-hold{position:relative;width:min(60vmin,380px);aspect-ratio:1;cursor:default;touch-action:none}
+#rest .moon-hold{position:relative;width:min(60vmin,380px);aspect-ratio:1;cursor:default;pointer-events:none}
 #rest .moon-hold svg{width:100%;height:100%;overflow:visible}
 #rest .moon{animation:floaty 6s ease-in-out infinite;transform-origin:150px 150px}
 @keyframes floaty{50%{transform:translateY(6px) rotate(-2deg)}}
 #rest .z{opacity:0;animation:zz 4.5s ease-in-out infinite}
 #rest .z2{animation-delay:1.5s}#rest .z3{animation-delay:3s}
 @keyframes zz{0%{opacity:0;transform:translate(0,8px)}30%{opacity:.85}100%{opacity:0;transform:translate(10px,-14px)}}
-#rest .moon-hold.holding{transition:scale 4s linear;scale:.9}
+/* Hidden grown-up unlock: one star like the others, near (not at) the top-right corner. The touch
+   area is a bit bigger than the dot; holding it 4 s brightens the star, then unlocks. */
+#rest .unlock-star{position:absolute;top:13%;right:13%;width:44px;height:44px;translate:50% -50%;
+  display:flex;align-items:center;justify-content:center;touch-action:none;z-index:2}
+#rest .unlock-star span{width:4px;height:4px;border-radius:50%;background:#fff;opacity:.35;
+  animation:twinkle 4s ease-in-out infinite;animation-delay:.7s}
+#rest .unlock-star.holding span{animation:none;opacity:1;scale:2.2;box-shadow:0 0 8px #fff;
+  transition:opacity 4s linear,scale 4s linear,box-shadow 4s linear}
 #rest::after{content:"By: C. A. Maya-Lastra - 2026";position:absolute;left:50%;bottom:max(10px,env(safe-area-inset-bottom));translate:-50% 0;
   font:500 12px/1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.06em;color:rgba(255,255,255,.25);pointer-events:none;user-select:none}
 @media (prefers-reduced-motion:reduce){#rest .moon,#rest .z,#rest .tw{animation:none}#rest .z{opacity:.7}}
@@ -184,13 +191,13 @@ html,body{margin:0;height:100%;background:var(--page-bg);overflow:hidden;
 #end.credit-holding::after{color:rgba(255,255,255,.8);transition:color 4s linear}
 
 /* Setup: collapsible "Defaults (this device)" section below "Create a game". */
-#setup .defaults-form{max-width:640px;margin:0 auto;padding:0 16px 40px}
-#setup .defaults-form details{background:#F6F3EC;border-radius:14px;padding:12px 14px}
-#setup .defaults-form summary{font-weight:700;font-size:18px;cursor:pointer;padding:6px 2px}
-#setup .defaults-form .lead{margin:8px 0 14px}
+#setup h2{font-size:20px;margin:18px 0 4px}
+#setup .create-form{margin-top:26px}
+#setup .create-form details{background:#F6F3EC;border-radius:14px;padding:12px 14px}
+#setup .create-form summary{font-weight:700;font-size:18px;cursor:pointer;padding:6px 2px}
+#setup .create-form .lead{margin:8px 0 14px}
 #setup .reset{background:#F1EEE8;color:#5b6573}
 #setup .saved{color:#2C7E44;font-weight:600}
-#setup > form:first-child{padding-bottom:16px}
 
 /* OpenMoji drawings sit in the text like an emoji glyph (their artwork has a margin, so a bit larger). */
 img.emoji,.front img.emoji{width:1.2em;height:1.2em;object-fit:contain;vertical-align:middle;pointer-events:none}
@@ -225,6 +232,7 @@ img.emoji,.front img.emoji{width:1.2em;height:1.2em;object-fit:contain;vertical-
       <circle class="tw t2" cx="310" cy="240" r="1.8"/><circle class="tw" cx="200" cy="30" r="1.4"/><circle class="tw t3" cx="20" cy="160" r="1.5"/>
       <circle class="tw t3" cx="380" cy="170" r="1.6"/><circle class="tw t2" cx="150" cy="275" r="1.3"/></g>
   </svg>
+  <div class="unlock-star" aria-hidden="true"><span></span></div>
   <div class="moon-hold">
     <svg viewBox="0 0 300 300" aria-hidden="true">
       <defs><mask id="crescent"><rect width="300" height="300" fill="#fff"/><circle cx="200" cy="105" r="90" fill="#000"/></mask></defs>
@@ -341,7 +349,7 @@ const TEXT = {
     // Picture sets (emoji). Only simple, everyday things a toddler knows. "emoji|spoken word".
     sets: {
       farm:     { name: "farm animals",  items: ["🐄|cow", "🐖|pig", "🐎|horse", "🐑|sheep", "🐐|goat", "🐔|chicken", "🐤|chick", "🦆|duck", "🐇|rabbit", "🐕|dog", "🐈|cat", "🦃|turkey", "🐁|mouse"] },
-      wild:     { name: "wild animals",  items: ["🦁|lion", "🐯|tiger", "🐘|elephant", "🦒|giraffe", "🦓|zebra", "🦛|hippo", "🦏|rhino", "🐵|monkey", "🦍|gorilla", "🐊|crocodile", "🐻|bear", "🐼|panda", "🦎|lizard", "🐍|snake", "🐢|turtle", "🦨|skunk"] },
+      wild:     { name: "wild animals",  items: ["🦁|lion", "🐅|tiger", "🐘|elephant", "🦒|giraffe", "🦓|zebra", "🦛|hippo", "🦏|rhino", "🐒|monkey", "🦍|gorilla", "🐊|crocodile", "🐻|bear", "🐼|panda", "🦎|lizard", "🐍|snake", "🐢|turtle", "🦨|skunk"] },
       bugs:     { name: "bugs",          items: ["🐝|bee", "🐞|ladybug", "🦋|butterfly", "🐛|caterpillar", "🐜|ant", "🐌|snail", "🕷️|spider", "🦗|cricket", "🪲|beetle", "🪰|fly", "🦟|mosquito", "🪱|worm"] },
       birds:    { name: "birds",         items: ["🐧|penguin", "🦉|owl", "🦜|parrot", "🦩|flamingo", "🦅|eagle", "🦢|swan", "🕊️|dove", "🦚|peacock", "🐓|rooster"] },
       sea:      { name: "sea animals",   items: ["🐟|fish", "🐡|pufferfish", "🐙|octopus", "🦀|crab", "🐬|dolphin", "🐳|whale", "🦈|shark", "🦑|squid", "🦞|lobster", "🦭|seal"] },
@@ -370,7 +378,7 @@ const TEXT = {
     shapes: { circle: "círculo", oval: "óvalo", square: "cuadrado", rectangle: "rectángulo", triangle: "triángulo", diamond: "rombo", pentagon: "pentágono", hexagon: "hexágono", heptagon: "heptágono", octagon: "octágono", star: "estrella", heart: "corazón", semicircle: "semicírculo" },
     sets: {
       farm:     { name: "animales de la granja", items: ["🐄|vaca", "🐖|cerdo", "🐎|caballo", "🐑|oveja", "🐐|cabra", "🐔|gallina", "🐤|pollito", "🦆|pato", "🐇|conejo", "🐕|perro", "🐈|gato", "🦃|pavo", "🐁|ratón"] },
-      wild:     { name: "animales salvajes",     items: ["🦁|león", "🐯|tigre", "🐘|elefante", "🦒|jirafa", "🦓|cebra", "🦛|hipopótamo", "🦏|rinoceronte", "🐵|mono", "🦍|gorila", "🐊|cocodrilo", "🐻|oso", "🐼|panda", "🦎|lagartija", "🐍|culebra", "🐢|tortuga", "🦨|zorrillo"] },
+      wild:     { name: "animales salvajes",     items: ["🦁|león", "🐅|tigre", "🐘|elefante", "🦒|jirafa", "🦓|cebra", "🦛|hipopótamo", "🦏|rinoceronte", "🐒|mono", "🦍|gorila", "🐊|cocodrilo", "🐻|oso", "🐼|panda", "🦎|lagartija", "🐍|culebra", "🐢|tortuga", "🦨|zorrillo"] },
       bugs:     { name: "bichos",                items: ["🐝|abeja", "🐞|mariquita", "🦋|mariposa", "🐛|oruga", "🐜|hormiga", "🐌|caracol", "🕷️|araña", "🦗|grillo", "🪲|escarabajo", "🪰|mosca", "🦟|zancudo", "🪱|gusano"] },
       birds:    { name: "pájaros",               items: ["🐧|pingüino", "🦉|búho", "🦜|loro", "🦩|flamenco", "🦅|águila", "🦢|cisne", "🕊️|paloma", "🦚|pavo real", "🐓|gallo"] },
       sea:      { name: "animales del mar",      items: ["🐟|pez", "🐡|pez globo", "🐙|pulpo", "🦀|cangrejo", "🐬|delfín", "🐳|ballena", "🦈|tiburón", "🦑|calamar", "🦞|langosta", "🦭|foca"] },
@@ -1255,8 +1263,7 @@ fullscreen 0 = don't go full screen when a game tile is tapped (default: full sc
 seed     number = same shuffle every time
 start    0 = skip the Start screen (first card may be silent: browsers need a tap to unlock sound)
 win      phrase spoken at the end (default "Good job!" / "¡Muy bien!")
-demo     end = skip the game and show the end fireworks (to try them, or win=)
-rest     games before the sleepy-moon rest screen (default 6; 0 = never). A grown-up holds the moon ~4 s to unlock.
+rest     games before the sleepy-moon rest screen (default 6; 0 = never). A grown-up holds the small star at the top right ~4 s to unlock.
 grow     longer fireworks after each finished game: max extra slow rockets (default 10, ~9 s more); 0 = always short
 (grown-ups: hold a game tile ~1 s to lock that game; only it is offered at the end, and the lock survives a reload)
 again    ms after the end before the game tiles show (default: once the last firework has completely faded)
@@ -1451,7 +1458,8 @@ function fitTiles() {
    the game always begins with a tap on a tile. */
 /* ---------- Rest screen ----------
    After CFG.rest finished games (default 6) a sleepy moon replaces the game tiles: "Time for a
-   break". Nothing to tap for the child; a grown-up holds the moon ~4 s to unlock (fresh count).
+   break". Nothing to tap for the child; a grown-up holds one small star near the top-right corner
+   ~4 s to unlock (fresh count). It looks like the other stars and brightens slowly while held.
    It also comes back after a reload, so reloading doesn't skip the rest. rest=0 turns it off. */
 const restEl = document.getElementById("rest");
 function showRest() {
@@ -1463,7 +1471,7 @@ function showRest() {
 }
 function hideEndTilesOnly() { endEl.classList.remove("show"); }
 function initRest() {
-  const moon = restEl.querySelector(".moon-hold");
+  const moon = restEl.querySelector(".unlock-star");   // the hidden grown-up star (not the moon)
   let timer = null;
   const cancel = () => { clearTimeout(timer); timer = null; moon.classList.remove("holding"); };
   moon.addEventListener("pointerdown", e => {
@@ -1617,11 +1625,12 @@ function initVoiceList() {
 }
 
 /* ===== src/js/setup.js ===== */
-/* setup.js: the parents' setup screen, opened with ?setup (e.g. index.html?setup).
-   A plain form to make one specific game. "Start game" turns the choices into URL settings and
-   reloads the page with them; the child then sees one big tile with a replay badge for that game.
-   The link can be copied or bookmarked to come back to the same game later.
-   Opening ?setup on a link that already has settings pre-fills the form, so it can be edited. */
+/* setup.js: the parents' setup screen, opened with ?setup or by holding the credit line 4 s.
+   - Defaults (this device), always visible at the top: what the child gets when picking a tile alone.
+     Saved on the device; "Back to the game" leaves without changing anything.
+   - Create a game (link), collapsible below: one specific game. "Start game" turns the choices into
+     URL settings and reloads with them (the child then sees one big tile with a replay badge); the
+     link can be copied or bookmarked. Open by default when the current link is already such a game. */
 
 const SETUP_THEMES = [
   ["numbers", "Numbers 1 2 3"], ["letters", "Letters A B C"], ["images", "Pictures 🐶🍎🐠"],
@@ -1636,9 +1645,12 @@ function setupForm() {
   const opt = (v, label, sel) => `<option value="${v}"${sel ? " selected" : ""}>${label}</option>`;
   const checked = b => b ? " checked" : "";
   const shapesWanted = list("shapes").map(s => s.toLowerCase());
-  return `<form autocomplete="off">
-  <h1>Memoriter: set up a game</h1>
-  <p class="lead">Choose what your child will play, then press <b>Start game</b>. Bookmark or copy the link to use the same game again.</p>
+  return `<div class="setup-wrap">
+  <h1>Memoriter: settings</h1>
+${defaultsForm()}
+  <form class="create-form" autocomplete="off"><details${THEME_GIVEN ? " open" : ""}>
+  <summary>Create a game (link)</summary>
+  <p class="lead">Make one specific game, then press <b>Start game</b>. Bookmark or copy the link to use the same game again.</p>
 
   <fieldset><legend>Game</legend><div class="row choices">
     ${SETUP_THEMES.map(([v, label]) => `<label><input type="radio" name="theme" value="${v}"${checked(v === cur)}><span>${label}</span></label>`).join("")}
@@ -1681,17 +1693,17 @@ function setupForm() {
     <label><input type="checkbox" name="fullscreen"${checked(CFG.fullscreen)}> full screen when the game starts</label>
   </div><div class="row" style="margin-top:8px">
     <label>Rest after <input type="number" name="rest" min="0" max="50" value="${CFG.rest}"> games</label>
-    <small>A sleepy moon says it's time for a break; hold the moon 4 s to unlock. 0 = never.</small>
+    <small>A sleepy moon says it's time for a break; a grown-up holds the small star at the top right 4 s to unlock. 0 = never.</small>
   </div></fieldset>
 
   <div class="actions">
     <button type="submit" class="start">Start game ▶</button>
     <button type="button" class="copy">Copy link</button>
-    <button type="button" class="cancel">Cancel</button>
     <div class="link"></div>
   </div>
-</form>
-${defaultsForm()}`;
+  </details></form>
+  <p class="credits">Emoji graphics: <a href="https://openmoji.org" target="_blank" rel="noopener">OpenMoji</a>, the open-source emoji project, CC BY-SA 4.0.</p>
+</div>`;
 }
 
 /* ---------- Defaults (this device) ----------
@@ -1705,10 +1717,10 @@ function defaultsForm() {
   const dShapes = String(D.shapes || "").split(",").filter(Boolean);
   const dSets = String(D.set || "").split(",").filter(Boolean);
   const dCards = parseInt(D.cards || "8", 10), dPh = D.phonics || "0";
-  return `<form class="defaults-form" autocomplete="off"><details${has ? " open" : ""}>
-  <summary>Defaults (this device)${has ? " · custom" : ""}</summary>
+  return `<form class="defaults-form" autocomplete="off">
+  <h2>Defaults (this device)${has ? " · custom" : ""}</h2>
   <p class="lead">What your child gets when choosing a game on their own. Change them as they learn,
-    e.g. numbers 10 to 20 once 1 to 8 are known. Saved on this device only; a game made above still wins.</p>
+    e.g. numbers 10 to 20 once 1 to 8 are known. Saved on this device only; a game made below (a link) still wins.</p>
 
   <fieldset><legend>Numbers</legend><div class="row">
     <label>From <input type="number" name="from" value="${escapeHTML(D.from || "1")}"></label>
@@ -1746,11 +1758,11 @@ function defaultsForm() {
 
   <div class="actions">
     <button type="submit" class="start">Save defaults</button>
+    <button type="button" class="cancel">Back to the game</button>
     <button type="button" class="reset">Reset to original</button>
     <span class="saved" aria-live="polite"></span>
   </div>
-  <p class="credits">Emoji graphics: <a href="https://openmoji.org" target="_blank" rel="noopener">OpenMoji</a>, the open-source emoji project, CC BY-SA 4.0.</p>
-</details></form>`;
+</form>`;
 }
 /* Defaults form → only what differs from the built-in defaults. */
 function collectDefaults(form) {
@@ -1828,7 +1840,7 @@ function initSetup() {
   const box = document.createElement("div"); box.id = "setup";
   box.innerHTML = setupForm();
   document.body.appendChild(box);
-  const form = box.querySelector("form"), link = box.querySelector(".link");   // the first form: create a game
+  const form = box.querySelector(".create-form"), link = box.querySelector(".link");
   const urlFor = () => location.href.split(/[?#]/)[0] + "?" + setupParams(form).toString();
   const refresh = () => {
     const theme = new FormData(form).get("theme");
@@ -1868,9 +1880,6 @@ initHelp();
 initVoiceList();
 newGame();
 initSetup();
-
-/* demo=end: skip the game and show the end celebration (to try it out, or win=). */
-if (Q.get("demo") === "end") { cards.forEach(c => { c.done = true; c.el.classList.add("gone"); }); setTimeout(finale, 300); }
 })();
 </script>
 </body>

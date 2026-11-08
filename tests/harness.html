@@ -14,7 +14,18 @@ let i = 0;
 const save = () => { document.getElementById("out").textContent = btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(results)).reduce((a, b) => (a.push(b), a), []))); };
 function next() {
   if (i >= queries.length) return;
-  f.onload = () => setTimeout(() => {
+  f.onload = () => setTimeout(async () => {
+    // _play=1: finish the game for real by tapping each matching pair (as a child would), then
+    // wait for the end of the round, so end-screen settings can be checked.
+    if (/[?&]_play=1/.test(f.src)) {
+      try {
+        const d = f.contentDocument, groups = {};
+        for (const c of d.querySelectorAll(".card")) (groups[c.dataset.say] ||= []).push(c);
+        const tap = el => el.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, cancelable: true, pointerType: "touch", isPrimary: true, button: 0 }));
+        for (const [a, b] of Object.values(groups)) { tap(a); tap(b); await new Promise(r => setTimeout(r, 60)); }
+        await new Promise(r => setTimeout(r, 2600));
+      } catch (e) { /* page not ready: captured as it is */ }
+    }
     let dom = "";
     try { dom = f.contentDocument.documentElement.outerHTML; } catch (e) { dom = "ERROR " + e; }
     results.push(dom); i++; save(); next();

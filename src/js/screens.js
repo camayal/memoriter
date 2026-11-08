@@ -42,8 +42,7 @@ fullscreen 0 = don't go full screen when a game tile is tapped (default: full sc
 seed     number = same shuffle every time
 start    0 = skip the Start screen (first card may be silent: browsers need a tap to unlock sound)
 win      phrase spoken at the end (default "Good job!" / "¡Muy bien!")
-demo     end = skip the game and show the end fireworks (to try them, or win=)
-rest     games before the sleepy-moon rest screen (default 6; 0 = never). A grown-up holds the moon ~4 s to unlock.
+rest     games before the sleepy-moon rest screen (default 6; 0 = never). A grown-up holds the small star at the top right ~4 s to unlock.
 grow     longer fireworks after each finished game: max extra slow rockets (default 10, ~9 s more); 0 = always short
 (grown-ups: hold a game tile ~1 s to lock that game; only it is offered at the end, and the lock survives a reload)
 again    ms after the end before the game tiles show (default: once the last firework has completely faded)
@@ -238,7 +237,8 @@ function fitTiles() {
    the game always begins with a tap on a tile. */
 /* ---------- Rest screen ----------
    After CFG.rest finished games (default 6) a sleepy moon replaces the game tiles: "Time for a
-   break". Nothing to tap for the child; a grown-up holds the moon ~4 s to unlock (fresh count).
+   break". Nothing to tap for the child; a grown-up holds one small star near the top-right corner
+   ~4 s to unlock (fresh count). It looks like the other stars and brightens slowly while held.
    It also comes back after a reload, so reloading doesn't skip the rest. rest=0 turns it off. */
 const restEl = document.getElementById("rest");
 function showRest() {
@@ -250,7 +250,7 @@ function showRest() {
 }
 function hideEndTilesOnly() { endEl.classList.remove("show"); }
 function initRest() {
-  const moon = restEl.querySelector(".moon-hold");
+  const moon = restEl.querySelector(".unlock-star");   // the hidden grown-up star (not the moon)
   let timer = null;
   const cancel = () => { clearTimeout(timer); timer = null; moon.classList.remove("holding"); };
   moon.addEventListener("pointerdown", e => {

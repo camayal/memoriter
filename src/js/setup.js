@@ -1,9 +1,10 @@
 "use strict";
-/* setup.js: the parents' setup screen, opened with ?setup (e.g. index.html?setup).
-   A plain form to make one specific game. "Start game" turns the choices into URL settings and
-   reloads the page with them; the child then sees one big tile with a replay badge for that game.
-   The link can be copied or bookmarked to come back to the same game later.
-   Opening ?setup on a link that already has settings pre-fills the form, so it can be edited. */
+/* setup.js: the parents' setup screen, opened with ?setup or by holding the credit line 4 s.
+   - Defaults (this device), always visible at the top: what the child gets when picking a tile alone.
+     Saved on the device; "Back to the game" leaves without changing anything.
+   - Create a game (link), collapsible below: one specific game. "Start game" turns the choices into
+     URL settings and reloads with them (the child then sees one big tile with a replay badge); the
+     link can be copied or bookmarked. Open by default when the current link is already such a game. */
 
 const SETUP_THEMES = [
   ["numbers", "Numbers 1 2 3"], ["letters", "Letters A B C"], ["images", "Pictures 🐶🍎🐠"],
@@ -18,9 +19,12 @@ function setupForm() {
   const opt = (v, label, sel) => `<option value="${v}"${sel ? " selected" : ""}>${label}</option>`;
   const checked = b => b ? " checked" : "";
   const shapesWanted = list("shapes").map(s => s.toLowerCase());
-  return `<form autocomplete="off">
-  <h1>Memoriter: set up a game</h1>
-  <p class="lead">Choose what your child will play, then press <b>Start game</b>. Bookmark or copy the link to use the same game again.</p>
+  return `<div class="setup-wrap">
+  <h1>Memoriter: settings</h1>
+${defaultsForm()}
+  <form class="create-form" autocomplete="off"><details${THEME_GIVEN ? " open" : ""}>
+  <summary>Create a game (link)</summary>
+  <p class="lead">Make one specific game, then press <b>Start game</b>. Bookmark or copy the link to use the same game again.</p>
 
   <fieldset><legend>Game</legend><div class="row choices">
     ${SETUP_THEMES.map(([v, label]) => `<label><input type="radio" name="theme" value="${v}"${checked(v === cur)}><span>${label}</span></label>`).join("")}
@@ -63,17 +67,17 @@ function setupForm() {
     <label><input type="checkbox" name="fullscreen"${checked(CFG.fullscreen)}> full screen when the game starts</label>
   </div><div class="row" style="margin-top:8px">
     <label>Rest after <input type="number" name="rest" min="0" max="50" value="${CFG.rest}"> games</label>
-    <small>A sleepy moon says it's time for a break; hold the moon 4 s to unlock. 0 = never.</small>
+    <small>A sleepy moon says it's time for a break; a grown-up holds the small star at the top right 4 s to unlock. 0 = never.</small>
   </div></fieldset>
 
   <div class="actions">
     <button type="submit" class="start">Start game ▶</button>
     <button type="button" class="copy">Copy link</button>
-    <button type="button" class="cancel">Cancel</button>
     <div class="link"></div>
   </div>
-</form>
-${defaultsForm()}`;
+  </details></form>
+  <p class="credits">Emoji graphics: <a href="https://openmoji.org" target="_blank" rel="noopener">OpenMoji</a>, the open-source emoji project, CC BY-SA 4.0.</p>
+</div>`;
 }
 
 /* ---------- Defaults (this device) ----------
@@ -87,10 +91,10 @@ function defaultsForm() {
   const dShapes = String(D.shapes || "").split(",").filter(Boolean);
   const dSets = String(D.set || "").split(",").filter(Boolean);
   const dCards = parseInt(D.cards || "8", 10), dPh = D.phonics || "0";
-  return `<form class="defaults-form" autocomplete="off"><details${has ? " open" : ""}>
-  <summary>Defaults (this device)${has ? " · custom" : ""}</summary>
+  return `<form class="defaults-form" autocomplete="off">
+  <h2>Defaults (this device)${has ? " · custom" : ""}</h2>
   <p class="lead">What your child gets when choosing a game on their own. Change them as they learn,
-    e.g. numbers 10 to 20 once 1 to 8 are known. Saved on this device only; a game made above still wins.</p>
+    e.g. numbers 10 to 20 once 1 to 8 are known. Saved on this device only; a game made below (a link) still wins.</p>
 
   <fieldset><legend>Numbers</legend><div class="row">
     <label>From <input type="number" name="from" value="${escapeHTML(D.from || "1")}"></label>
@@ -128,11 +132,11 @@ function defaultsForm() {
 
   <div class="actions">
     <button type="submit" class="start">Save defaults</button>
+    <button type="button" class="cancel">Back to the game</button>
     <button type="button" class="reset">Reset to original</button>
     <span class="saved" aria-live="polite"></span>
   </div>
-  <p class="credits">Emoji graphics: <a href="https://openmoji.org" target="_blank" rel="noopener">OpenMoji</a>, the open-source emoji project, CC BY-SA 4.0.</p>
-</details></form>`;
+</form>`;
 }
 /* Defaults form → only what differs from the built-in defaults. */
 function collectDefaults(form) {
@@ -210,7 +214,7 @@ function initSetup() {
   const box = document.createElement("div"); box.id = "setup";
   box.innerHTML = setupForm();
   document.body.appendChild(box);
-  const form = box.querySelector("form"), link = box.querySelector(".link");   // the first form: create a game
+  const form = box.querySelector(".create-form"), link = box.querySelector(".link");
   const urlFor = () => location.href.split(/[?#]/)[0] + "?" + setupParams(form).toString();
   const refresh = () => {
     const theme = new FormData(form).get("theme");
