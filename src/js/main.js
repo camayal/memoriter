@@ -10,6 +10,7 @@ initSpeech();
 initFireworks();
 initBoard();
 initStartScreen();
+initRest();
 initHelp();
 initVoiceList();
 newGame();

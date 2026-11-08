@@ -120,7 +120,7 @@ function frame() {
 }
 
 /* Fireworks end show. onReady fires when the "play again" button may appear (to practise patience). */
-function fireworksShow(onReady) {
+function fireworksShow(onReady, round = 1) {
   running = true; night.classList.add("on"); say(Q.get("win") || W.win);
   const Wd = innerWidth, H = innerHeight, reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
   let t = 400;
@@ -133,6 +133,10 @@ function fireworksShow(onReady) {
   }
   // 3. A quick volley.
   if (!reduced) for (let i = 0; i < 4; i++) { later(() => launch(), t); t += 180; }
+  // 3b. Calm part that grows with each finished game: one slow rocket more per game, up to
+  //     CFG.calmMax (default 10, about 9 s more). grow=0 turns it off.
+  const extra = Math.min(Math.max(0, round - 1), CFG.calmMax);
+  for (let i = 0; i < extra; i++) { t += 900; later(() => launch(randOf(["peony", "ring", "willow"])), t); }
   // 4. Big heart or smiley in the middle.
   t += 300;
   later(() => { launch(Math.random() < .5 ? "heart" : "smile", Wd / 2, H * .3).big = true; }, t);

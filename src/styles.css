@@ -56,7 +56,6 @@ html,body{margin:0;height:100%;background:var(--page-bg);overflow:hidden;
 #langnote{max-width:min(90vw,520px);margin:1.4em 16px 0;text-align:center;
   font:600 14px/1.4 system-ui,sans-serif;color:#8a5a00}
 #langnote:empty{display:none}
-@keyframes breathe{50%{scale:1.05}}
 @media (prefers-reduced-motion:reduce){#start .tile,#end .tile{animation:none}}
 .overlay{position:fixed;inset:16px;overflow:auto;background:#fff;border-radius:16px;padding:20px;
   font:14px/1.5 ui-monospace,Consolas,monospace;white-space:pre-wrap;box-shadow:0 10px 40px rgba(0,0,0,.15)}
@@ -69,7 +68,7 @@ html,body{margin:0;height:100%;background:var(--page-bg);overflow:hidden;
   width:var(--themes-w,auto);max-width:100%}
 #start .tile,#end .tile{position:relative;width:var(--tile,200px);aspect-ratio:1;border:0;padding:0;cursor:pointer;
   border-radius:24%;background:var(--tint);box-shadow:0 .5vmin 0 rgba(47,58,74,.12),0 1.2vmin 2.4vmin rgba(47,58,74,.12);
-  animation:breathe 2.6s ease-in-out infinite;transition:translate .1s}
+  transition:translate .1s}                          /* no idle animation: calm, nothing moves until touched */
 #start .tile:active,#end .tile:active{translate:0 .6vmin}
 #start .mini,#end .mini{position:absolute;left:27%;top:24%;width:46%;aspect-ratio:1;border-radius:18%;background:#fff;
   display:flex;align-items:center;justify-content:center;container-type:size;
@@ -134,3 +133,26 @@ html,body{margin:0;height:100%;background:var(--page-bg);overflow:hidden;
 #end::after{color:rgba(255,255,255,.32)}
 #setup form::after{display:block;text-align:center;margin-top:28px;color:rgba(47,58,74,.3)}
 #start,#end{padding-bottom:26px}
+
+/* Grown-up long press on a tile: it sinks slowly while held, then shows the replay badge (locked). */
+.tile.holding{transition:scale 1s linear;scale:.93}
+.tile.armed{scale:.97;outline:4px solid rgba(61,170,92,.55);outline-offset:4px}
+
+/* Rest screen: a sleepy moon on a quiet night sky. Slow, soft motion only. */
+#rest{position:fixed;inset:0;display:none;align-items:center;justify-content:center}
+#rest.show{display:flex;animation:fadeIn 1.5s forwards;opacity:0}
+#rest .sky{position:absolute;inset:0;width:100%;height:100%}
+#rest .tw{animation:twinkle 4s ease-in-out infinite;opacity:.3}
+#rest .t2{animation-delay:1.3s}#rest .t3{animation-delay:2.6s}
+@keyframes twinkle{50%{opacity:.9}}
+#rest .moon-hold{position:relative;width:min(60vmin,380px);aspect-ratio:1;cursor:default;touch-action:none}
+#rest .moon-hold svg{width:100%;height:100%;overflow:visible}
+#rest .moon{animation:floaty 6s ease-in-out infinite;transform-origin:150px 150px}
+@keyframes floaty{50%{transform:translateY(6px) rotate(-2deg)}}
+#rest .z{opacity:0;animation:zz 4.5s ease-in-out infinite}
+#rest .z2{animation-delay:1.5s}#rest .z3{animation-delay:3s}
+@keyframes zz{0%{opacity:0;transform:translate(0,8px)}30%{opacity:.85}100%{opacity:0;transform:translate(10px,-14px)}}
+#rest .moon-hold.holding{transition:scale 2s linear;scale:.92}
+#rest::after{content:"By: C. A. Maya-Lastra - 2026";position:absolute;left:50%;bottom:max(10px,env(safe-area-inset-bottom));translate:-50% 0;
+  font:500 12px/1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.06em;color:rgba(255,255,255,.25);pointer-events:none;user-select:none}
+@media (prefers-reduced-motion:reduce){#rest .moon,#rest .z,#rest .tw{animation:none}#rest .z{opacity:.7}}

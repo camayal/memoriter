@@ -65,7 +65,6 @@ html,body{margin:0;height:100%;background:var(--page-bg);overflow:hidden;
 #langnote{max-width:min(90vw,520px);margin:1.4em 16px 0;text-align:center;
   font:600 14px/1.4 system-ui,sans-serif;color:#8a5a00}
 #langnote:empty{display:none}
-@keyframes breathe{50%{scale:1.05}}
 @media (prefers-reduced-motion:reduce){#start .tile,#end .tile{animation:none}}
 .overlay{position:fixed;inset:16px;overflow:auto;background:#fff;border-radius:16px;padding:20px;
   font:14px/1.5 ui-monospace,Consolas,monospace;white-space:pre-wrap;box-shadow:0 10px 40px rgba(0,0,0,.15)}
@@ -78,7 +77,7 @@ html,body{margin:0;height:100%;background:var(--page-bg);overflow:hidden;
   width:var(--themes-w,auto);max-width:100%}
 #start .tile,#end .tile{position:relative;width:var(--tile,200px);aspect-ratio:1;border:0;padding:0;cursor:pointer;
   border-radius:24%;background:var(--tint);box-shadow:0 .5vmin 0 rgba(47,58,74,.12),0 1.2vmin 2.4vmin rgba(47,58,74,.12);
-  animation:breathe 2.6s ease-in-out infinite;transition:translate .1s}
+  transition:translate .1s}                          /* no idle animation: calm, nothing moves until touched */
 #start .tile:active,#end .tile:active{translate:0 .6vmin}
 #start .mini,#end .mini{position:absolute;left:27%;top:24%;width:46%;aspect-ratio:1;border-radius:18%;background:#fff;
   display:flex;align-items:center;justify-content:center;container-type:size;
@@ -143,6 +142,29 @@ html,body{margin:0;height:100%;background:var(--page-bg);overflow:hidden;
 #end::after{color:rgba(255,255,255,.32)}
 #setup form::after{display:block;text-align:center;margin-top:28px;color:rgba(47,58,74,.3)}
 #start,#end{padding-bottom:26px}
+
+/* Grown-up long press on a tile: it sinks slowly while held, then shows the replay badge (locked). */
+.tile.holding{transition:scale 1s linear;scale:.93}
+.tile.armed{scale:.97;outline:4px solid rgba(61,170,92,.55);outline-offset:4px}
+
+/* Rest screen: a sleepy moon on a quiet night sky. Slow, soft motion only. */
+#rest{position:fixed;inset:0;display:none;align-items:center;justify-content:center}
+#rest.show{display:flex;animation:fadeIn 1.5s forwards;opacity:0}
+#rest .sky{position:absolute;inset:0;width:100%;height:100%}
+#rest .tw{animation:twinkle 4s ease-in-out infinite;opacity:.3}
+#rest .t2{animation-delay:1.3s}#rest .t3{animation-delay:2.6s}
+@keyframes twinkle{50%{opacity:.9}}
+#rest .moon-hold{position:relative;width:min(60vmin,380px);aspect-ratio:1;cursor:default;touch-action:none}
+#rest .moon-hold svg{width:100%;height:100%;overflow:visible}
+#rest .moon{animation:floaty 6s ease-in-out infinite;transform-origin:150px 150px}
+@keyframes floaty{50%{transform:translateY(6px) rotate(-2deg)}}
+#rest .z{opacity:0;animation:zz 4.5s ease-in-out infinite}
+#rest .z2{animation-delay:1.5s}#rest .z3{animation-delay:3s}
+@keyframes zz{0%{opacity:0;transform:translate(0,8px)}30%{opacity:.85}100%{opacity:0;transform:translate(10px,-14px)}}
+#rest .moon-hold.holding{transition:scale 2s linear;scale:.92}
+#rest::after{content:"By: C. A. Maya-Lastra - 2026";position:absolute;left:50%;bottom:max(10px,env(safe-area-inset-bottom));translate:-50% 0;
+  font:500 12px/1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.06em;color:rgba(255,255,255,.25);pointer-events:none;user-select:none}
+@media (prefers-reduced-motion:reduce){#rest .moon,#rest .z,#rest .tw{animation:none}#rest .z{opacity:.7}}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#FFF7EA">
@@ -166,6 +188,29 @@ html,body{margin:0;height:100%;background:var(--page-bg);overflow:hidden;
 <div id="night"></div>
 <canvas id="fx"></canvas>
 <div id="end"></div>
+<div id="rest" aria-label="Time for a break">
+  <svg class="sky" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <g fill="#fff"><circle class="tw" cx="40" cy="50" r="2.2"/><circle class="tw t2" cx="90" cy="220" r="1.6"/><circle class="tw t3" cx="350" cy="60" r="2"/>
+      <circle class="tw t2" cx="310" cy="240" r="1.8"/><circle class="tw" cx="200" cy="30" r="1.4"/><circle class="tw t3" cx="20" cy="160" r="1.5"/>
+      <circle class="tw t3" cx="380" cy="170" r="1.6"/><circle class="tw t2" cx="150" cy="275" r="1.3"/></g>
+  </svg>
+  <div class="moon-hold">
+    <svg viewBox="0 0 300 300" aria-hidden="true">
+      <defs><mask id="crescent"><rect width="300" height="300" fill="#fff"/><circle cx="200" cy="105" r="90" fill="#000"/></mask></defs>
+      <g class="moon">
+        <circle cx="150" cy="150" r="100" fill="#FFE08A" mask="url(#crescent)"/>
+        <path d="M82 150 q13 11 26 0" fill="none" stroke="#8A6A1F" stroke-width="5" stroke-linecap="round"/>
+        <circle cx="96" cy="178" r="10" fill="#F6A5A5" opacity=".55"/>
+        <path d="M112 202 q10 7 20 0" fill="none" stroke="#8A6A1F" stroke-width="4.5" stroke-linecap="round"/>
+      </g>
+      <g class="zzz" fill="#fff" font-family="Andika,Nunito,system-ui,sans-serif" font-weight="700">
+        <text class="z z1" x="205" y="120" font-size="24">z</text>
+        <text class="z z2" x="228" y="88" font-size="30">z</text>
+        <text class="z z3" x="252" y="52" font-size="38">Z</text>
+      </g>
+    </svg>
+  </div>
+</div>
 
 <script>
 (() => {
@@ -213,7 +258,9 @@ const CFG = {
   upper: (Q.get("case") || "upper").toLowerCase() !== "lower",
   // Letters: say the name ("bee"), the sound ("buh", phonics=1) or both ("B … buh", phonics=both).
   phonics: (Q.get("phonics") || "0").toLowerCase(),
-  fullscreen: Q.get("fullscreen") !== "0",            // go full screen when a game tile is tapped
+  fullscreen: Q.get("fullscreen") !== "0",
+  rest: Q.get("rest") === "0" ? 0 : Math.max(0, Math.round(num("rest", 6))),   // games before the rest screen (0 = never)
+  calmMax: Q.get("grow") === "0" ? 0 : Math.max(0, Math.round(num("grow", 10))),   // extra calm rockets, max            // go full screen when a game tile is tapped
 };
 
 /* Random numbers: optionally seeded (seed=…) so the same shuffle repeats. */
@@ -236,10 +283,11 @@ const escapeHTML = s => s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;",
 const TEXT = {
   en: {
     start: "Let's go!",
+    rest: "Time for a break. See you soon!",
     win: "Good job!",
     sample: "Hello, one, two, three",
     noVoice: "No English voice on this device/browser.",
-    shapes: { line: "line", circle: "circle", oval: "oval", square: "square", rectangle: "rectangle", triangle: "triangle", diamond: "diamond", pentagon: "pentagon", hexagon: "hexagon", heptagon: "heptagon", octagon: "octagon", star: "star", heart: "heart" },
+    shapes: { circle: "circle", oval: "oval", square: "square", rectangle: "rectangle", triangle: "triangle", diamond: "diamond", pentagon: "pentagon", hexagon: "hexagon", heptagon: "heptagon", octagon: "octagon", star: "star", heart: "heart" },
     // Picture sets (emoji). Only simple, everyday things a toddler knows. "emoji|spoken word".
     sets: {
       animals:  { name: "animals",  items: ["🐶|dog", "🐱|cat", "🐮|cow", "🐷|pig", "🐸|frog", "🦁|lion", "🐵|monkey", "🐤|chick", "🦆|duck", "🐻|bear", "🐰|rabbit", "🐟|fish", "🐘|elephant", "🐴|horse"] },
@@ -259,10 +307,11 @@ const TEXT = {
   },
   es: {
     start: "¡Vamos!",
+    rest: "¡Hora de descansar! Hasta pronto.",
     win: "¡Muy bien!",
     sample: "Hola, uno, dos, tres",
     noVoice: "No hay voz en español en este dispositivo/navegador.",
-    shapes: { line: "línea", circle: "círculo", oval: "óvalo", square: "cuadrado", rectangle: "rectángulo", triangle: "triángulo", diamond: "rombo", pentagon: "pentágono", hexagon: "hexágono", heptagon: "heptágono", octagon: "octágono", star: "estrella", heart: "corazón" },
+    shapes: { circle: "círculo", oval: "óvalo", square: "cuadrado", rectangle: "rectángulo", triangle: "triángulo", diamond: "rombo", pentagon: "pentágono", hexagon: "hexágono", heptagon: "heptágono", octagon: "octágono", star: "estrella", heart: "corazón" },
     sets: {
       animals:  { name: "animales",   items: ["🐶|perro", "🐱|gato", "🐮|vaca", "🐷|cerdo", "🐸|rana", "🦁|león", "🐵|mono", "🐤|pollito", "🦆|pato", "🐻|oso", "🐰|conejo", "🐟|pez", "🐘|elefante", "🐴|caballo"] },
       fruits:   { name: "frutas",     items: ["🍎|manzana", "🍌|banano", "🍇|uvas", "🍓|fresa", "🍊|naranja", "🍉|sandía", "🍐|pera", "🍒|cerezas", "🍍|piña", "🍋|limón", "🥝|kiwi", "🍑|durazno"] },
@@ -432,7 +481,6 @@ const starPoly = () => Array.from({ length: 10 }, (_, i) => {
 const polygon = (pts, c, s) => `<polygon points="${pts}" fill="${c}" stroke="${s}" stroke-width="4" stroke-linejoin="round"/>`;
 
 const SHAPES = {
-  line:      c => `<line x1="12" y1="50" x2="88" y2="50" stroke="${c}" stroke-width="12" stroke-linecap="round"/>`,
   circle:    (c, s) => `<circle cx="50" cy="50" r="40" fill="${c}" stroke="${s}" stroke-width="4"/>`,
   oval:      (c, s) => `<ellipse cx="50" cy="50" rx="44" ry="28" fill="${c}" stroke="${s}" stroke-width="4"/>`,
   square:    (c, s) => `<rect x="15" y="15" width="70" height="70" rx="4" fill="${c}" stroke="${s}" stroke-width="4"/>`,
@@ -801,7 +849,7 @@ function frame() {
 }
 
 /* Fireworks end show. onReady fires when the "play again" button may appear (to practise patience). */
-function fireworksShow(onReady) {
+function fireworksShow(onReady, round = 1) {
   running = true; night.classList.add("on"); say(Q.get("win") || W.win);
   const Wd = innerWidth, H = innerHeight, reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
   let t = 400;
@@ -814,6 +862,10 @@ function fireworksShow(onReady) {
   }
   // 3. A quick volley.
   if (!reduced) for (let i = 0; i < 4; i++) { later(() => launch(), t); t += 180; }
+  // 3b. Calm part that grows with each finished game: one slow rocket more per game, up to
+  //     CFG.calmMax (default 10, about 9 s more). grow=0 turns it off.
+  const extra = Math.min(Math.max(0, round - 1), CFG.calmMax);
+  for (let i = 0; i < extra; i++) { t += 900; later(() => launch(randOf(["peony", "ring", "willow"])), t); }
   // 4. Big heart or smiley in the middle.
   t += 300;
   later(() => { launch(Math.random() < .5 ? "heart" : "smile", Wd / 2, H * .3).big = true; }, t);
@@ -908,8 +960,20 @@ function flipBack() {
 }
 
 /* End of the game: a short fireworks show. */
+/* Games finished in this session (kept across reloads of the same tab). Each one makes the next
+   fireworks a little longer, so the wait before the next game grows: calmer, less rushing. */
+let gamesDone = 0;
+try { gamesDone = +sessionStorage.getItem("memoriter-games") || 0; } catch { /* storage blocked */ }
+function resetGames() {
+  gamesDone = 0;
+  try { sessionStorage.setItem("memoriter-games", 0); } catch { /* storage blocked */ }
+}
+const restDue = () => CFG.rest > 0 && gamesDone >= CFG.rest;
+
 function finale() {
-  fireworksShow(showAgain);
+  gamesDone++;
+  try { sessionStorage.setItem("memoriter-games", gamesDone); } catch { /* storage blocked */ }
+  fireworksShow(showAgain, gamesDone);
 }
 
 function vanish(c) {
@@ -961,7 +1025,7 @@ from,to  numbers range, e.g. from=1&to=20 (random pick if the range has more num
 letters  abc (whole alphabet) | a-d (range) | aeiou (exact list) | vowels
 case     upper | lower                                           (default: upper)
 phonics  letters say their name (0, default) | their sound, e.g. "buh" (1) | both, "bee … buh" (both)
-shapes   comma list: line,circle,oval,square,rectangle,triangle,diamond,
+shapes   comma list: circle,oval,square,rectangle,triangle,diamond,
          pentagon,hexagon,heptagon,octagon,star,heart          (default: random pick)
 set      pictures game: animals | fruits | vehicles | nature | random (default: random, a new set each game)
 items    your own cards, comma list or repeated; "shown|spoken" to say something else
@@ -989,6 +1053,9 @@ seed     number = same shuffle every time
 start    0 = skip the Start screen (first card may be silent: browsers need a tap to unlock sound)
 win      phrase spoken at the end (default "Good job!" / "¡Muy bien!")
 demo     end = skip the game and show the end fireworks (to try them, or win=)
+rest     games before the sleepy-moon rest screen (default 6; 0 = never). A grown-up holds the moon ~2 s to unlock.
+grow     longer fireworks after each finished game: max extra slow rockets (default 10, ~9 s more); 0 = always short
+(grown-ups: hold a game tile ~1 s to lock that game; only it is offered at the end, and the lock survives a reload)
 again    ms after the end before the game tiles show (default: when the fireworks end)
 
 (tap to close)`;
@@ -1020,6 +1087,21 @@ function customTile() {
   while (items.length < 3) items.push(items[items.length - 1] || face("?"));
   return { tint: base.tint, faces: items };
 }
+/* A grown-up can lock the game from the tiles: hold a tile ~1 s (a soft click and the replay badge
+   confirm it), and the game starts when the finger lifts. From then on only that game is offered at
+   the end, like a game made in ?setup, and the lock survives a reload (theme= is added to the address).
+   A child's short tap is unaffected. */
+let lockedTheme = null;
+const isLocked = () => THEME_GIVEN || !!lockedTheme;
+const LONG_PRESS_MS = 1000;
+function lockTheme(theme) {
+  lockedTheme = theme;
+  try {                                               // keep it on reload: same as a parent-made link
+    const p = new URLSearchParams(location.search); p.set("theme", theme);
+    history.replaceState(null, "", location.pathname + "?" + p.toString() + location.hash);
+  } catch { /* address can't be changed here: the lock still holds until the page closes */ }
+}
+
 const tileFor = theme => THEME_GIVEN ? customTile() : THEME_TILES[theme];
 const tileLabel = theme => theme === "images" && !list("items").length ? W.findPairs(W.sets[currentSet()].name) : W.themes[theme] || W.start;
 
@@ -1053,14 +1135,36 @@ function makeTile(theme, i, extraClass = "") {
   const tile = tileFor(theme), b = document.createElement("button");
   b.type = "button"; b.className = ("tile " + extraClass).trim(); b.dataset.theme = theme;
   b.setAttribute("aria-label", tileLabel(theme));
-  b.style.setProperty("--tint", lighten(tile.tint, .82)); b.style.animationDelay = (i * .25) + "s";
+  b.style.setProperty("--tint", lighten(tile.tint, .82));
   // Drawn back to front, so the first symbol (1, A, 🐶 …) sits on top.
   b.innerHTML = [2, 1, 0].map(k => `<span class="mini m${k}">${miniFace(tile.tint, tile.faces[k])}</span>`).join("")
-              + (THEME_GIVEN ? REPLAY_ICON : "");
-  b.addEventListener("click", () => {
-    // Child-picked pictures game: a fresh set each time (a parent-made game keeps the one previewed).
-    if (theme === "images" && !THEME_GIVEN) chooseSet();
+              + (isLocked() ? REPLAY_ICON : "");
+  const start = () => {
+    // Child-picked pictures game: a fresh set each time (a parent-made or locked game keeps its set).
+    if (theme === "images" && !isLocked()) chooseSet();
     hideEnd(); CFG.theme = theme; newGame(); beginGame(b, tileLabel(theme));
+  };
+  // Long press = grown-up lock (see lockTheme). The game then starts on release, because browsers
+  // only allow sound and full screen right after a finger lifts.
+  let timer = null, armed = false;
+  const cancel = () => { clearTimeout(timer); timer = null; b.classList.remove("holding"); };
+  b.addEventListener("pointerdown", e => {
+    if (e.button > 0 || isLocked()) return;
+    armed = false; b.classList.add("holding");
+    timer = setTimeout(() => {
+      armed = true; timer = null; b.classList.remove("holding"); b.classList.add("armed");
+      if (!b.querySelector(".replay")) b.insertAdjacentHTML("beforeend", REPLAY_ICON);
+      if (audio()) tone(880, AC.currentTime, { type: "sine", peak: .12, decay: .08 });
+      navigator.vibrate?.(30);
+    }, LONG_PRESS_MS);
+  });
+  b.addEventListener("pointerleave", () => { if (!armed) cancel(); });
+  b.addEventListener("pointercancel", () => { cancel(); armed = false; b.classList.remove("armed"); });
+  b.addEventListener("contextmenu", e => e.preventDefault());
+  b.addEventListener("click", () => {
+    if (timer) cancel();
+    if (armed) { armed = false; lockTheme(theme); }
+    start();
   });
   return b;
 }
@@ -1129,6 +1233,41 @@ function fitTiles() {
 /* ---------- Start screen ----------
    Browsers only allow sound and speech after a tap, and the speech engine is slow to wake up, so
    the game always begins with a tap on a tile. */
+/* ---------- Rest screen ----------
+   After CFG.rest finished games (default 6) a sleepy moon replaces the game tiles: "Time for a
+   break". Nothing to tap for the child; a grown-up holds the moon ~2 s to unlock (fresh count).
+   It also comes back after a reload, so reloading doesn't skip the rest. rest=0 turns it off. */
+const restEl = document.getElementById("rest");
+function showRest() {
+  hideEndTilesOnly();
+  stopFireworks();                                  // no more rockets: quiet from here
+  night.classList.add("on");
+  restEl.classList.add("show");
+  say(W.rest);
+}
+function hideEndTilesOnly() { endEl.classList.remove("show"); }
+function initRest() {
+  const moon = restEl.querySelector(".moon-hold");
+  let timer = null;
+  const cancel = () => { clearTimeout(timer); timer = null; moon.classList.remove("holding"); };
+  moon.addEventListener("pointerdown", e => {
+    if (e.button > 0) return;
+    moon.classList.add("holding");
+    timer = setTimeout(() => {
+      timer = null; moon.classList.remove("holding");
+      resetGames();
+      restEl.classList.remove("show"); night.classList.remove("on");
+      audio(); if (AC) tone(660, AC.currentTime, { type: "sine", peak: .1, decay: .15 });
+      if (startEl.isConnected && !startEl.classList.contains("hide")) return;   // came from a reload: tiles are already there
+      showAgain();
+    }, 2000);
+  });
+  for (const ev of ["pointerup", "pointerleave", "pointercancel"]) moon.addEventListener(ev, cancel);
+  moon.addEventListener("contextmenu", e => e.preventDefault());
+  // Rest already due when the page opens (e.g. after a reload): show the moon over the Start screen.
+  if (restDue()) { night.classList.add("on"); restEl.classList.add("show"); }
+}
+
 function initStartScreen() {
   addEventListener("resize", fitTiles);
   if (Q.get("start") === "0") { startEl.remove(); return; }
@@ -1143,11 +1282,12 @@ function initStartScreen() {
    The game just played as a big tile in the middle (most likely what the child wants again),
    with the other games as smaller tiles underneath. For a parent-made game: only its big tile. */
 function showAgain() {
+  if (restDue()) { showRest(); return; }
   const current = CFG.theme;
-  if (current === "images" && THEME_GIVEN) chooseSet();   // random set: the tile previews the next one
+  if (current === "images" && isLocked()) chooseSet();   // random set: the tile previews the next one
   endEl.innerHTML = "";
   endEl.appendChild(makeTile(current, 0, "big"));
-  if (!THEME_GIVEN) {
+  if (!isLocked()) {
     const others = document.createElement("div"); others.className = "others";
     tileThemes().filter(x => x !== current).forEach((x, i) => others.appendChild(makeTile(x, i + 1, "small")));
     endEl.appendChild(others);
@@ -1255,6 +1395,9 @@ function setupForm() {
     <label><input type="checkbox" name="tts"${checked(CFG.tts)}> say each card out loud</label>
     <label><input type="checkbox" name="sound"${checked(CFG.sound)}> sounds</label>
     <label><input type="checkbox" name="fullscreen"${checked(CFG.fullscreen)}> full screen when the game starts</label>
+  </div><div class="row" style="margin-top:8px">
+    <label>Rest after <input type="number" name="rest" min="0" max="50" value="${CFG.rest}"> games</label>
+    <small>A sleepy moon says it's time for a break; hold the moon 2 s to unlock. 0 = never.</small>
   </div></fieldset>
 
   <div class="actions">
@@ -1292,8 +1435,9 @@ function setupParams(form) {
   if (!f.get("tts")) p.set("tts", "0");
   if (!f.get("sound")) p.set("sound", "0");
   if (!f.get("fullscreen")) p.set("fullscreen", "0");
+  if (String(f.get("rest")) !== "6") p.set("rest", String(Math.max(0, parseInt(f.get("rest"), 10) || 0)));
   // Keep the look-and-feel settings a link may already have (patterns, colours, timings …).
-  for (const k of ["colors", "back", "backcolor", "mark", "bg", "bgcolor", "delay", "vanish", "rate", "pitch", "win"]) if (Q.has(k)) p.set(k, Q.get(k));
+  for (const k of ["grow", "colors", "back", "backcolor", "mark", "bg", "bgcolor", "delay", "vanish", "rate", "pitch", "win"]) if (Q.has(k)) p.set(k, Q.get(k));
   return p;
 }
 
@@ -1330,6 +1474,7 @@ initSpeech();
 initFireworks();
 initBoard();
 initStartScreen();
+initRest();
 initHelp();
 initVoiceList();
 newGame();

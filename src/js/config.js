@@ -41,7 +41,9 @@ const CFG = {
   upper: (Q.get("case") || "upper").toLowerCase() !== "lower",
   // Letters: say the name ("bee"), the sound ("buh", phonics=1) or both ("B … buh", phonics=both).
   phonics: (Q.get("phonics") || "0").toLowerCase(),
-  fullscreen: Q.get("fullscreen") !== "0",            // go full screen when a game tile is tapped
+  fullscreen: Q.get("fullscreen") !== "0",
+  rest: Q.get("rest") === "0" ? 0 : Math.max(0, Math.round(num("rest", 6))),   // games before the rest screen (0 = never)
+  calmMax: Q.get("grow") === "0" ? 0 : Math.max(0, Math.round(num("grow", 10))),   // extra calm rockets, max            // go full screen when a game tile is tapped
 };
 
 /* Random numbers: optionally seeded (seed=…) so the same shuffle repeats. */

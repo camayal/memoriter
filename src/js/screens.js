@@ -13,7 +13,7 @@ from,to  numbers range, e.g. from=1&to=20 (random pick if the range has more num
 letters  abc (whole alphabet) | a-d (range) | aeiou (exact list) | vowels
 case     upper | lower                                           (default: upper)
 phonics  letters say their name (0, default) | their sound, e.g. "buh" (1) | both, "bee … buh" (both)
-shapes   comma list: line,circle,oval,square,rectangle,triangle,diamond,
+shapes   comma list: circle,oval,square,rectangle,triangle,diamond,
          pentagon,hexagon,heptagon,octagon,star,heart          (default: random pick)
 set      pictures game: animals | fruits | vehicles | nature | random (default: random, a new set each game)
 items    your own cards, comma list or repeated; "shown|spoken" to say something else
@@ -41,6 +41,9 @@ seed     number = same shuffle every time
 start    0 = skip the Start screen (first card may be silent: browsers need a tap to unlock sound)
 win      phrase spoken at the end (default "Good job!" / "¡Muy bien!")
 demo     end = skip the game and show the end fireworks (to try them, or win=)
+rest     games before the sleepy-moon rest screen (default 6; 0 = never). A grown-up holds the moon ~2 s to unlock.
+grow     longer fireworks after each finished game: max extra slow rockets (default 10, ~9 s more); 0 = always short
+(grown-ups: hold a game tile ~1 s to lock that game; only it is offered at the end, and the lock survives a reload)
 again    ms after the end before the game tiles show (default: when the fireworks end)
 
 (tap to close)`;
@@ -72,6 +75,21 @@ function customTile() {
   while (items.length < 3) items.push(items[items.length - 1] || face("?"));
   return { tint: base.tint, faces: items };
 }
+/* A grown-up can lock the game from the tiles: hold a tile ~1 s (a soft click and the replay badge
+   confirm it), and the game starts when the finger lifts. From then on only that game is offered at
+   the end, like a game made in ?setup, and the lock survives a reload (theme= is added to the address).
+   A child's short tap is unaffected. */
+let lockedTheme = null;
+const isLocked = () => THEME_GIVEN || !!lockedTheme;
+const LONG_PRESS_MS = 1000;
+function lockTheme(theme) {
+  lockedTheme = theme;
+  try {                                               // keep it on reload: same as a parent-made link
+    const p = new URLSearchParams(location.search); p.set("theme", theme);
+    history.replaceState(null, "", location.pathname + "?" + p.toString() + location.hash);
+  } catch { /* address can't be changed here: the lock still holds until the page closes */ }
+}
+
 const tileFor = theme => THEME_GIVEN ? customTile() : THEME_TILES[theme];
 const tileLabel = theme => theme === "images" && !list("items").length ? W.findPairs(W.sets[currentSet()].name) : W.themes[theme] || W.start;
 
@@ -105,14 +123,36 @@ function makeTile(theme, i, extraClass = "") {
   const tile = tileFor(theme), b = document.createElement("button");
   b.type = "button"; b.className = ("tile " + extraClass).trim(); b.dataset.theme = theme;
   b.setAttribute("aria-label", tileLabel(theme));
-  b.style.setProperty("--tint", lighten(tile.tint, .82)); b.style.animationDelay = (i * .25) + "s";
+  b.style.setProperty("--tint", lighten(tile.tint, .82));
   // Drawn back to front, so the first symbol (1, A, 🐶 …) sits on top.
   b.innerHTML = [2, 1, 0].map(k => `<span class="mini m${k}">${miniFace(tile.tint, tile.faces[k])}</span>`).join("")
-              + (THEME_GIVEN ? REPLAY_ICON : "");
-  b.addEventListener("click", () => {
-    // Child-picked pictures game: a fresh set each time (a parent-made game keeps the one previewed).
-    if (theme === "images" && !THEME_GIVEN) chooseSet();
+              + (isLocked() ? REPLAY_ICON : "");
+  const start = () => {
+    // Child-picked pictures game: a fresh set each time (a parent-made or locked game keeps its set).
+    if (theme === "images" && !isLocked()) chooseSet();
     hideEnd(); CFG.theme = theme; newGame(); beginGame(b, tileLabel(theme));
+  };
+  // Long press = grown-up lock (see lockTheme). The game then starts on release, because browsers
+  // only allow sound and full screen right after a finger lifts.
+  let timer = null, armed = false;
+  const cancel = () => { clearTimeout(timer); timer = null; b.classList.remove("holding"); };
+  b.addEventListener("pointerdown", e => {
+    if (e.button > 0 || isLocked()) return;
+    armed = false; b.classList.add("holding");
+    timer = setTimeout(() => {
+      armed = true; timer = null; b.classList.remove("holding"); b.classList.add("armed");
+      if (!b.querySelector(".replay")) b.insertAdjacentHTML("beforeend", REPLAY_ICON);
+      if (audio()) tone(880, AC.currentTime, { type: "sine", peak: .12, decay: .08 });
+      navigator.vibrate?.(30);
+    }, LONG_PRESS_MS);
+  });
+  b.addEventListener("pointerleave", () => { if (!armed) cancel(); });
+  b.addEventListener("pointercancel", () => { cancel(); armed = false; b.classList.remove("armed"); });
+  b.addEventListener("contextmenu", e => e.preventDefault());
+  b.addEventListener("click", () => {
+    if (timer) cancel();
+    if (armed) { armed = false; lockTheme(theme); }
+    start();
   });
   return b;
 }
@@ -181,6 +221,41 @@ function fitTiles() {
 /* ---------- Start screen ----------
    Browsers only allow sound and speech after a tap, and the speech engine is slow to wake up, so
    the game always begins with a tap on a tile. */
+/* ---------- Rest screen ----------
+   After CFG.rest finished games (default 6) a sleepy moon replaces the game tiles: "Time for a
+   break". Nothing to tap for the child; a grown-up holds the moon ~2 s to unlock (fresh count).
+   It also comes back after a reload, so reloading doesn't skip the rest. rest=0 turns it off. */
+const restEl = document.getElementById("rest");
+function showRest() {
+  hideEndTilesOnly();
+  stopFireworks();                                  // no more rockets: quiet from here
+  night.classList.add("on");
+  restEl.classList.add("show");
+  say(W.rest);
+}
+function hideEndTilesOnly() { endEl.classList.remove("show"); }
+function initRest() {
+  const moon = restEl.querySelector(".moon-hold");
+  let timer = null;
+  const cancel = () => { clearTimeout(timer); timer = null; moon.classList.remove("holding"); };
+  moon.addEventListener("pointerdown", e => {
+    if (e.button > 0) return;
+    moon.classList.add("holding");
+    timer = setTimeout(() => {
+      timer = null; moon.classList.remove("holding");
+      resetGames();
+      restEl.classList.remove("show"); night.classList.remove("on");
+      audio(); if (AC) tone(660, AC.currentTime, { type: "sine", peak: .1, decay: .15 });
+      if (startEl.isConnected && !startEl.classList.contains("hide")) return;   // came from a reload: tiles are already there
+      showAgain();
+    }, 2000);
+  });
+  for (const ev of ["pointerup", "pointerleave", "pointercancel"]) moon.addEventListener(ev, cancel);
+  moon.addEventListener("contextmenu", e => e.preventDefault());
+  // Rest already due when the page opens (e.g. after a reload): show the moon over the Start screen.
+  if (restDue()) { night.classList.add("on"); restEl.classList.add("show"); }
+}
+
 function initStartScreen() {
   addEventListener("resize", fitTiles);
   if (Q.get("start") === "0") { startEl.remove(); return; }
@@ -195,11 +270,12 @@ function initStartScreen() {
    The game just played as a big tile in the middle (most likely what the child wants again),
    with the other games as smaller tiles underneath. For a parent-made game: only its big tile. */
 function showAgain() {
+  if (restDue()) { showRest(); return; }
   const current = CFG.theme;
-  if (current === "images" && THEME_GIVEN) chooseSet();   // random set: the tile previews the next one
+  if (current === "images" && isLocked()) chooseSet();   // random set: the tile previews the next one
   endEl.innerHTML = "";
   endEl.appendChild(makeTile(current, 0, "big"));
-  if (!THEME_GIVEN) {
+  if (!isLocked()) {
     const others = document.createElement("div"); others.className = "others";
     tileThemes().filter(x => x !== current).forEach((x, i) => others.appendChild(makeTile(x, i + 1, "small")));
     endEl.appendChild(others);

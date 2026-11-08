@@ -74,8 +74,20 @@ function flipBack() {
 }
 
 /* End of the game: a short fireworks show. */
+/* Games finished in this session (kept across reloads of the same tab). Each one makes the next
+   fireworks a little longer, so the wait before the next game grows: calmer, less rushing. */
+let gamesDone = 0;
+try { gamesDone = +sessionStorage.getItem("memoriter-games") || 0; } catch { /* storage blocked */ }
+function resetGames() {
+  gamesDone = 0;
+  try { sessionStorage.setItem("memoriter-games", 0); } catch { /* storage blocked */ }
+}
+const restDue = () => CFG.rest > 0 && gamesDone >= CFG.rest;
+
 function finale() {
-  fireworksShow(showAgain);
+  gamesDone++;
+  try { sessionStorage.setItem("memoriter-games", gamesDone); } catch { /* storage blocked */ }
+  fireworksShow(showAgain, gamesDone);
 }
 
 function vanish(c) {

@@ -61,6 +61,9 @@ function setupForm() {
     <label><input type="checkbox" name="tts"${checked(CFG.tts)}> say each card out loud</label>
     <label><input type="checkbox" name="sound"${checked(CFG.sound)}> sounds</label>
     <label><input type="checkbox" name="fullscreen"${checked(CFG.fullscreen)}> full screen when the game starts</label>
+  </div><div class="row" style="margin-top:8px">
+    <label>Rest after <input type="number" name="rest" min="0" max="50" value="${CFG.rest}"> games</label>
+    <small>A sleepy moon says it's time for a break; hold the moon 2 s to unlock. 0 = never.</small>
   </div></fieldset>
 
   <div class="actions">
@@ -98,8 +101,9 @@ function setupParams(form) {
   if (!f.get("tts")) p.set("tts", "0");
   if (!f.get("sound")) p.set("sound", "0");
   if (!f.get("fullscreen")) p.set("fullscreen", "0");
+  if (String(f.get("rest")) !== "6") p.set("rest", String(Math.max(0, parseInt(f.get("rest"), 10) || 0)));
   // Keep the look-and-feel settings a link may already have (patterns, colours, timings …).
-  for (const k of ["colors", "back", "backcolor", "mark", "bg", "bgcolor", "delay", "vanish", "rate", "pitch", "win"]) if (Q.has(k)) p.set(k, Q.get(k));
+  for (const k of ["grow", "colors", "back", "backcolor", "mark", "bg", "bgcolor", "delay", "vanish", "rate", "pitch", "win"]) if (Q.has(k)) p.set(k, Q.get(k));
   return p;
 }
 

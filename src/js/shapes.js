@@ -9,7 +9,6 @@ const starPoly = () => Array.from({ length: 10 }, (_, i) => {
 const polygon = (pts, c, s) => `<polygon points="${pts}" fill="${c}" stroke="${s}" stroke-width="4" stroke-linejoin="round"/>`;
 
 const SHAPES = {
-  line:      c => `<line x1="12" y1="50" x2="88" y2="50" stroke="${c}" stroke-width="12" stroke-linecap="round"/>`,
   circle:    (c, s) => `<circle cx="50" cy="50" r="40" fill="${c}" stroke="${s}" stroke-width="4"/>`,
   oval:      (c, s) => `<ellipse cx="50" cy="50" rx="44" ry="28" fill="${c}" stroke="${s}" stroke-width="4"/>`,
   square:    (c, s) => `<rect x="15" y="15" width="70" height="70" rx="4" fill="${c}" stroke="${s}" stroke-width="4"/>`,

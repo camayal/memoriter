@@ -25,7 +25,7 @@ Works in a browser but has not been tested on real devices yet.
 | `src/js/speech.js` | Text-to-speech, voice choice and presets |
 | `src/js/fireworks.js` | Sparkle particles and the end fireworks show |
 | `site/wa/pairs/` | Copies of the website's shell files for `camayal.info/wa/pairs` (iframe page, manifest, offline `sw.js`) |
-| `tests/check.py` | `python tests/check.py` checks 61 URL settings in headless Edge/Chrome (~5 s). `--dist` tests the built file. |
+| `tests/check.py` | `python tests/check.py` checks 66 URL settings in headless Edge/Chrome (~5 s). `--dist` tests the built file. |
 | `src/js/board.js` | Game logic: deal, flip, match, layout |
 | `src/js/screens.js` | Game tiles, Start screen, end screen, `?help=1`, `?voices=1` |
 | `src/js/setup.js` | Parents' setup screen (`?setup`) |
@@ -58,6 +58,10 @@ To add a language, copy the `en` block in `src/js/i18n.js`, translate it, and ac
 | Start screen: the toddler picks the game | ✅ Done | One big tile per game: numbers **1**, letters **A**, animals 🐶, shapes ▲, colors (crayons). Each tile shows a small fanned stack of three cards, so the child can choose by looking. Tapping says "Let's find pairs of numbers!" / "¡Vamos a buscar parejas de números!" (etc.), pops confetti and starts. The tap also unlocks sound and speech, so the first card is heard. Tiles are sized to fill the screen; the layout picks the column count that gives the biggest tiles, preferring even rows (3 + 2). `themes=` limits or orders the tiles. `start=0` skips the screen. If the device has no voice for the language, a note for the grown-up appears. |
 | Parents' setup screen | ✅ Done | Open `index.html?setup`. A plain form: game (numbers, letters, animals, shapes, colors, own cards), its options (number range, which letters / lowercase, which shapes, own cards one per line with `shown\|spoken`, "these are pictures"), number of cards, language, voice, speech and sound on/off. **Start game** reloads the page with those settings; **Copy link** copies them for a bookmark. Opening `?setup` on an existing link pre-fills the form. |
 | Parent-made game: one big tile | ✅ Done | When the link picks the game (from setup, or `theme=` / `letters=` / `shapes=` / `items=`), the child sees one big tile previewing that exact game (e.g. A E I O U), with a green replay badge, at the start and again after the fireworks. |
+| Grown-up lock by long press | ✅ Done | Holding a game tile ~1 s (soft click, tile sinks, replay badge appears) locks that game: it starts on release, and the end screen offers only that game. The lock survives a reload (`theme=` is added to the address). A child's short tap is unaffected. |
+| Calmer pacing: fireworks grow each game | ✅ Done | The first show stays short (~4 s); each finished game in the session adds one slow extra rocket before the finale, up to 10 (~13 s total), so the wait before the next game grows. Counted per browser tab. `grow=0` keeps it always short, `grow=N` changes the maximum. |
+| Rest screen (sleepy moon) | ✅ Done | After 6 finished games (`rest=6`, `rest=0` = never, also in setup) the fireworks end on a quiet night sky with a sleeping crescent moon, slowly rising "Z z z" and softly twinkling stars; the voice says "Time for a break. See you soon!" / "¡Hora de descansar! Hasta pronto." Nothing for the child to tap. A grown-up holds the moon ~2 s to unlock (count starts again). Reloading the page doesn't skip it. |
+| No idle animations | ✅ Done | Tiles no longer "breathe": nothing moves on screen until it is touched (the rest screen's slow moon and stars are the only gentle motion). |
 | Full screen | ✅ Done | Tapping a game tile switches to full screen (no address bar or browser buttons) on Android, desktop and iPad, also inside a same-site iframe. Not available on iPhone Safari. `fullscreen=0` or the setup screen turns it off. |
 | Install as an app (PWA) | ✅ Done (test on a phone) | `dist/` includes an app manifest (full-screen display, cream theme), icons (four cards: two cats face up, two star backs face down) and a service worker so the installed app also opens offline and picks up updates when online. Install from `camayal.info/wa/pairs` with the browser's "Install app" / "Add to Home screen" (needs the shell's manifest, see Publishing). Only works over https (GitHub Pages), not from disk. |
 | No pull-to-refresh, no zoom | ✅ Done | `overscroll-behavior:none` stops pull-down refresh and rubber-banding; `touch-action:none`, `maximum-scale=1` and blocked pinch / ctrl+wheel gestures stop zoom. The setup screen can still scroll. |
@@ -68,13 +72,13 @@ To add a language, copy the `en` block in `src/js/i18n.js`, translate it, and ac
 | Theme 2: letters (`abc`, `a-d`, `aeiou`) | ✅ Done | Also `vowels` / `vocales` and `case=lower`. Spanish adds ñ and speaks the Spanish letter names (be, ce, hache, jota…). |
 | Phonics (letter sounds) | ✅ Done (to tune by ear) | `phonics=1` says the letter's sound instead of its name (B → "buh", M → "mmm"); `phonics=both` says both ("B, buh"). English and Spanish (Spanish h says "muda"). Also in the setup screen under Letters, and for single-letter own cards. The sounds are spelled for the voice to read (browsers can't pronounce raw phonemes), so some may need adjusting per voice: edit `PHONICS_EN` / `PHONICS_ES` in `src/js/i18n.js`, or override one card with `items=B\|buh`. |
 | Bilingual (en / es) | ✅ Done | `lang=es` translates every spoken word: numbers as words ("veintidós"), Spanish letter names, shapes, animals, the Start and win phrases. Picks a Spanish voice, preferring the browser's own region. Tested headless in Edge, which chose a Spanish "Natural" voice. |
-| Theme 3: shapes | ✅ Done | line, circle, oval, square, rectangle, triangle, diamond, pentagon, hexagon, heptagon, octagon, star, heart. |
+| Theme 3: shapes | ✅ Done | circle, oval, square, rectangle, triangle, diamond, pentagon, hexagon, heptagon, octagon, star, heart. |
 | Theme 4: pictures | ✅ Done (emoji) | Four toddler-easy emoji sets: **animals**, **fruits**, **vehicles**, **nature** (sun, moon, rainbow…), with words in English and Spanish. The pictures tile shows a mix (🐶 🍎 🚗). Each game uses one set only, chosen at random and never the same twice in a row, and the voice names it ("Let's find pairs of fruits!"). `set=fruits` (or the setup screen) fixes one set. Own pictures: `items=` with emoji or image links. Emoji look different on each OS; a consistent image source is still an open decision. |
 
 ## URL parameters
 
 `setup` · `theme` · `themes` · `cards` · `from` · `to` · `letters` · `case` · `phonics` · `shapes` · `set` · `items` · `lang` · `voice` · `voices` ·
-`rate` · `pitch` · `tts` · `sound` · `colors` · `delay` · `vanish` · `back` · `backcolor` · `mark` · `bg` · `bgcolor` · `fullscreen` · `seed` · `start` · `win` · `again` · `demo` · `help`
+`rate` · `pitch` · `tts` · `sound` · `colors` · `delay` · `vanish` · `back` · `backcolor` · `mark` · `bg` · `bgcolor` · `fullscreen` · `grow` · `rest` · `seed` · `start` · `win` · `again` · `demo` · `help`
 
 Removed: `starttext` (the "Let's go!" button became the big tile). Removed as redundant: `pairs` (use `cards`), `img` (use `items` with `theme=images`), `theme=custom` (guessed from `items`), `vol` (use `sound=0`). Kept `rate` / `pitch` as fine-tuning on top of the `voice=` presets.
 
@@ -127,6 +131,14 @@ People play at **https://camayal.info/wa/pairs** (the GitHub Pages site with the
 - [ ] Matching uppercase to lowercase (A ↔ a)
 - [ ] Mixed pairs: picture ↔ word, number ↔ quantity (the two cards of a pair look different)
 - [x] ~~Ready-made packs~~: animals, fruits, vehicles, nature (`set=`)
+
+### Lower stimulation (ideas to build later)
+- [ ] Calm mode (`calm=1`, also in setup): slower flips and pops, quieter and fewer sounds, softer sparkles, fireworks become a gentle star shower
+- [ ] Quiet transition between games: the screen dims and a slow "breathing" circle grows and shrinks three times before the tiles appear
+- [ ] Fewer rewards per match: matched pairs fade away softly (no sparkle or pop); excitement kept for the end only
+- [ ] Slower pace in the game: wrong pairs stay visible a little longer, encouraging looking before tapping again
+- [ ] Gentle cooldown on the end tiles: they fade in slowly and ignore taps for the first 2 seconds
+- [ ] Session limits for parents in setup: rest length in minutes (auto-unlock after the break) and a daily maximum of games
 
 ### Gameplay / UX
 - [ ] Preview mode: show all cards for a few seconds at the start (`peek=3`)
