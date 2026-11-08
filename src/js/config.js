@@ -9,8 +9,13 @@ const list = k => Q.getAll(k).flatMap(v => v.split(",")).map(s => s.trim()).filt
 /* Language: "es", "es-MX", "spanish", "español" … all work. LANG is the 2-letter code used for
    built-in words; LANG_TAG is the full tag used to pick a voice. */
 const LANG_ALIASES = { spanish: "es", espanol: "es", "español": "es", english: "en", ingles: "en", "inglés": "en" };
-const LANG_TAG = (() => { const v = (Q.get("lang") || "en").trim().replace("_", "-"); return LANG_ALIASES[v.toLowerCase()] || v; })();
-const LANG = LANG_TAG.slice(0, 2).toLowerCase() === "es" ? "es" : "en";
+/* Language: lang= in the address wins (parent-made links); otherwise the language last chosen with
+   the EN · ES switch on this device; otherwise English. It can change while the game runs
+   (switchLanguage in screens.js), so these are variables. */
+const normLang = v => { v = String(v || "").trim().replace("_", "-"); return LANG_ALIASES[v.toLowerCase()] || v; };
+const savedLang = (() => { try { return localStorage.getItem("memoriter-lang"); } catch { return null; } })();
+let LANG_TAG = normLang(Q.get("lang") || savedLang || "en") || "en";
+let LANG = LANG_TAG.slice(0, 2).toLowerCase() === "es" ? "es" : "en";
 
 /* Theme: given with theme=…, or guessed from the other settings, so "?letters=vowels" alone
    already means the letters theme. */

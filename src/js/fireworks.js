@@ -38,18 +38,22 @@ function sparkle(x, y, size, color) {
 }
 
 /* ----- Theme symbol for the big final burst -----
-   One of the cards the child just matched is drawn off-screen (a letter or number as itself, a
-   picture as its silhouette, a shape as its outline, a colour as a crayon) and its filled pixels
-   become target points: every spark of the final rocket flies to one point and slows down there,
-   so the symbol shows up in sparks before it fades. Prepared when the show starts (shapes load
-   as images, so it takes a moment); if it isn't ready, the heart or smiley is used instead. */
+   One of the cards the child just matched is drawn off-screen (a letter, number or word as itself,
+   a shape as itself, a colour as a crayon), and evenly spaced points along its OUTLINE become
+   targets: every spark of the final rocket flies to one point and slows down there, so the
+   symbol's outline shows up in sparks before it fades. Pictures (emoji) use their outline only when
+   it is easy to recognise (checked one by one: cat, rabbit, fish, apple, car…); the others (round
+   heads, boxes) get the happy-face firework instead. Shapes load as images, so this is prepared
+   when the show starts; if it isn't ready, the heart or smiley is used. */
 let finaleSymbol = null;
+const CLEAR_OUTLINES = new Set(["🐱", "🐰", "🐟", "🐘", "🦆", "🍎", "🍌", "🍐", "🍒", "🚗", "✈️", "🚲", "🚁", "🌙", "⭐", "☁️", "🌸", "🌳"]);
 function prepareSymbol(item, color) {
   finaleSymbol = null;
   if (!item) return;
+  if (item.kind === "img" || (item.kind === "emoji" && !CLEAR_OUTLINES.has(item.show))) { finaleSymbol = { smile: true }; return; }
   const N = 160, cv = document.createElement("canvas"); cv.width = cv.height = N;
   const g = cv.getContext("2d");
-  const done = () => { const points = samplePoints(g, N); if (points) finaleSymbol = { points, color }; };
+  const done = () => { const points = outlinePoints(g, N); if (points) finaleSymbol = { points, color }; };
   g.fillStyle = "#000"; g.textAlign = "center"; g.textBaseline = "middle";
   if (item.kind === "text" || item.kind === "emoji") {
     let size = item.kind === "emoji" ? 128 : 140;
@@ -67,16 +71,28 @@ function prepareSymbol(item, color) {
     img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
   }
 }
-/* Filled pixels → up to 280 points, centred and scaled to -1…1. */
-function samplePoints(g, N) {
-  const d = g.getImageData(0, 0, N, N).data, pts = [];
-  for (let y = 0; y < N; y += 3) for (let x = 0; x < N; x += 3) if (d[(y * N + x) * 4 + 3] > 110) pts.push([x, y]);
-  if (pts.length < 12) return null;
+/* Edge pixels of the drawn symbol (filled pixel next to an empty one), thinned so neighbouring
+   points are at least ~4 px apart, centred and scaled to -1…1. At most 260 points. */
+function outlinePoints(g, N) {
+  const d = g.getImageData(0, 0, N, N).data, on = (x, y) => x >= 0 && y >= 0 && x < N && y < N && d[(y * N + x) * 4 + 3] > 110;
+  const edge = [];
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++)
+    if (on(x, y) && (!on(x - 2, y) || !on(x + 2, y) || !on(x, y - 2) || !on(x, y + 2))) edge.push([x, y]);
+  if (edge.length < 12) return null;
+  for (let i = edge.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [edge[i], edge[j]] = [edge[j], edge[i]]; }
+  const cell = 4, taken = new Set(), pts = [];
+  for (const [x, y] of edge) {
+    const cx = Math.floor(x / cell), cy = Math.floor(y / cell);
+    let near = false;
+    for (let dx = -1; dx <= 1 && !near; dx++) for (let dy = -1; dy <= 1; dy++) if (taken.has((cx + dx) + "," + (cy + dy))) { near = true; break; }
+    if (near) continue;
+    taken.add(cx + "," + cy); pts.push([x, y]);
+    if (pts.length >= 260) break;
+  }
   const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
-  const cx = (Math.min(...xs) + Math.max(...xs)) / 2, cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+  const mx = (Math.min(...xs) + Math.max(...xs)) / 2, my = (Math.min(...ys) + Math.max(...ys)) / 2;
   const half = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) / 2 || 1;
-  for (let i = pts.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pts[i], pts[j]] = [pts[j], pts[i]]; }
-  return pts.slice(0, 280).map(([x, y]) => [(x - cx) / half, (y - cy) / half]);
+  return pts.map(([x, y]) => [(x - mx) / half, (y - my) / half]);
 }
 
 function launch(kind, x, ty) {
@@ -109,7 +125,7 @@ function explode(r) {
   } else if (k === "symbol" && r.points) {
     // Sparks fly to the symbol's points: with drag .92 a spark travels v / (1 - .92) = 12.5 v in total.
     const R = Math.min(innerWidth, innerHeight) * .24;
-    for (const [px, py] of r.points) spark({ x, y, vx: px * R / 12.5, vy: py * R / 12.5, drag: .92, grav: .004, fade: .0085, size: 2.8, color: Math.random() < .12 ? "#FFFFFF" : r.symbolColor });
+    for (const [px, py] of r.points) spark({ x, y, vx: px * R / 12.5, vy: py * R / 12.5, drag: .92, grav: .003, fade: .0075, size: 3, color: Math.random() < .12 ? "#FFFFFF" : r.symbolColor });
     ring(36, S * 1.2, "#FFFFFF", { size: 1.6, fade: .025 });
   } else if (k === "smile") {
     const yellow = "#FFD86B", v = S * 4.4, o = { color: yellow, grav: .02, fade: .011 };
@@ -193,9 +209,11 @@ function fireworksShow(onReady, round = 1) {
   t += 300;
   // The big final burst: a symbol from the game just played (see prepareSymbol), else heart/smiley.
   later(() => {
-    const sym = finaleSymbol, r = launch(sym ? "symbol" : (Math.random() < .5 ? "heart" : "smile"), Wd / 2, H * .32);
+    const sym = finaleSymbol;
+    const kind = sym && sym.points ? "symbol" : sym && sym.smile ? "smile" : (Math.random() < .5 ? "heart" : "smile");
+    const r = launch(kind, Wd / 2, H * .32);
     r.big = true;
-    if (sym) { r.points = sym.points; r.symbolColor = sym.color; }
+    if (kind === "symbol") { r.points = sym.points; r.symbolColor = sym.color; }
   }, t);
   later(() => { running = false; }, t + 1800);
   // The tiles wait until the last firework (the theme symbol) has completely faded; again=ms forces a fixed time.

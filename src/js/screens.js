@@ -14,7 +14,7 @@ letters  abc (whole alphabet) | a-d (range) | aeiou (exact list) | vowels
 case     upper | lower                                           (default: upper)
 phonics  letters say their name (0, default) | their sound, e.g. "buh" (1) | both, "bee … buh" (both)
 shapes   comma list: circle,oval,square,rectangle,triangle,diamond,
-         pentagon,hexagon,heptagon,octagon,star,heart          (default: random pick)
+         pentagon,hexagon,heptagon,octagon,star,heart,semicircle (default: random pick)
 set      pictures game: animals | fruits | vehicles | nature | random (default: random, a new set each game)
 items    your own cards, comma list or repeated; "shown|spoken" to say something else
          e.g. items=A|Apple,B|Ball      with theme=images: emoji or image links, e.g. items=https://…/cat.png|cat
@@ -269,12 +269,54 @@ function initRest() {
   if (restDue()) { night.classList.add("on"); restEl.classList.add("show"); }
 }
 
+/* Small, faint EN · ES switch in the bottom-right corner of the start and end screens (never during
+   play). It switches on the spot (no reload): words, voice, tiles and the waiting board all change.
+   The choice is remembered on this device and written into the address (lang=), so a reload or a
+   copied link keeps it. */
+function switchLanguage(code) {
+  if (!TEXT[code] || code === LANG) return;
+  LANG = code; LANG_TAG = code; W = TEXT[code];
+  document.documentElement.lang = code;
+  try { localStorage.setItem("memoriter-lang", code); } catch { /* storage blocked: just this session */ }
+  try {
+    const p = new URLSearchParams(location.search); p.set("lang", code);
+    history.replaceState(null, "", location.pathname + "?" + p.toString() + location.hash);
+  } catch { /* address can't be changed here */ }
+  chooseVoice();
+  // Redraw whatever is on screen in the new language.
+  if (startEl.isConnected && !startEl.classList.contains("hide")) { newGame(); renderStartTiles(); }
+  if (endEl.classList.contains("show")) showAgain();
+}
+function langSwitch() {
+  const el = document.createElement("div"); el.className = "langsw";
+  for (const code of ["en", "es"]) {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = code.toUpperCase(); b.lang = code;
+    b.setAttribute("aria-label", code === "en" ? "English" : "Español");
+    if (code === LANG) b.className = "on";
+    b.addEventListener("click", e => {
+      e.stopPropagation();
+      switchLanguage(code);
+    });
+    el.appendChild(b);
+    if (code === "en") el.insertAdjacentHTML("beforeend", "<span>·</span>");
+  }
+  return el;
+}
+
 function initStartScreen() {
   addEventListener("resize", fitTiles);
   if (Q.get("start") === "0") { startEl.remove(); return; }
+  renderStartTiles();
+}
+/* Start screen tiles + EN · ES switch (also redrawn when the language changes). */
+function renderStartTiles() {
   const tiles = startEl.querySelector(".themes");
+  tiles.innerHTML = "";
   if (THEME_GIVEN) tiles.appendChild(makeTile(CFG.theme, 0, "big"));
   else tileThemes().forEach((theme, i) => tiles.appendChild(makeTile(theme, i)));
+  startEl.querySelector(".langsw")?.remove();
+  startEl.appendChild(langSwitch());
   updateLangNotice();
   fitTiles();
 }
@@ -284,6 +326,7 @@ function initStartScreen() {
    with the other games as smaller tiles underneath. For a parent-made game: only its big tile. */
 function showAgain() {
   if (restDue()) { showRest(); return; }
+  endEl.querySelector(".langsw")?.remove();
   const current = CFG.theme;
   if (current === "images" && isLocked()) chooseSet();   // random set: the tile previews the next one
   endEl.innerHTML = "";
@@ -293,6 +336,7 @@ function showAgain() {
     tileThemes().filter(x => x !== current).forEach((x, i) => others.appendChild(makeTile(x, i + 1, "small")));
     endEl.appendChild(others);
   }
+  endEl.appendChild(langSwitch());
   fitTiles();
   endEl.classList.add("show");
 }

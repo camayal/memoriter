@@ -165,6 +165,15 @@ html,body{margin:0;height:100%;background:var(--page-bg);overflow:hidden;
 #rest::after{content:"By: C. A. Maya-Lastra - 2026";position:absolute;left:50%;bottom:max(10px,env(safe-area-inset-bottom));translate:-50% 0;
   font:500 12px/1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.06em;color:rgba(255,255,255,.25);pointer-events:none;user-select:none}
 @media (prefers-reduced-motion:reduce){#rest .moon,#rest .z,#rest .tw{animation:none}#rest .z{opacity:.7}}
+
+/* EN · ES switch: tiny and faint, bottom-right of the start and end screens. */
+.langsw{position:absolute;right:max(10px,env(safe-area-inset-right));bottom:max(4px,env(safe-area-inset-bottom));
+  display:flex;align-items:center;font:500 13px/1 system-ui,-apple-system,"Segoe UI",sans-serif;color:rgba(47,58,74,.3)}
+.langsw button{border:0;background:none;color:inherit;font:inherit;letter-spacing:.06em;padding:12px 6px;cursor:pointer}
+.langsw button.on{color:rgba(47,58,74,.55);font-weight:700;cursor:default}
+.langsw span{opacity:.7}
+#end .langsw{color:rgba(255,255,255,.3)}
+#end .langsw button.on{color:rgba(255,255,255,.6)}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#FFF7EA">
@@ -226,8 +235,13 @@ const list = k => Q.getAll(k).flatMap(v => v.split(",")).map(s => s.trim()).filt
 /* Language: "es", "es-MX", "spanish", "español" … all work. LANG is the 2-letter code used for
    built-in words; LANG_TAG is the full tag used to pick a voice. */
 const LANG_ALIASES = { spanish: "es", espanol: "es", "español": "es", english: "en", ingles: "en", "inglés": "en" };
-const LANG_TAG = (() => { const v = (Q.get("lang") || "en").trim().replace("_", "-"); return LANG_ALIASES[v.toLowerCase()] || v; })();
-const LANG = LANG_TAG.slice(0, 2).toLowerCase() === "es" ? "es" : "en";
+/* Language: lang= in the address wins (parent-made links); otherwise the language last chosen with
+   the EN · ES switch on this device; otherwise English. It can change while the game runs
+   (switchLanguage in screens.js), so these are variables. */
+const normLang = v => { v = String(v || "").trim().replace("_", "-"); return LANG_ALIASES[v.toLowerCase()] || v; };
+const savedLang = (() => { try { return localStorage.getItem("memoriter-lang"); } catch { return null; } })();
+let LANG_TAG = normLang(Q.get("lang") || savedLang || "en") || "en";
+let LANG = LANG_TAG.slice(0, 2).toLowerCase() === "es" ? "es" : "en";
 
 /* Theme: given with theme=…, or guessed from the other settings, so "?letters=vowels" alone
    already means the letters theme. */
@@ -287,7 +301,7 @@ const TEXT = {
     win: "Good job!",
     sample: "Hello, one, two, three",
     noVoice: "No English voice on this device/browser.",
-    shapes: { circle: "circle", oval: "oval", square: "square", rectangle: "rectangle", triangle: "triangle", diamond: "diamond", pentagon: "pentagon", hexagon: "hexagon", heptagon: "heptagon", octagon: "octagon", star: "star", heart: "heart" },
+    shapes: { circle: "circle", oval: "oval", square: "square", rectangle: "rectangle", triangle: "triangle", diamond: "diamond", pentagon: "pentagon", hexagon: "hexagon", heptagon: "heptagon", octagon: "octagon", star: "star", heart: "heart", semicircle: "semicircle" },
     // Picture sets (emoji). Only simple, everyday things a toddler knows. "emoji|spoken word".
     sets: {
       animals:  { name: "animals",  items: ["🐶|dog", "🐱|cat", "🐮|cow", "🐷|pig", "🐸|frog", "🦁|lion", "🐵|monkey", "🐤|chick", "🦆|duck", "🐻|bear", "🐰|rabbit", "🐟|fish", "🐘|elephant", "🐴|horse"] },
@@ -311,7 +325,7 @@ const TEXT = {
     win: "¡Muy bien!",
     sample: "Hola, uno, dos, tres",
     noVoice: "No hay voz en español en este dispositivo/navegador.",
-    shapes: { circle: "círculo", oval: "óvalo", square: "cuadrado", rectangle: "rectángulo", triangle: "triángulo", diamond: "rombo", pentagon: "pentágono", hexagon: "hexágono", heptagon: "heptágono", octagon: "octágono", star: "estrella", heart: "corazón" },
+    shapes: { circle: "círculo", oval: "óvalo", square: "cuadrado", rectangle: "rectángulo", triangle: "triángulo", diamond: "rombo", pentagon: "pentágono", hexagon: "hexágono", heptagon: "heptágono", octagon: "octágono", star: "estrella", heart: "corazón", semicircle: "semicírculo" },
     sets: {
       animals:  { name: "animales",   items: ["🐶|perro", "🐱|gato", "🐮|vaca", "🐷|cerdo", "🐸|rana", "🦁|león", "🐵|mono", "🐤|pollito", "🦆|pato", "🐻|oso", "🐰|conejo", "🐟|pez", "🐘|elefante", "🐴|caballo"] },
       fruits:   { name: "frutas",     items: ["🍎|manzana", "🍌|banano", "🍇|uvas", "🍓|fresa", "🍊|naranja", "🍉|sandía", "🍐|pera", "🍒|cerezas", "🍍|piña", "🍋|limón", "🥝|kiwi", "🍑|durazno"] },
@@ -327,7 +341,7 @@ const TEXT = {
     number: n => numberES(n),
   },
 };
-const W = TEXT[LANG];
+let W = TEXT[LANG];                                 // current language's words (changes with the EN · ES switch)
 
 /* Letter SOUNDS (phonics). Browsers can't be told "say the sound /b/", so each sound is spelled the
    way a voice will read it. Sounds you can hold (m, s, f …) are stretched ("mmm"); short ones get a
@@ -492,6 +506,11 @@ const SHAPES = {
   heptagon:  (c, s) => polygon(poly(7, 44, 52), c, s),
   octagon:   (c, s) => polygon(poly(8, 44, 50, -67.5), c, s),
   star:      (c, s) => polygon(starPoly(), c, s),
+  // Semicircle: a half disk with a flat bottom.
+  semicircle: (c, s) => `<path d="M8 70 A42 42 0 0 1 92 70 Z" fill="${c}" stroke="${s}" stroke-width="4" stroke-linejoin="round"/>`,
+  // Arch (doorway with a tunnel cut out), turned off for now; to bring it back, uncomment it here
+  // and add arch: "arch" / arch: "arco" to the shape names in i18n.js.
+  // arch:      (c, s) => `<path d="M10 90 V48 A40 40 0 0 1 90 48 V90 H66 V64 A16 16 0 0 0 34 64 V90 Z" fill="${c}" stroke="${s}" stroke-width="4" stroke-linejoin="round"/>`,
   heart:     (c, s) => `<path d="M50 86 C20 64 8 48 8 32 C8 18 19 9 31 9 C40 9 46 14 50 21 C54 14 60 9 69 9 C81 9 92 18 92 32 C92 48 80 64 50 86Z" fill="${c}" stroke="${s}" stroke-width="4" stroke-linejoin="round"/>`,
 };
 
@@ -767,18 +786,22 @@ function sparkle(x, y, size, color) {
 }
 
 /* ----- Theme symbol for the big final burst -----
-   One of the cards the child just matched is drawn off-screen (a letter or number as itself, a
-   picture as its silhouette, a shape as its outline, a colour as a crayon) and its filled pixels
-   become target points: every spark of the final rocket flies to one point and slows down there,
-   so the symbol shows up in sparks before it fades. Prepared when the show starts (shapes load
-   as images, so it takes a moment); if it isn't ready, the heart or smiley is used instead. */
+   One of the cards the child just matched is drawn off-screen (a letter, number or word as itself,
+   a shape as itself, a colour as a crayon), and evenly spaced points along its OUTLINE become
+   targets: every spark of the final rocket flies to one point and slows down there, so the
+   symbol's outline shows up in sparks before it fades. Pictures (emoji) use their outline only when
+   it is easy to recognise (checked one by one: cat, rabbit, fish, apple, car…); the others (round
+   heads, boxes) get the happy-face firework instead. Shapes load as images, so this is prepared
+   when the show starts; if it isn't ready, the heart or smiley is used. */
 let finaleSymbol = null;
+const CLEAR_OUTLINES = new Set(["🐱", "🐰", "🐟", "🐘", "🦆", "🍎", "🍌", "🍐", "🍒", "🚗", "✈️", "🚲", "🚁", "🌙", "⭐", "☁️", "🌸", "🌳"]);
 function prepareSymbol(item, color) {
   finaleSymbol = null;
   if (!item) return;
+  if (item.kind === "img" || (item.kind === "emoji" && !CLEAR_OUTLINES.has(item.show))) { finaleSymbol = { smile: true }; return; }
   const N = 160, cv = document.createElement("canvas"); cv.width = cv.height = N;
   const g = cv.getContext("2d");
-  const done = () => { const points = samplePoints(g, N); if (points) finaleSymbol = { points, color }; };
+  const done = () => { const points = outlinePoints(g, N); if (points) finaleSymbol = { points, color }; };
   g.fillStyle = "#000"; g.textAlign = "center"; g.textBaseline = "middle";
   if (item.kind === "text" || item.kind === "emoji") {
     let size = item.kind === "emoji" ? 128 : 140;
@@ -796,16 +819,28 @@ function prepareSymbol(item, color) {
     img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
   }
 }
-/* Filled pixels → up to 280 points, centred and scaled to -1…1. */
-function samplePoints(g, N) {
-  const d = g.getImageData(0, 0, N, N).data, pts = [];
-  for (let y = 0; y < N; y += 3) for (let x = 0; x < N; x += 3) if (d[(y * N + x) * 4 + 3] > 110) pts.push([x, y]);
-  if (pts.length < 12) return null;
+/* Edge pixels of the drawn symbol (filled pixel next to an empty one), thinned so neighbouring
+   points are at least ~4 px apart, centred and scaled to -1…1. At most 260 points. */
+function outlinePoints(g, N) {
+  const d = g.getImageData(0, 0, N, N).data, on = (x, y) => x >= 0 && y >= 0 && x < N && y < N && d[(y * N + x) * 4 + 3] > 110;
+  const edge = [];
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++)
+    if (on(x, y) && (!on(x - 2, y) || !on(x + 2, y) || !on(x, y - 2) || !on(x, y + 2))) edge.push([x, y]);
+  if (edge.length < 12) return null;
+  for (let i = edge.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [edge[i], edge[j]] = [edge[j], edge[i]]; }
+  const cell = 4, taken = new Set(), pts = [];
+  for (const [x, y] of edge) {
+    const cx = Math.floor(x / cell), cy = Math.floor(y / cell);
+    let near = false;
+    for (let dx = -1; dx <= 1 && !near; dx++) for (let dy = -1; dy <= 1; dy++) if (taken.has((cx + dx) + "," + (cy + dy))) { near = true; break; }
+    if (near) continue;
+    taken.add(cx + "," + cy); pts.push([x, y]);
+    if (pts.length >= 260) break;
+  }
   const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
-  const cx = (Math.min(...xs) + Math.max(...xs)) / 2, cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+  const mx = (Math.min(...xs) + Math.max(...xs)) / 2, my = (Math.min(...ys) + Math.max(...ys)) / 2;
   const half = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) / 2 || 1;
-  for (let i = pts.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pts[i], pts[j]] = [pts[j], pts[i]]; }
-  return pts.slice(0, 280).map(([x, y]) => [(x - cx) / half, (y - cy) / half]);
+  return pts.map(([x, y]) => [(x - mx) / half, (y - my) / half]);
 }
 
 function launch(kind, x, ty) {
@@ -838,7 +873,7 @@ function explode(r) {
   } else if (k === "symbol" && r.points) {
     // Sparks fly to the symbol's points: with drag .92 a spark travels v / (1 - .92) = 12.5 v in total.
     const R = Math.min(innerWidth, innerHeight) * .24;
-    for (const [px, py] of r.points) spark({ x, y, vx: px * R / 12.5, vy: py * R / 12.5, drag: .92, grav: .004, fade: .0085, size: 2.8, color: Math.random() < .12 ? "#FFFFFF" : r.symbolColor });
+    for (const [px, py] of r.points) spark({ x, y, vx: px * R / 12.5, vy: py * R / 12.5, drag: .92, grav: .003, fade: .0075, size: 3, color: Math.random() < .12 ? "#FFFFFF" : r.symbolColor });
     ring(36, S * 1.2, "#FFFFFF", { size: 1.6, fade: .025 });
   } else if (k === "smile") {
     const yellow = "#FFD86B", v = S * 4.4, o = { color: yellow, grav: .02, fade: .011 };
@@ -922,9 +957,11 @@ function fireworksShow(onReady, round = 1) {
   t += 300;
   // The big final burst: a symbol from the game just played (see prepareSymbol), else heart/smiley.
   later(() => {
-    const sym = finaleSymbol, r = launch(sym ? "symbol" : (Math.random() < .5 ? "heart" : "smile"), Wd / 2, H * .32);
+    const sym = finaleSymbol;
+    const kind = sym && sym.points ? "symbol" : sym && sym.smile ? "smile" : (Math.random() < .5 ? "heart" : "smile");
+    const r = launch(kind, Wd / 2, H * .32);
     r.big = true;
-    if (sym) { r.points = sym.points; r.symbolColor = sym.color; }
+    if (kind === "symbol") { r.points = sym.points; r.symbolColor = sym.color; }
   }, t);
   later(() => { running = false; }, t + 1800);
   // The tiles wait until the last firework (the theme symbol) has completely faded; again=ms forces a fixed time.
@@ -1088,7 +1125,7 @@ letters  abc (whole alphabet) | a-d (range) | aeiou (exact list) | vowels
 case     upper | lower                                           (default: upper)
 phonics  letters say their name (0, default) | their sound, e.g. "buh" (1) | both, "bee … buh" (both)
 shapes   comma list: circle,oval,square,rectangle,triangle,diamond,
-         pentagon,hexagon,heptagon,octagon,star,heart          (default: random pick)
+         pentagon,hexagon,heptagon,octagon,star,heart,semicircle (default: random pick)
 set      pictures game: animals | fruits | vehicles | nature | random (default: random, a new set each game)
 items    your own cards, comma list or repeated; "shown|spoken" to say something else
          e.g. items=A|Apple,B|Ball      with theme=images: emoji or image links, e.g. items=https://…/cat.png|cat
@@ -1343,12 +1380,54 @@ function initRest() {
   if (restDue()) { night.classList.add("on"); restEl.classList.add("show"); }
 }
 
+/* Small, faint EN · ES switch in the bottom-right corner of the start and end screens (never during
+   play). It switches on the spot (no reload): words, voice, tiles and the waiting board all change.
+   The choice is remembered on this device and written into the address (lang=), so a reload or a
+   copied link keeps it. */
+function switchLanguage(code) {
+  if (!TEXT[code] || code === LANG) return;
+  LANG = code; LANG_TAG = code; W = TEXT[code];
+  document.documentElement.lang = code;
+  try { localStorage.setItem("memoriter-lang", code); } catch { /* storage blocked: just this session */ }
+  try {
+    const p = new URLSearchParams(location.search); p.set("lang", code);
+    history.replaceState(null, "", location.pathname + "?" + p.toString() + location.hash);
+  } catch { /* address can't be changed here */ }
+  chooseVoice();
+  // Redraw whatever is on screen in the new language.
+  if (startEl.isConnected && !startEl.classList.contains("hide")) { newGame(); renderStartTiles(); }
+  if (endEl.classList.contains("show")) showAgain();
+}
+function langSwitch() {
+  const el = document.createElement("div"); el.className = "langsw";
+  for (const code of ["en", "es"]) {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = code.toUpperCase(); b.lang = code;
+    b.setAttribute("aria-label", code === "en" ? "English" : "Español");
+    if (code === LANG) b.className = "on";
+    b.addEventListener("click", e => {
+      e.stopPropagation();
+      switchLanguage(code);
+    });
+    el.appendChild(b);
+    if (code === "en") el.insertAdjacentHTML("beforeend", "<span>·</span>");
+  }
+  return el;
+}
+
 function initStartScreen() {
   addEventListener("resize", fitTiles);
   if (Q.get("start") === "0") { startEl.remove(); return; }
+  renderStartTiles();
+}
+/* Start screen tiles + EN · ES switch (also redrawn when the language changes). */
+function renderStartTiles() {
   const tiles = startEl.querySelector(".themes");
+  tiles.innerHTML = "";
   if (THEME_GIVEN) tiles.appendChild(makeTile(CFG.theme, 0, "big"));
   else tileThemes().forEach((theme, i) => tiles.appendChild(makeTile(theme, i)));
+  startEl.querySelector(".langsw")?.remove();
+  startEl.appendChild(langSwitch());
   updateLangNotice();
   fitTiles();
 }
@@ -1358,6 +1437,7 @@ function initStartScreen() {
    with the other games as smaller tiles underneath. For a parent-made game: only its big tile. */
 function showAgain() {
   if (restDue()) { showRest(); return; }
+  endEl.querySelector(".langsw")?.remove();
   const current = CFG.theme;
   if (current === "images" && isLocked()) chooseSet();   // random set: the tile previews the next one
   endEl.innerHTML = "";
@@ -1367,6 +1447,7 @@ function showAgain() {
     tileThemes().filter(x => x !== current).forEach((x, i) => others.appendChild(makeTile(x, i + 1, "small")));
     endEl.appendChild(others);
   }
+  endEl.appendChild(langSwitch());
   fitTiles();
   endEl.classList.add("show");
 }

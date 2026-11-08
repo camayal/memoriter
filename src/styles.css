@@ -156,3 +156,12 @@ html,body{margin:0;height:100%;background:var(--page-bg);overflow:hidden;
 #rest::after{content:"By: C. A. Maya-Lastra - 2026";position:absolute;left:50%;bottom:max(10px,env(safe-area-inset-bottom));translate:-50% 0;
   font:500 12px/1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.06em;color:rgba(255,255,255,.25);pointer-events:none;user-select:none}
 @media (prefers-reduced-motion:reduce){#rest .moon,#rest .z,#rest .tw{animation:none}#rest .z{opacity:.7}}
+
+/* EN · ES switch: tiny and faint, bottom-right of the start and end screens. */
+.langsw{position:absolute;right:max(10px,env(safe-area-inset-right));bottom:max(4px,env(safe-area-inset-bottom));
+  display:flex;align-items:center;font:500 13px/1 system-ui,-apple-system,"Segoe UI",sans-serif;color:rgba(47,58,74,.3)}
+.langsw button{border:0;background:none;color:inherit;font:inherit;letter-spacing:.06em;padding:12px 6px;cursor:pointer}
+.langsw button.on{color:rgba(47,58,74,.55);font-weight:700;cursor:default}
+.langsw span{opacity:.7}
+#end .langsw{color:rgba(255,255,255,.3)}
+#end .langsw button.on{color:rgba(255,255,255,.6)}

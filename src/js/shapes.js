@@ -20,5 +20,10 @@ const SHAPES = {
   heptagon:  (c, s) => polygon(poly(7, 44, 52), c, s),
   octagon:   (c, s) => polygon(poly(8, 44, 50, -67.5), c, s),
   star:      (c, s) => polygon(starPoly(), c, s),
+  // Semicircle: a half disk with a flat bottom.
+  semicircle: (c, s) => `<path d="M8 70 A42 42 0 0 1 92 70 Z" fill="${c}" stroke="${s}" stroke-width="4" stroke-linejoin="round"/>`,
+  // Arch (doorway with a tunnel cut out), turned off for now; to bring it back, uncomment it here
+  // and add arch: "arch" / arch: "arco" to the shape names in i18n.js.
+  // arch:      (c, s) => `<path d="M10 90 V48 A40 40 0 0 1 90 48 V90 H66 V64 A16 16 0 0 0 34 64 V90 Z" fill="${c}" stroke="${s}" stroke-width="4" stroke-linejoin="round"/>`,
   heart:     (c, s) => `<path d="M50 86 C20 64 8 48 8 32 C8 18 19 9 31 9 C40 9 46 14 50 21 C54 14 60 9 69 9 C81 9 92 18 92 32 C92 48 80 64 50 86Z" fill="${c}" stroke="${s}" stroke-width="4" stroke-linejoin="round"/>`,
 };
