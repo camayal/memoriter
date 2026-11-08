@@ -31,6 +31,7 @@ colors   one = one random colour for all cards, new each game (default)
          0 = dark ink
 delay    ms before a non-matching pair flips back (default 1200)
 vanish   ms a matched pair stays visible before it pops away (default 900)
+peek     seconds every card is shown face up when a game starts (default 0 = off)
 pace     fast = a tap while two cards are open moves on at once (for quick players).
          Default (calm): those taps are ignored until the wrong pair turns back or the pair pops away.
 back     card back pattern (default: random, new each game, never plain)
@@ -193,6 +194,7 @@ function beginGame(fromEl, label) {
   sparkle(r.left + r.width * .3, r.top + r.height / 2, Math.max(r.width, r.height) * 1.2, null);
   sparkle(r.left + r.width * .7, r.top + r.height / 2, Math.max(r.width, r.height) * 1.2, null);
   startEl.classList.add("hide");
+  peekCards(500);                                   // peek=N: once the start screen has faded
 }
 
 /* Tiles are sized to the screen, as big as possible for little hands (like the cards).

@@ -14,4 +14,5 @@ initRest();
 initHelp();
 initVoiceList();
 newGame();
+if (!startEl.isConnected) peekCards(300);           // start=0: the board shows straight away
 initSetup();

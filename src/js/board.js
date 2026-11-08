@@ -2,7 +2,7 @@
 /* board.js: the game itself: dealing cards, flipping, matching, layout. */
 
 const grid = document.getElementById("grid"), board = document.getElementById("board");
-let cards = [], openCards = [], locked = false, matched = 0, total = 0;
+let cards = [], openCards = [], locked = false, matched = 0, total = 0, peeking = false, peekTimer = null;
 let mismatch = null;                                // { a, b, timer } while two different cards are showing
 
 /* Emoji as HTML. Default: the OpenMoji drawing (https://openmoji.org, CC BY-SA 4.0), identical on
@@ -30,6 +30,7 @@ function newGame() {
   applyPatterns();                                  // new random card back each game
   const items = buildItems();
   if (mismatch) clearTimeout(mismatch.timer);
+  clearTimeout(peekTimer); peeking = false;
   total = items.length; matched = 0; openCards = []; locked = false; mismatch = null;
   const colors = gameColors(items.length);
   const deck = shuffle(items.flatMap((it, i) => [{ ...it, id: i, color: colors[i] }, { ...it, id: i, color: colors[i] }]));
@@ -53,7 +54,7 @@ function newGame() {
 function onTap(i) {
   const c = cards[i];
   audio();                                          // make sure audio is unlocked
-  if (c.done || c.up) return;
+  if (peeking || c.done || c.up) return;
   // Two cards still open. Calm pace (default): the tap is ignored completely (no sound, no movement),
   // so tapping fast gets nothing and the child learns to watch the cards. pace=fast: a tap turns the
   // wrong pair back right away and goes on.
@@ -79,6 +80,19 @@ function onTap(i) {
     locked = true;
     mismatch = { a, b, timer: setTimeout(flipBack, CFG.delay) };
   }
+}
+
+/* Peek (peek=N, off by default): when the game starts, every card is shown face up for N seconds,
+   silently, then they all turn over and play begins. Taps are ignored until then.
+   `after` waits for the start screen to fade first. */
+function peekCards(after = 0) {
+  if (!(CFG.peek > 0)) return;
+  clearTimeout(peekTimer); peeking = true;
+  const show = up => { for (const c of cards) { c.up = up; c.el.classList.toggle("up", up); } };
+  peekTimer = setTimeout(() => {
+    show(true);
+    peekTimer = setTimeout(() => { show(false); peeking = false; }, CFG.peek * 1000);
+  }, after);
 }
 
 function flipBack() {

@@ -65,7 +65,7 @@ To add a language, I copy the `en` block in `src/js/i18n.js`, translate it, and 
 | Theme symbol in the final firework | ✅ Done | The big final burst draws the **outline** of one of the cards just matched in evenly spaced sparks: a letter, number or word as itself, a shape as its outline; the colors game ends with a rainbow arc of coloured sparks (red outside → purple inside). Pictures use their outline when it reads clearly (cat, rabbit, fish, elephant, duck, apple, banana, pear, cherries, car, airplane, bike, helicopter, moon, star, cloud, flower, tree); the rest (round heads like dog/pig/frog, boxes like bus/train) get the happy-face firework (list in `CLEAR_OUTLINES`, `fireworks.js`). The other bursts (flowers, rings…) stay. |
 | No idle animations | ✅ Done | I stopped the tiles from "breathing": nothing moves on screen until it is touched (the rest screen's slow moon and stars are the only gentle motion). |
 | Full screen | ✅ Done | Tapping a game tile switches to full screen (no address bar or browser buttons) on Android, desktop and iPad, also inside a same-site iframe. Not available on iPhone Safari. `fullscreen=0` or the setup screen turns it off. |
-| Install as an app (PWA) | ✅ Done (I still need to test it on a phone) | `dist/` includes an app manifest (full-screen display, cream theme), icons (four cards: two cats face up, two star backs face down) and a service worker, so the installed app opens instantly from the saved copy (also offline) and picks up updates in the background, shown on the next open. It installs from `camayal.info/wa/pairs` with the browser's "Install app" / "Add to Home screen" (needs the shell's manifest, see Publishing). Only works over https (GitHub Pages), not from disk. |
+| Install as an app (PWA) | ✅ Done (I still need to test it on a phone) | `dist/` includes an app manifest (full-screen display, cream theme), icons (four cards: two OpenMoji dog faces face up, the same dog as the pictures tile, and two star backs face down) and a service worker, so the installed app opens instantly from the saved copy (also offline) and picks up updates in the background, shown on the next open. It installs from `camayal.info/wa/pairs` with the browser's "Install app" / "Add to Home screen" (needs the shell's manifest, see Publishing). Only works over https (GitHub Pages), not from disk. |
 | No pull-to-refresh, no zoom | ✅ Done | `overscroll-behavior:none` stops pull-down refresh and rubber-banding; `touch-action:none`, `maximum-scale=1` and blocked pinch / ctrl+wheel gestures stop zoom. The setup screen can still scroll. |
 | Cards react to every small tap | ✅ Done | I made cards react on touch-down instead of "click" (which got cancelled when a small finger slid or held), and blocked long-press menus. (A tap while two cards are open is handled by the pace setting, below.) |
 | Calm pace: rushing does nothing | ✅ Done | My child sometimes tapped wildly. Now, while two cards are open, every tap is **ignored completely** (no sound, no movement, no word, nothing saved for later) until the wrong pair has turned back (`delay=`, 1.2 s) or the found pair has fully popped away (~1.4 s). I chose to ignore rather than react: any reaction (a sink, a sound, a "slow down" phrase) would reward fast tapping, while nothing happening takes the fun out of it, and the child learns to watch the cards. A short burst of harder tapping at first is normal. **Fast pace** (`pace=fast`, or "fast pace" in setup, both in Defaults and in a link) brings back the quick behaviour for children with a good memory, since speed is a good skill too: a tap turns a wrong pair back at once and goes on. |
@@ -83,7 +83,7 @@ To add a language, I copy the `en` block in `src/js/i18n.js`, translate it, and 
 
 ## URL parameters
 
-`setup` · `pace` · `theme` · `themes` · `cards` · `from` · `to` · `letters` · `case` · `phonics` · `shapes` · `set` · `items` · `lang` · `voice` · `voices` ·
+`setup` · `pace` · `peek` · `theme` · `themes` · `cards` · `from` · `to` · `letters` · `case` · `phonics` · `shapes` · `set` · `items` · `lang` · `voice` · `voices` ·
 `rate` · `pitch` · `tts` · `sound` · `colors` · `delay` · `vanish` · `back` · `backcolor` · `mark` · `bg` · `bgcolor` · `fullscreen` · `grow` · `rest` · `emoji` · `seed` · `start` · `win` · `again` · `help`
 
 I removed `demo` (the tests now play the round for real) and `starttext` (the "Let's go!" button became the big tile). I also removed some as redundant: `pairs` (use `cards`), `img` (use `items` with `theme=images`), `theme=custom` (guessed from `items`), `vol` (use `sound=0`). I kept `rate` / `pitch` as fine-tuning on top of the `voice=` presets.
@@ -143,7 +143,7 @@ People play at **https://camayal.info/wa/pairs** (my GitHub Pages site with the 
 - [ ] Session limits for parents in setup: rest length in minutes (auto-unlock after the break) and a daily maximum of games
 
 ### Gameplay / UX
-- [ ] Preview mode: show all cards for a few seconds at the start (`peek=3`)
+- [x] ~~Preview mode~~: `peek=N` (or Peek in setup, Defaults and link) shows every card face up for N seconds when a game starts, silently, then turns them over; taps are ignored meanwhile. Off by default (`peek=0`).
 - [ ] Difficulty presets (`level=1..3`) that set the pair count
 - [x] ~~Card back styles~~ (done: `back=`, `backcolor=`)
 - [x] ~~A parent settings panel~~ (`?setup`)

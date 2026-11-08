@@ -57,6 +57,8 @@ const CFG = {
   // Pace: calm (default) ignores taps while two cards are open, until the wrong pair has turned back or
   // the found pair has popped away, so rushing does nothing. pace=fast lets a tap move on at once.
   fast: (Q.get("pace") || "").trim().toLowerCase() === "fast",
+  // Peek: seconds every card is shown face up when a game starts (0 = off, the default; max 30).
+  peek: Math.max(0, Math.min(30, num("peek", 0))),
   upper: (Q.get("case") || "upper").toLowerCase() !== "lower",
   // Letters: say the name ("bee"), the sound ("buh", phonics=1) or both ("B … buh", phonics=both).
   phonics: (Q.get("phonics") || "0").toLowerCase(),
