@@ -4,7 +4,7 @@
 
 const HELP = `MEMORITER: a memory pairs game for toddlers. Every setting comes from the URL.
 
-setup    open the parents' setup screen (…/index.html?setup), or hold the faint credit line 4 s on the start/end screen
+setup    open the parents' setup screen (…/index.html?setup), or hold the faint “…” (bottom-left of the start/end screen) 4 s
 theme    numbers | letters | shapes | images (pictures) | colors   (default: the child picks a tile on the Start screen;
          also guessed from letters=, shapes=, items=; then one big tile with a replay badge)
 themes   which tiles the Start screen offers, in order, e.g. themes=numbers,colors (default: all five)
@@ -311,18 +311,19 @@ function initStartScreen() {
   if (Q.get("start") === "0") { startEl.remove(); return; }
   renderStartTiles();
 }
-/* Grown-up door to the setup screen: hold the faint credit line at the bottom for 4 s (it darkens
-   slowly while held). A short touch does nothing. Opens ?setup with the current settings, so the
-   form starts from the game being played. */
-function creditHold(container) {
-  container.querySelector(".credit-hold")?.remove();
-  const el = document.createElement("div"); el.className = "credit-hold"; el.setAttribute("aria-hidden", "true");
+/* Grown-up door to the setup screen: a faint "…" in the bottom-left corner of the start and end
+   screens (mirroring EN · ES on the right). Hold it 4 s (it darkens slowly while held); a short
+   touch does nothing. Opens ?setup with the current settings. */
+function setupDoor(container) {
+  container.querySelector(".setupdoor")?.remove();
+  const el = document.createElement("div"); el.className = "setupdoor"; el.textContent = "…";
+  el.setAttribute("aria-label", "Settings (hold)");
   let timer = null;
-  const cancel = () => { clearTimeout(timer); timer = null; container.classList.remove("credit-holding"); };
+  const cancel = () => { clearTimeout(timer); timer = null; el.classList.remove("holding"); };
   el.addEventListener("pointerdown", e => {
     if (e.button > 0) return;
     e.preventDefault(); e.stopPropagation();
-    container.classList.add("credit-holding");
+    el.classList.add("holding");
     timer = setTimeout(() => {
       const p = new URLSearchParams(location.search); p.set("setup", "");
       location.href = location.pathname + "?" + p.toString().replace(/setup=(&|$)/, "setup$1");
@@ -341,7 +342,7 @@ function renderStartTiles() {
   else tileThemes().forEach((theme, i) => tiles.appendChild(makeTile(theme, i)));
   startEl.querySelector(".langsw")?.remove();
   startEl.appendChild(langSwitch());
-  creditHold(startEl);
+  setupDoor(startEl);
   updateLangNotice();
   fitTiles();
 }
@@ -362,7 +363,7 @@ function showAgain() {
     endEl.appendChild(others);
   }
   endEl.appendChild(langSwitch());
-  creditHold(endEl);
+  setupDoor(endEl);
   fitTiles();
   endEl.classList.add("show");
 }

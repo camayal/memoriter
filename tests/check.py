@@ -198,7 +198,7 @@ CASES = [
                and subset(re.findall(r'class="sym"[^>]*>([^<]*)<', p.dom.split('id="start"')[1].split('id="night"')[0]), "AEIOU")),
     ("items=cat,dog,fish", "own words: tile previews them", lambda p: subset(re.findall(r'class="sym"[^>]*>([^<]*)<', p.dom.split('id="start"')[1].split('id="night"')[0]), ["cat", "dog", "fish"])),
     ("theme=numbers&lang=es", "Spanish phrase on parent-made tile", lambda p: "¡Vamos a buscar parejas de números!" in p.dom),
-    ("", "hidden grown-up door (credit line) on start screen", lambda p: 'class="credit-hold"' in p.dom.split('id="start"')[1].split('id="night"')[0]),
+    ("", "grown-up door (…) on start screen", lambda p: 'class="setupdoor"' in p.dom.split('id="start"')[1].split('id="night"')[0]),
     ("setup&theme=letters", "setup has a Cancel button", lambda p: 'class="cancel"' in p.dom),
     ("setup", "setup has the Defaults section", lambda p: 'class="defaults-form"' in p.dom and "Defaults (this device)" in p.dom),
     ("setup", "?setup opens the parents' form", lambda p: 'id="setup"' in p.dom and 'name="theme"' in p.dom),
