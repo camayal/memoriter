@@ -41,10 +41,10 @@ seed     number = same shuffle every time
 start    0 = skip the Start screen (first card may be silent: browsers need a tap to unlock sound)
 win      phrase spoken at the end (default "Good job!" / "¡Muy bien!")
 demo     end = skip the game and show the end fireworks (to try them, or win=)
-rest     games before the sleepy-moon rest screen (default 6; 0 = never). A grown-up holds the moon ~2 s to unlock.
+rest     games before the sleepy-moon rest screen (default 6; 0 = never). A grown-up holds the moon ~4 s to unlock.
 grow     longer fireworks after each finished game: max extra slow rockets (default 10, ~9 s more); 0 = always short
 (grown-ups: hold a game tile ~1 s to lock that game; only it is offered at the end, and the lock survives a reload)
-again    ms after the end before the game tiles show (default: when the fireworks end)
+again    ms after the end before the game tiles show (default: once the last firework has completely faded)
 
 (tap to close)`;
 
@@ -236,7 +236,7 @@ function fitTiles() {
    the game always begins with a tap on a tile. */
 /* ---------- Rest screen ----------
    After CFG.rest finished games (default 6) a sleepy moon replaces the game tiles: "Time for a
-   break". Nothing to tap for the child; a grown-up holds the moon ~2 s to unlock (fresh count).
+   break". Nothing to tap for the child; a grown-up holds the moon ~4 s to unlock (fresh count).
    It also comes back after a reload, so reloading doesn't skip the rest. rest=0 turns it off. */
 const restEl = document.getElementById("rest");
 function showRest() {
@@ -261,7 +261,7 @@ function initRest() {
       audio(); if (AC) tone(660, AC.currentTime, { type: "sine", peak: .1, decay: .15 });
       if (startEl.isConnected && !startEl.classList.contains("hide")) return;   // came from a reload: tiles are already there
       showAgain();
-    }, 2000);
+    }, 4000);
   });
   for (const ev of ["pointerup", "pointerleave", "pointercancel"]) moon.addEventListener(ev, cancel);
   moon.addEventListener("contextmenu", e => e.preventDefault());

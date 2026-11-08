@@ -87,6 +87,9 @@ const restDue = () => CFG.rest > 0 && gamesDone >= CFG.rest;
 function finale() {
   gamesDone++;
   try { sessionStorage.setItem("memoriter-games", gamesDone); } catch { /* storage blocked */ }
+  // One of the cards just matched becomes the shape of the final firework (light colour for the night sky).
+  const c = cards.length ? randOf(cards) : null;
+  if (c) prepareSymbol(c, c.kind === "swatch" ? lighten(c.show, .15) : c.kind === "emoji" ? "#FFD86B" : lighten(c.color === INK ? "#7FB2F0" : c.color, .3));
   fireworksShow(showAgain, gamesDone);
 }
 

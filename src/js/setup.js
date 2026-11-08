@@ -63,7 +63,7 @@ function setupForm() {
     <label><input type="checkbox" name="fullscreen"${checked(CFG.fullscreen)}> full screen when the game starts</label>
   </div><div class="row" style="margin-top:8px">
     <label>Rest after <input type="number" name="rest" min="0" max="50" value="${CFG.rest}"> games</label>
-    <small>A sleepy moon says it's time for a break; hold the moon 2 s to unlock. 0 = never.</small>
+    <small>A sleepy moon says it's time for a break; hold the moon 4 s to unlock. 0 = never.</small>
   </div></fieldset>
 
   <div class="actions">

@@ -14,6 +14,7 @@ const BURSTS = ["peony", "ring", "double", "willow", "glitter", "crossette", "st
 
 let parts = [], rockets = [], running = false, animating = false;
 let timers = [];
+let showDone = null;                                // called once the sky is empty after the show
 const later = (fn, ms) => timers.push(setTimeout(fn, ms));
 const fxScale = () => Math.min(innerWidth, innerHeight) / 700;
 
@@ -34,6 +35,48 @@ function sparkle(x, y, size, color) {
     spark({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, fade: .028, drag: .97, grav: .06, glow: false, color: col, size: 2.5 + Math.random() * 2.5 });
   }
   kick();
+}
+
+/* ----- Theme symbol for the big final burst -----
+   One of the cards the child just matched is drawn off-screen (a letter or number as itself, a
+   picture as its silhouette, a shape as its outline, a colour as a crayon) and its filled pixels
+   become target points: every spark of the final rocket flies to one point and slows down there,
+   so the symbol shows up in sparks before it fades. Prepared when the show starts (shapes load
+   as images, so it takes a moment); if it isn't ready, the heart or smiley is used instead. */
+let finaleSymbol = null;
+function prepareSymbol(item, color) {
+  finaleSymbol = null;
+  if (!item) return;
+  const N = 160, cv = document.createElement("canvas"); cv.width = cv.height = N;
+  const g = cv.getContext("2d");
+  const done = () => { const points = samplePoints(g, N); if (points) finaleSymbol = { points, color }; };
+  g.fillStyle = "#000"; g.textAlign = "center"; g.textBaseline = "middle";
+  if (item.kind === "text" || item.kind === "emoji") {
+    let size = item.kind === "emoji" ? 128 : 140;
+    const font = s => item.kind === "emoji" ? `${s}px sans-serif` : `700 ${s}px Andika, Nunito, system-ui, sans-serif`;
+    g.font = font(size);
+    const w = g.measureText(item.show).width;
+    if (w > N * .94) { size *= N * .94 / w; g.font = font(size); }
+    g.fillText(item.show, N / 2, N / 2 + size * .04);
+    done();
+  } else if (item.kind === "shape" || item.kind === "swatch") {
+    let svg = item.kind === "shape" ? `<svg viewBox="0 0 100 100">${SHAPES[item.show]("#000", "#000")}</svg>` : crayonSVG(item.show);
+    svg = svg.replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" ');
+    const img = new Image();
+    img.onload = () => { g.drawImage(img, 0, 0, N, N); done(); };
+    img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+  }
+}
+/* Filled pixels → up to 280 points, centred and scaled to -1…1. */
+function samplePoints(g, N) {
+  const d = g.getImageData(0, 0, N, N).data, pts = [];
+  for (let y = 0; y < N; y += 3) for (let x = 0; x < N; x += 3) if (d[(y * N + x) * 4 + 3] > 110) pts.push([x, y]);
+  if (pts.length < 12) return null;
+  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+  const cx = (Math.min(...xs) + Math.max(...xs)) / 2, cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+  const half = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) / 2 || 1;
+  for (let i = pts.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pts[i], pts[j]] = [pts[j], pts[i]]; }
+  return pts.slice(0, 280).map(([x, y]) => [(x - cx) / half, (y - cy) / half]);
 }
 
 function launch(kind, x, ty) {
@@ -63,6 +106,11 @@ function explode(r) {
   else if (k === "heart") {
     shape(130, t => [Math.sin(t) ** 3, -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) / 16], S * 4.4, lighten(NAMED.pink, .2));
     ring(30, S * 1.4, "#FFFFFF", { size: 1.8, fade: .02 });
+  } else if (k === "symbol" && r.points) {
+    // Sparks fly to the symbol's points: with drag .92 a spark travels v / (1 - .92) = 12.5 v in total.
+    const R = Math.min(innerWidth, innerHeight) * .24;
+    for (const [px, py] of r.points) spark({ x, y, vx: px * R / 12.5, vy: py * R / 12.5, drag: .92, grav: .004, fade: .0085, size: 2.8, color: Math.random() < .12 ? "#FFFFFF" : r.symbolColor });
+    ring(36, S * 1.2, "#FFFFFF", { size: 1.6, fade: .025 });
   } else if (k === "smile") {
     const yellow = "#FFD86B", v = S * 4.4, o = { color: yellow, grav: .02, fade: .011 };
     ring(80, v, yellow, { grav: .02, fade: .011 });
@@ -116,7 +164,11 @@ function frame() {
   ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over";
 
   if (running || rockets.length || parts.length) requestAnimationFrame(frame);
-  else { animating = false; ctx.clearRect(0, 0, innerWidth, innerHeight); }
+  else {
+    animating = false; ctx.clearRect(0, 0, innerWidth, innerHeight);
+    // Show over and every spark gone: only now the tiles (or the moon) may appear, after a short calm pause.
+    if (showDone) { const f = showDone; showDone = null; later(f, 500); }
+  }
 }
 
 /* Fireworks end show. onReady fires when the "play again" button may appear (to practise patience). */
@@ -139,13 +191,20 @@ function fireworksShow(onReady, round = 1) {
   for (let i = 0; i < extra; i++) { t += 900; later(() => launch(randOf(["peony", "ring", "willow"])), t); }
   // 4. Big heart or smiley in the middle.
   t += 300;
-  later(() => { launch(Math.random() < .5 ? "heart" : "smile", Wd / 2, H * .3).big = true; }, t);
+  // The big final burst: a symbol from the game just played (see prepareSymbol), else heart/smiley.
+  later(() => {
+    const sym = finaleSymbol, r = launch(sym ? "symbol" : (Math.random() < .5 ? "heart" : "smile"), Wd / 2, H * .32);
+    r.big = true;
+    if (sym) { r.points = sym.points; r.symbolColor = sym.color; }
+  }, t);
   later(() => { running = false; }, t + 1800);
-  later(onReady, num("again", t + 1500));
+  // The tiles wait until the last firework (the theme symbol) has completely faded; again=ms forces a fixed time.
+  if (Q.has("again")) later(onReady, num("again", 0)); else showDone = onReady;
   kick();
 }
 
 function stopFireworks() {
+  showDone = null;
   timers.forEach(clearTimeout); timers = []; rockets = []; running = false;
   night.classList.remove("on");
 }

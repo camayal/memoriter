@@ -161,7 +161,7 @@ html,body{margin:0;height:100%;background:var(--page-bg);overflow:hidden;
 #rest .z{opacity:0;animation:zz 4.5s ease-in-out infinite}
 #rest .z2{animation-delay:1.5s}#rest .z3{animation-delay:3s}
 @keyframes zz{0%{opacity:0;transform:translate(0,8px)}30%{opacity:.85}100%{opacity:0;transform:translate(10px,-14px)}}
-#rest .moon-hold.holding{transition:scale 2s linear;scale:.92}
+#rest .moon-hold.holding{transition:scale 4s linear;scale:.9}
 #rest::after{content:"By: C. A. Maya-Lastra - 2026";position:absolute;left:50%;bottom:max(10px,env(safe-area-inset-bottom));translate:-50% 0;
   font:500 12px/1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.06em;color:rgba(255,255,255,.25);pointer-events:none;user-select:none}
 @media (prefers-reduced-motion:reduce){#rest .moon,#rest .z,#rest .tw{animation:none}#rest .z{opacity:.7}}
@@ -620,7 +620,7 @@ const sfx = {
     if (!audio()) return; const t = AC.currentTime;
     noise(t, { dur: big ? .9 : .6, peak: big ? .2 : .14, f0: 700, f1: 120, pan });
     const penta = [1047, 1175, 1319, 1568, 1760, 2093, 2349, 2637];                          // C major pentatonic, high
-    if (kind === "heart" || kind === "smile") {                                              // happy arpeggio C-E-G-C
+    if (kind === "heart" || kind === "smile" || kind === "symbol") {                                              // happy arpeggio C-E-G-C
       [1047, 1319, 1568, 2093, 2637].forEach((f, i) => tone(f, t + .08 + i * .09, { type: "triangle", peak: .06, decay: .7, pan }));
     } else if (kind === "willow") {                                                           // long soft shimmer
       noise(t + .1, { dur: 2, peak: .035, filter: "highpass", f0: 5000, attack: .25, pan });
@@ -743,6 +743,7 @@ const BURSTS = ["peony", "ring", "double", "willow", "glitter", "crossette", "st
 
 let parts = [], rockets = [], running = false, animating = false;
 let timers = [];
+let showDone = null;                                // called once the sky is empty after the show
 const later = (fn, ms) => timers.push(setTimeout(fn, ms));
 const fxScale = () => Math.min(innerWidth, innerHeight) / 700;
 
@@ -763,6 +764,48 @@ function sparkle(x, y, size, color) {
     spark({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, fade: .028, drag: .97, grav: .06, glow: false, color: col, size: 2.5 + Math.random() * 2.5 });
   }
   kick();
+}
+
+/* ----- Theme symbol for the big final burst -----
+   One of the cards the child just matched is drawn off-screen (a letter or number as itself, a
+   picture as its silhouette, a shape as its outline, a colour as a crayon) and its filled pixels
+   become target points: every spark of the final rocket flies to one point and slows down there,
+   so the symbol shows up in sparks before it fades. Prepared when the show starts (shapes load
+   as images, so it takes a moment); if it isn't ready, the heart or smiley is used instead. */
+let finaleSymbol = null;
+function prepareSymbol(item, color) {
+  finaleSymbol = null;
+  if (!item) return;
+  const N = 160, cv = document.createElement("canvas"); cv.width = cv.height = N;
+  const g = cv.getContext("2d");
+  const done = () => { const points = samplePoints(g, N); if (points) finaleSymbol = { points, color }; };
+  g.fillStyle = "#000"; g.textAlign = "center"; g.textBaseline = "middle";
+  if (item.kind === "text" || item.kind === "emoji") {
+    let size = item.kind === "emoji" ? 128 : 140;
+    const font = s => item.kind === "emoji" ? `${s}px sans-serif` : `700 ${s}px Andika, Nunito, system-ui, sans-serif`;
+    g.font = font(size);
+    const w = g.measureText(item.show).width;
+    if (w > N * .94) { size *= N * .94 / w; g.font = font(size); }
+    g.fillText(item.show, N / 2, N / 2 + size * .04);
+    done();
+  } else if (item.kind === "shape" || item.kind === "swatch") {
+    let svg = item.kind === "shape" ? `<svg viewBox="0 0 100 100">${SHAPES[item.show]("#000", "#000")}</svg>` : crayonSVG(item.show);
+    svg = svg.replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" ');
+    const img = new Image();
+    img.onload = () => { g.drawImage(img, 0, 0, N, N); done(); };
+    img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+  }
+}
+/* Filled pixels → up to 280 points, centred and scaled to -1…1. */
+function samplePoints(g, N) {
+  const d = g.getImageData(0, 0, N, N).data, pts = [];
+  for (let y = 0; y < N; y += 3) for (let x = 0; x < N; x += 3) if (d[(y * N + x) * 4 + 3] > 110) pts.push([x, y]);
+  if (pts.length < 12) return null;
+  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+  const cx = (Math.min(...xs) + Math.max(...xs)) / 2, cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+  const half = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) / 2 || 1;
+  for (let i = pts.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pts[i], pts[j]] = [pts[j], pts[i]]; }
+  return pts.slice(0, 280).map(([x, y]) => [(x - cx) / half, (y - cy) / half]);
 }
 
 function launch(kind, x, ty) {
@@ -792,6 +835,11 @@ function explode(r) {
   else if (k === "heart") {
     shape(130, t => [Math.sin(t) ** 3, -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) / 16], S * 4.4, lighten(NAMED.pink, .2));
     ring(30, S * 1.4, "#FFFFFF", { size: 1.8, fade: .02 });
+  } else if (k === "symbol" && r.points) {
+    // Sparks fly to the symbol's points: with drag .92 a spark travels v / (1 - .92) = 12.5 v in total.
+    const R = Math.min(innerWidth, innerHeight) * .24;
+    for (const [px, py] of r.points) spark({ x, y, vx: px * R / 12.5, vy: py * R / 12.5, drag: .92, grav: .004, fade: .0085, size: 2.8, color: Math.random() < .12 ? "#FFFFFF" : r.symbolColor });
+    ring(36, S * 1.2, "#FFFFFF", { size: 1.6, fade: .025 });
   } else if (k === "smile") {
     const yellow = "#FFD86B", v = S * 4.4, o = { color: yellow, grav: .02, fade: .011 };
     ring(80, v, yellow, { grav: .02, fade: .011 });
@@ -845,7 +893,11 @@ function frame() {
   ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over";
 
   if (running || rockets.length || parts.length) requestAnimationFrame(frame);
-  else { animating = false; ctx.clearRect(0, 0, innerWidth, innerHeight); }
+  else {
+    animating = false; ctx.clearRect(0, 0, innerWidth, innerHeight);
+    // Show over and every spark gone: only now the tiles (or the moon) may appear, after a short calm pause.
+    if (showDone) { const f = showDone; showDone = null; later(f, 500); }
+  }
 }
 
 /* Fireworks end show. onReady fires when the "play again" button may appear (to practise patience). */
@@ -868,13 +920,20 @@ function fireworksShow(onReady, round = 1) {
   for (let i = 0; i < extra; i++) { t += 900; later(() => launch(randOf(["peony", "ring", "willow"])), t); }
   // 4. Big heart or smiley in the middle.
   t += 300;
-  later(() => { launch(Math.random() < .5 ? "heart" : "smile", Wd / 2, H * .3).big = true; }, t);
+  // The big final burst: a symbol from the game just played (see prepareSymbol), else heart/smiley.
+  later(() => {
+    const sym = finaleSymbol, r = launch(sym ? "symbol" : (Math.random() < .5 ? "heart" : "smile"), Wd / 2, H * .32);
+    r.big = true;
+    if (sym) { r.points = sym.points; r.symbolColor = sym.color; }
+  }, t);
   later(() => { running = false; }, t + 1800);
-  later(onReady, num("again", t + 1500));
+  // The tiles wait until the last firework (the theme symbol) has completely faded; again=ms forces a fixed time.
+  if (Q.has("again")) later(onReady, num("again", 0)); else showDone = onReady;
   kick();
 }
 
 function stopFireworks() {
+  showDone = null;
   timers.forEach(clearTimeout); timers = []; rockets = []; running = false;
   night.classList.remove("on");
 }
@@ -973,6 +1032,9 @@ const restDue = () => CFG.rest > 0 && gamesDone >= CFG.rest;
 function finale() {
   gamesDone++;
   try { sessionStorage.setItem("memoriter-games", gamesDone); } catch { /* storage blocked */ }
+  // One of the cards just matched becomes the shape of the final firework (light colour for the night sky).
+  const c = cards.length ? randOf(cards) : null;
+  if (c) prepareSymbol(c, c.kind === "swatch" ? lighten(c.show, .15) : c.kind === "emoji" ? "#FFD86B" : lighten(c.color === INK ? "#7FB2F0" : c.color, .3));
   fireworksShow(showAgain, gamesDone);
 }
 
@@ -1053,10 +1115,10 @@ seed     number = same shuffle every time
 start    0 = skip the Start screen (first card may be silent: browsers need a tap to unlock sound)
 win      phrase spoken at the end (default "Good job!" / "¡Muy bien!")
 demo     end = skip the game and show the end fireworks (to try them, or win=)
-rest     games before the sleepy-moon rest screen (default 6; 0 = never). A grown-up holds the moon ~2 s to unlock.
+rest     games before the sleepy-moon rest screen (default 6; 0 = never). A grown-up holds the moon ~4 s to unlock.
 grow     longer fireworks after each finished game: max extra slow rockets (default 10, ~9 s more); 0 = always short
 (grown-ups: hold a game tile ~1 s to lock that game; only it is offered at the end, and the lock survives a reload)
-again    ms after the end before the game tiles show (default: when the fireworks end)
+again    ms after the end before the game tiles show (default: once the last firework has completely faded)
 
 (tap to close)`;
 
@@ -1248,7 +1310,7 @@ function fitTiles() {
    the game always begins with a tap on a tile. */
 /* ---------- Rest screen ----------
    After CFG.rest finished games (default 6) a sleepy moon replaces the game tiles: "Time for a
-   break". Nothing to tap for the child; a grown-up holds the moon ~2 s to unlock (fresh count).
+   break". Nothing to tap for the child; a grown-up holds the moon ~4 s to unlock (fresh count).
    It also comes back after a reload, so reloading doesn't skip the rest. rest=0 turns it off. */
 const restEl = document.getElementById("rest");
 function showRest() {
@@ -1273,7 +1335,7 @@ function initRest() {
       audio(); if (AC) tone(660, AC.currentTime, { type: "sine", peak: .1, decay: .15 });
       if (startEl.isConnected && !startEl.classList.contains("hide")) return;   // came from a reload: tiles are already there
       showAgain();
-    }, 2000);
+    }, 4000);
   });
   for (const ev of ["pointerup", "pointerleave", "pointercancel"]) moon.addEventListener(ev, cancel);
   moon.addEventListener("contextmenu", e => e.preventDefault());
@@ -1410,7 +1472,7 @@ function setupForm() {
     <label><input type="checkbox" name="fullscreen"${checked(CFG.fullscreen)}> full screen when the game starts</label>
   </div><div class="row" style="margin-top:8px">
     <label>Rest after <input type="number" name="rest" min="0" max="50" value="${CFG.rest}"> games</label>
-    <small>A sleepy moon says it's time for a break; hold the moon 2 s to unlock. 0 = never.</small>
+    <small>A sleepy moon says it's time for a break; hold the moon 4 s to unlock. 0 = never.</small>
   </div></fieldset>
 
   <div class="actions">

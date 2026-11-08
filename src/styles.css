@@ -152,7 +152,7 @@ html,body{margin:0;height:100%;background:var(--page-bg);overflow:hidden;
 #rest .z{opacity:0;animation:zz 4.5s ease-in-out infinite}
 #rest .z2{animation-delay:1.5s}#rest .z3{animation-delay:3s}
 @keyframes zz{0%{opacity:0;transform:translate(0,8px)}30%{opacity:.85}100%{opacity:0;transform:translate(10px,-14px)}}
-#rest .moon-hold.holding{transition:scale 2s linear;scale:.92}
+#rest .moon-hold.holding{transition:scale 4s linear;scale:.9}
 #rest::after{content:"By: C. A. Maya-Lastra - 2026";position:absolute;left:50%;bottom:max(10px,env(safe-area-inset-bottom));translate:-50% 0;
   font:500 12px/1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.06em;color:rgba(255,255,255,.25);pointer-events:none;user-select:none}
 @media (prefers-reduced-motion:reduce){#rest .moon,#rest .z,#rest .tw{animation:none}#rest .z{opacity:.7}}
