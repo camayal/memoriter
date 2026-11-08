@@ -129,6 +129,7 @@ html,body{margin:0;height:100%;background:var(--page-bg);overflow:hidden;
 #setup button{font:700 18px/1 system-ui,sans-serif;border:0;border-radius:12px;padding:14px 22px;cursor:pointer}
 #setup .start{background:#3DAA5C;color:#fff;box-shadow:0 3px 0 #2C7E44}
 #setup .copy{background:#E6ECF7;color:#23529F}
+#setup .cancel{background:#F1EEE8;color:#5b6573}
 #setup .link{width:100%;font:13px/1.4 ui-monospace,Consolas,monospace;word-break:break-all;color:#5b6573}
 #setup [hidden]{display:none!important}
 
@@ -312,10 +313,15 @@ const TEXT = {
     shapes: { circle: "circle", oval: "oval", square: "square", rectangle: "rectangle", triangle: "triangle", diamond: "diamond", pentagon: "pentagon", hexagon: "hexagon", heptagon: "heptagon", octagon: "octagon", star: "star", heart: "heart", semicircle: "semicircle" },
     // Picture sets (emoji). Only simple, everyday things a toddler knows. "emoji|spoken word".
     sets: {
-      animals:  { name: "animals",  items: ["🐶|dog", "🐱|cat", "🐮|cow", "🐷|pig", "🐸|frog", "🦁|lion", "🐵|monkey", "🐤|chick", "🦆|duck", "🐻|bear", "🐰|rabbit", "🐟|fish", "🐘|elephant", "🐴|horse"] },
+      farm:     { name: "farm animals",  items: ["🐄|cow", "🐖|pig", "🐎|horse", "🐑|sheep", "🐐|goat", "🐔|chicken", "🐤|chick", "🦆|duck", "🐇|rabbit", "🐕|dog", "🐈|cat", "🦃|turkey", "🐁|mouse"] },
+      wild:     { name: "wild animals",  items: ["🦁|lion", "🐯|tiger", "🐘|elephant", "🦒|giraffe", "🦓|zebra", "🦛|hippo", "🦏|rhino", "🐵|monkey", "🦍|gorilla", "🐊|crocodile", "🐻|bear", "🐼|panda", "🦎|lizard", "🐍|snake", "🐢|turtle", "🦨|skunk"] },
+      bugs:     { name: "bugs",          items: ["🐝|bee", "🐞|ladybug", "🦋|butterfly", "🐛|caterpillar", "🐜|ant", "🐌|snail", "🕷️|spider", "🦗|cricket", "🪲|beetle", "🪰|fly", "🦟|mosquito", "🪱|worm"] },
+      birds:    { name: "birds",         items: ["🐧|penguin", "🦉|owl", "🦜|parrot", "🦩|flamingo", "🦅|eagle", "🦢|swan", "🕊️|dove", "🦚|peacock", "🐓|rooster"] },
+      sea:      { name: "sea animals",   items: ["🐟|fish", "🐡|pufferfish", "🐙|octopus", "🦀|crab", "🐬|dolphin", "🐳|whale", "🦈|shark", "🦑|squid", "🦞|lobster", "🦭|seal"] },
       fruits:   { name: "fruits",   items: ["🍎|apple", "🍌|banana", "🍇|grapes", "🍓|strawberry", "🍊|orange", "🍉|watermelon", "🍐|pear", "🍒|cherries", "🍍|pineapple", "🍋|lemon", "🥝|kiwi", "🍑|peach"] },
-      vehicles: { name: "vehicles", items: ["🚗|car", "🚌|bus", "🚒|fire truck", "🚓|police car", "🚑|ambulance", "🚜|tractor", "🚂|train", "✈️|airplane", "🚁|helicopter", "🚀|rocket", "🚢|boat", "🚲|bike"] },
-      nature:   { name: "things in nature",   items: ["☀️|sun", "🌙|moon", "⭐|star", "☁️|cloud", "🌈|rainbow", "🌸|flower", "🌳|tree", "🍄|mushroom", "🍂|leaf", "❄️|snowflake", "🌊|wave", "🌵|cactus"] },
+      // Vehicles: turned off for now (didn't fit with the other sets). Uncomment to bring it back.
+      // vehicles: { name: "vehicles", items: ["🚗|car", "🚌|bus", "🚒|fire truck", "🚓|police car", "🚑|ambulance", "🚜|tractor", "🚂|train", "✈️|airplane", "🚁|helicopter", "🚀|rocket", "🚢|boat", "🚲|bike"] },
+      nature:   { name: "things in nature",   items: ["☀️|sun", "🌙|moon", "⭐|star", "☁️|cloud", "🌈|rainbow", "🌸|flower", "🌳|tree", "🍄|mushroom", "🍂|leaf", "❄️|snowflake", "🌊|wave", "🌵|cactus", "🌧️|rain", "⚡|lightning"] },
     },
     findPairs: what => `Let's find pairs of ${what}!`,
     alphabet: "abcdefghijklmnopqrstuvwxyz",
@@ -336,10 +342,15 @@ const TEXT = {
     noVoice: "No hay voz en español en este dispositivo/navegador.",
     shapes: { circle: "círculo", oval: "óvalo", square: "cuadrado", rectangle: "rectángulo", triangle: "triángulo", diamond: "rombo", pentagon: "pentágono", hexagon: "hexágono", heptagon: "heptágono", octagon: "octágono", star: "estrella", heart: "corazón", semicircle: "semicírculo" },
     sets: {
-      animals:  { name: "animales",   items: ["🐶|perro", "🐱|gato", "🐮|vaca", "🐷|cerdo", "🐸|rana", "🦁|león", "🐵|mono", "🐤|pollito", "🦆|pato", "🐻|oso", "🐰|conejo", "🐟|pez", "🐘|elefante", "🐴|caballo"] },
+      farm:     { name: "animales de la granja", items: ["🐄|vaca", "🐖|cerdo", "🐎|caballo", "🐑|oveja", "🐐|cabra", "🐔|gallina", "🐤|pollito", "🦆|pato", "🐇|conejo", "🐕|perro", "🐈|gato", "🦃|pavo", "🐁|ratón"] },
+      wild:     { name: "animales salvajes",     items: ["🦁|león", "🐯|tigre", "🐘|elefante", "🦒|jirafa", "🦓|cebra", "🦛|hipopótamo", "🦏|rinoceronte", "🐵|mono", "🦍|gorila", "🐊|cocodrilo", "🐻|oso", "🐼|panda", "🦎|lagartija", "🐍|culebra", "🐢|tortuga", "🦨|zorrillo"] },
+      bugs:     { name: "bichos",                items: ["🐝|abeja", "🐞|mariquita", "🦋|mariposa", "🐛|oruga", "🐜|hormiga", "🐌|caracol", "🕷️|araña", "🦗|grillo", "🪲|escarabajo", "🪰|mosca", "🦟|zancudo", "🪱|gusano"] },
+      birds:    { name: "pájaros",               items: ["🐧|pingüino", "🦉|búho", "🦜|loro", "🦩|flamenco", "🦅|águila", "🦢|cisne", "🕊️|paloma", "🦚|pavo real", "🐓|gallo"] },
+      sea:      { name: "animales del mar",      items: ["🐟|pez", "🐡|pez globo", "🐙|pulpo", "🦀|cangrejo", "🐬|delfín", "🐳|ballena", "🦈|tiburón", "🦑|calamar", "🦞|langosta", "🦭|foca"] },
       fruits:   { name: "frutas",     items: ["🍎|manzana", "🍌|banano", "🍇|uvas", "🍓|fresa", "🍊|naranja", "🍉|sandía", "🍐|pera", "🍒|cerezas", "🍍|piña", "🍋|limón", "🥝|kiwi", "🍑|durazno"] },
-      vehicles: { name: "vehículos",  items: ["🚗|carro", "🚌|bus", "🚒|carro de bomberos", "🚓|carro de policía", "🚑|ambulancia", "🚜|tractor", "🚂|tren", "✈️|avión", "🚁|helicóptero", "🚀|cohete", "🚢|barco", "🚲|bicicleta"] },
-      nature:   { name: "cosas de la naturaleza", items: ["☀️|sol", "🌙|luna", "⭐|estrella", "☁️|nube", "🌈|arcoíris", "🌸|flor", "🌳|árbol", "🍄|hongo", "🍂|hoja", "❄️|copo de nieve", "🌊|ola", "🌵|cactus"] },
+      // Vehicles: turned off for now (didn't fit with the other sets). Uncomment to bring it back.
+      // vehicles: { name: "vehículos",  items: ["🚗|carro", "🚌|bus", "🚒|carro de bomberos", "🚓|carro de policía", "🚑|ambulancia", "🚜|tractor", "🚂|tren", "✈️|avión", "🚁|helicóptero", "🚀|cohete", "🚢|barco", "🚲|bicicleta"] },
+      nature:   { name: "cosas de la naturaleza", items: ["☀️|sol", "🌙|luna", "⭐|estrella", "☁️|nube", "🌈|arcoíris", "🌸|flor", "🌳|árbol", "🍄|hongo", "🍂|hoja", "❄️|copo de nieve", "🌊|ola", "🌵|cactus", "🌧️|lluvia", "⚡|rayo"] },
     },
     findPairs: what => `¡Vamos a buscar parejas de ${what}!`,
     alphabet: "abcdefghijklmnñopqrstuvwxyz",
@@ -534,10 +545,17 @@ const parseItem = (raw, kind) => {
   return { kind, show: show.trim(), say: say !== undefined ? say.trim() : kind === "text" ? spoken(show) : show.trim() };
 };
 
-/* Picture set for the images theme: set=animals|fruits|vehicles|nature, or random (default).
+/* Picture set for the images theme: set=farm|wild|bugs|birds|sea|fruits|nature, or random (default).
    With random, a new set is chosen each time the child picks the pictures game (never the same
    twice in a row), and the voice names it: "Let's find pairs of fruits!". */
-const SET_ALIASES = { animales: "animals", animal: "animals", frutas: "fruits", fruta: "fruits", fruit: "fruits", vehiculos: "vehicles", "vehículos": "vehicles", vehicle: "vehicles", naturaleza: "nature" };
+const SET_ALIASES = {
+  animals: "farm", animales: "farm", granja: "farm", "farm animals": "farm",
+  salvajes: "wild", safari: "wild", zoo: "wild", "wild animals": "wild",
+  bichos: "bugs", insects: "bugs", insectos: "bugs", bug: "bugs",
+  pajaros: "birds", "pájaros": "birds", aves: "birds", bird: "birds",
+  mar: "sea", ocean: "sea", oceano: "sea", "océano": "sea", "sea animals": "sea",
+  frutas: "fruits", fruta: "fruits", fruit: "fruits", naturaleza: "nature",
+};
 const SET_WANTED = (() => { const v = (Q.get("set") || "random").toLowerCase(); return SET_ALIASES[v] || v; })();
 let chosenSet = null;
 function chooseSet() {
@@ -813,7 +831,9 @@ function sparkle(x, y, size, color) {
    heads, boxes) get the happy-face firework instead. Shapes load as images, so this is prepared
    when the show starts; if it isn't ready, the heart or smiley is used. */
 let finaleSymbol = null;
-const CLEAR_OUTLINES = new Set(["🐱", "🐰", "🐟", "🐘", "🦆", "🍎", "🍌", "🍐", "🍒", "🚗", "✈️", "🚲", "🚁", "🌙", "⭐", "☁️", "🌸", "🌳"]);
+// Checked one by one (outline readable in sparks). Vehicles stay listed in case that set comes back.
+const CLEAR_OUTLINES = new Set(["🐄", "🐖", "🐕", "🐈", "🐇", "🐎", "🐢", "🦨", "🐱", "🐰", "🐑", "🐐", "🦆", "🐓", "🐘", "🦒", "🦓", "🦋", "🕷️", "🐧", "🦢", "🐟",
+  "🍎", "🍌", "🍐", "🍒", "🌙", "⭐", "☁️", "🌸", "🌳", "🚗", "✈️", "🚲", "🚁"]);
 function prepareSymbol(item, color) {
   finaleSymbol = null;
   if (!item) return;
@@ -1023,13 +1043,16 @@ const grid = document.getElementById("grid"), board = document.getElementById("b
 let cards = [], openCards = [], locked = false, matched = 0, total = 0;
 let mismatch = null;                                // { a, b, timer } while two different cards are showing
 
+const emojiHTML = e => escapeHTML(e);
+
 function faceHTML(item, color) {
   if (item.kind === "shape") return `<svg viewBox="0 0 100 100" aria-hidden="true">${SHAPES[item.show](color, darker(color, .85))}</svg>`;
   if (item.kind === "swatch") return crayonSVG(item.show);      // colours: a crayon in that colour (same drawing as the tile)
   if (item.kind === "img") return `<img src="${encodeURI(item.show)}" alt="" draggable="false">`;
   const len = [...item.show].length;
   const size = item.kind === "emoji" ? 66 : Math.min(64, 150 / len);
-  return `<span class="txt" style="font-size:${size}cqmin;color:${color}">${escapeHTML(item.show)}</span>`;
+  const inner = item.kind === "emoji" ? emojiHTML(item.show) : escapeHTML(item.show);
+  return `<span class="txt" style="font-size:${size}cqmin;color:${color}">${inner}</span>`;
 }
 
 function newGame() {
@@ -1162,7 +1185,7 @@ case     upper | lower                                           (default: upper
 phonics  letters say their name (0, default) | their sound, e.g. "buh" (1) | both, "bee … buh" (both)
 shapes   comma list: circle,oval,square,rectangle,triangle,diamond,
          pentagon,hexagon,heptagon,octagon,star,heart,semicircle (default: random pick)
-set      pictures game: animals | fruits | vehicles | nature (things in nature) | random (default: random, a new set each game)
+set      pictures game: farm | wild | bugs | birds | sea | fruits | nature (things in nature) | random (default: random, a new set each game)
 items    your own cards, comma list or repeated; "shown|spoken" to say something else
          e.g. items=A|Apple,B|Ball      with theme=images: emoji or image links, e.g. items=https://…/cat.png|cat
 lang     language of every spoken/shown word: en | es (also es-MX, spanish, español)  (default: en)
@@ -1205,7 +1228,7 @@ const face = (show, kind = "text") => ({ kind, show });
 const THEME_TILES = {
   numbers: { tint: NAMED.blue,   faces: [face("1"), face("2"), face("3")] },
   letters: { tint: NAMED.red,    faces: [face("A"), face("B"), face("C")] },
-  images:  { tint: NAMED.orange, faces: [face("🐶", "emoji"), face("🍎", "emoji"), face("🚗", "emoji")] },   // pictures: animals, fruits, vehicles …
+  images:  { tint: NAMED.orange, faces: [face("🐶", "emoji"), face("🍎", "emoji"), face("🐠", "emoji")] },   // pictures: animals, fruits, sea …
   shapes:  { tint: NAMED.green,  faces: [face("triangle", "shape"), face("circle", "shape"), face("square", "shape")] },
   colors:  { tint: NAMED.purple, faces: [face(NAMED.red, "swatch"), face(NAMED.blue, "swatch"), face(NAMED.yellow, "swatch")] },
 };
@@ -1258,7 +1281,7 @@ function miniFace(tint, f) {
   if (f.kind === "shape") return `<svg viewBox="0 0 100 100">${SHAPES[f.show](tint, darker(tint, .85))}</svg>`;
   if (f.kind === "swatch") return crayonSVG(f.show);
   if (f.kind === "img") return `<img src="${encodeURI(f.show)}" alt="">`;
-  if (f.kind === "emoji") return `<span class="emo">${escapeHTML(f.show)}</span>`;
+  if (f.kind === "emoji") return `<span class="emo">${emojiHTML(f.show)}</span>`;
   const len = [...f.show].length;
   return `<span class="sym" style="color:${tint};font-size:${Math.min(72, 160 / len)}cqmin">${escapeHTML(f.show)}</span>`;
 }
@@ -1619,6 +1642,7 @@ function setupForm() {
   <div class="actions">
     <button type="submit" class="start">Start game ▶</button>
     <button type="button" class="copy">Copy link</button>
+    <button type="button" class="cancel">Cancel</button>
     <div class="link"></div>
   </div>
 </form>`;
@@ -1671,6 +1695,12 @@ function initSetup() {
   };
   form.addEventListener("input", refresh); form.addEventListener("change", refresh);
   form.addEventListener("submit", e => { e.preventDefault(); location.href = urlFor(); });
+  // Cancel: back to the game exactly as it was (same address, just without the setup screen).
+  box.querySelector(".cancel").addEventListener("click", () => {
+    const p = new URLSearchParams(location.search); p.delete("setup"); p.delete("parents");
+    const q = p.toString();
+    location.href = location.pathname + (q ? "?" + q : "") + location.hash;
+  });
   box.querySelector(".copy").addEventListener("click", async e => {
     try { await navigator.clipboard.writeText(urlFor()); e.target.textContent = "Copied ✓"; }
     catch { e.target.textContent = "Select the link below to copy"; }

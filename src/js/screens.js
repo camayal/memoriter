@@ -15,7 +15,7 @@ case     upper | lower                                           (default: upper
 phonics  letters say their name (0, default) | their sound, e.g. "buh" (1) | both, "bee … buh" (both)
 shapes   comma list: circle,oval,square,rectangle,triangle,diamond,
          pentagon,hexagon,heptagon,octagon,star,heart,semicircle (default: random pick)
-set      pictures game: animals | fruits | vehicles | nature (things in nature) | random (default: random, a new set each game)
+set      pictures game: farm | wild | bugs | birds | sea | fruits | nature (things in nature) | random (default: random, a new set each game)
 items    your own cards, comma list or repeated; "shown|spoken" to say something else
          e.g. items=A|Apple,B|Ball      with theme=images: emoji or image links, e.g. items=https://…/cat.png|cat
 lang     language of every spoken/shown word: en | es (also es-MX, spanish, español)  (default: en)
@@ -58,7 +58,7 @@ const face = (show, kind = "text") => ({ kind, show });
 const THEME_TILES = {
   numbers: { tint: NAMED.blue,   faces: [face("1"), face("2"), face("3")] },
   letters: { tint: NAMED.red,    faces: [face("A"), face("B"), face("C")] },
-  images:  { tint: NAMED.orange, faces: [face("🐶", "emoji"), face("🍎", "emoji"), face("🚗", "emoji")] },   // pictures: animals, fruits, vehicles …
+  images:  { tint: NAMED.orange, faces: [face("🐶", "emoji"), face("🍎", "emoji"), face("🐠", "emoji")] },   // pictures: animals, fruits, sea …
   shapes:  { tint: NAMED.green,  faces: [face("triangle", "shape"), face("circle", "shape"), face("square", "shape")] },
   colors:  { tint: NAMED.purple, faces: [face(NAMED.red, "swatch"), face(NAMED.blue, "swatch"), face(NAMED.yellow, "swatch")] },
 };
@@ -111,7 +111,7 @@ function miniFace(tint, f) {
   if (f.kind === "shape") return `<svg viewBox="0 0 100 100">${SHAPES[f.show](tint, darker(tint, .85))}</svg>`;
   if (f.kind === "swatch") return crayonSVG(f.show);
   if (f.kind === "img") return `<img src="${encodeURI(f.show)}" alt="">`;
-  if (f.kind === "emoji") return `<span class="emo">${escapeHTML(f.show)}</span>`;
+  if (f.kind === "emoji") return `<span class="emo">${emojiHTML(f.show)}</span>`;
   const len = [...f.show].length;
   return `<span class="sym" style="color:${tint};font-size:${Math.min(72, 160 / len)}cqmin">${escapeHTML(f.show)}</span>`;
 }

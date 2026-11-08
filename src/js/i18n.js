@@ -15,10 +15,15 @@ const TEXT = {
     shapes: { circle: "circle", oval: "oval", square: "square", rectangle: "rectangle", triangle: "triangle", diamond: "diamond", pentagon: "pentagon", hexagon: "hexagon", heptagon: "heptagon", octagon: "octagon", star: "star", heart: "heart", semicircle: "semicircle" },
     // Picture sets (emoji). Only simple, everyday things a toddler knows. "emoji|spoken word".
     sets: {
-      animals:  { name: "animals",  items: ["🐶|dog", "🐱|cat", "🐮|cow", "🐷|pig", "🐸|frog", "🦁|lion", "🐵|monkey", "🐤|chick", "🦆|duck", "🐻|bear", "🐰|rabbit", "🐟|fish", "🐘|elephant", "🐴|horse"] },
+      farm:     { name: "farm animals",  items: ["🐄|cow", "🐖|pig", "🐎|horse", "🐑|sheep", "🐐|goat", "🐔|chicken", "🐤|chick", "🦆|duck", "🐇|rabbit", "🐕|dog", "🐈|cat", "🦃|turkey", "🐁|mouse"] },
+      wild:     { name: "wild animals",  items: ["🦁|lion", "🐯|tiger", "🐘|elephant", "🦒|giraffe", "🦓|zebra", "🦛|hippo", "🦏|rhino", "🐵|monkey", "🦍|gorilla", "🐊|crocodile", "🐻|bear", "🐼|panda", "🦎|lizard", "🐍|snake", "🐢|turtle", "🦨|skunk"] },
+      bugs:     { name: "bugs",          items: ["🐝|bee", "🐞|ladybug", "🦋|butterfly", "🐛|caterpillar", "🐜|ant", "🐌|snail", "🕷️|spider", "🦗|cricket", "🪲|beetle", "🪰|fly", "🦟|mosquito", "🪱|worm"] },
+      birds:    { name: "birds",         items: ["🐧|penguin", "🦉|owl", "🦜|parrot", "🦩|flamingo", "🦅|eagle", "🦢|swan", "🕊️|dove", "🦚|peacock", "🐓|rooster"] },
+      sea:      { name: "sea animals",   items: ["🐟|fish", "🐡|pufferfish", "🐙|octopus", "🦀|crab", "🐬|dolphin", "🐳|whale", "🦈|shark", "🦑|squid", "🦞|lobster", "🦭|seal"] },
       fruits:   { name: "fruits",   items: ["🍎|apple", "🍌|banana", "🍇|grapes", "🍓|strawberry", "🍊|orange", "🍉|watermelon", "🍐|pear", "🍒|cherries", "🍍|pineapple", "🍋|lemon", "🥝|kiwi", "🍑|peach"] },
-      vehicles: { name: "vehicles", items: ["🚗|car", "🚌|bus", "🚒|fire truck", "🚓|police car", "🚑|ambulance", "🚜|tractor", "🚂|train", "✈️|airplane", "🚁|helicopter", "🚀|rocket", "🚢|boat", "🚲|bike"] },
-      nature:   { name: "things in nature",   items: ["☀️|sun", "🌙|moon", "⭐|star", "☁️|cloud", "🌈|rainbow", "🌸|flower", "🌳|tree", "🍄|mushroom", "🍂|leaf", "❄️|snowflake", "🌊|wave", "🌵|cactus"] },
+      // Vehicles: turned off for now (didn't fit with the other sets). Uncomment to bring it back.
+      // vehicles: { name: "vehicles", items: ["🚗|car", "🚌|bus", "🚒|fire truck", "🚓|police car", "🚑|ambulance", "🚜|tractor", "🚂|train", "✈️|airplane", "🚁|helicopter", "🚀|rocket", "🚢|boat", "🚲|bike"] },
+      nature:   { name: "things in nature",   items: ["☀️|sun", "🌙|moon", "⭐|star", "☁️|cloud", "🌈|rainbow", "🌸|flower", "🌳|tree", "🍄|mushroom", "🍂|leaf", "❄️|snowflake", "🌊|wave", "🌵|cactus", "🌧️|rain", "⚡|lightning"] },
     },
     findPairs: what => `Let's find pairs of ${what}!`,
     alphabet: "abcdefghijklmnopqrstuvwxyz",
@@ -39,10 +44,15 @@ const TEXT = {
     noVoice: "No hay voz en español en este dispositivo/navegador.",
     shapes: { circle: "círculo", oval: "óvalo", square: "cuadrado", rectangle: "rectángulo", triangle: "triángulo", diamond: "rombo", pentagon: "pentágono", hexagon: "hexágono", heptagon: "heptágono", octagon: "octágono", star: "estrella", heart: "corazón", semicircle: "semicírculo" },
     sets: {
-      animals:  { name: "animales",   items: ["🐶|perro", "🐱|gato", "🐮|vaca", "🐷|cerdo", "🐸|rana", "🦁|león", "🐵|mono", "🐤|pollito", "🦆|pato", "🐻|oso", "🐰|conejo", "🐟|pez", "🐘|elefante", "🐴|caballo"] },
+      farm:     { name: "animales de la granja", items: ["🐄|vaca", "🐖|cerdo", "🐎|caballo", "🐑|oveja", "🐐|cabra", "🐔|gallina", "🐤|pollito", "🦆|pato", "🐇|conejo", "🐕|perro", "🐈|gato", "🦃|pavo", "🐁|ratón"] },
+      wild:     { name: "animales salvajes",     items: ["🦁|león", "🐯|tigre", "🐘|elefante", "🦒|jirafa", "🦓|cebra", "🦛|hipopótamo", "🦏|rinoceronte", "🐵|mono", "🦍|gorila", "🐊|cocodrilo", "🐻|oso", "🐼|panda", "🦎|lagartija", "🐍|culebra", "🐢|tortuga", "🦨|zorrillo"] },
+      bugs:     { name: "bichos",                items: ["🐝|abeja", "🐞|mariquita", "🦋|mariposa", "🐛|oruga", "🐜|hormiga", "🐌|caracol", "🕷️|araña", "🦗|grillo", "🪲|escarabajo", "🪰|mosca", "🦟|zancudo", "🪱|gusano"] },
+      birds:    { name: "pájaros",               items: ["🐧|pingüino", "🦉|búho", "🦜|loro", "🦩|flamenco", "🦅|águila", "🦢|cisne", "🕊️|paloma", "🦚|pavo real", "🐓|gallo"] },
+      sea:      { name: "animales del mar",      items: ["🐟|pez", "🐡|pez globo", "🐙|pulpo", "🦀|cangrejo", "🐬|delfín", "🐳|ballena", "🦈|tiburón", "🦑|calamar", "🦞|langosta", "🦭|foca"] },
       fruits:   { name: "frutas",     items: ["🍎|manzana", "🍌|banano", "🍇|uvas", "🍓|fresa", "🍊|naranja", "🍉|sandía", "🍐|pera", "🍒|cerezas", "🍍|piña", "🍋|limón", "🥝|kiwi", "🍑|durazno"] },
-      vehicles: { name: "vehículos",  items: ["🚗|carro", "🚌|bus", "🚒|carro de bomberos", "🚓|carro de policía", "🚑|ambulancia", "🚜|tractor", "🚂|tren", "✈️|avión", "🚁|helicóptero", "🚀|cohete", "🚢|barco", "🚲|bicicleta"] },
-      nature:   { name: "cosas de la naturaleza", items: ["☀️|sol", "🌙|luna", "⭐|estrella", "☁️|nube", "🌈|arcoíris", "🌸|flor", "🌳|árbol", "🍄|hongo", "🍂|hoja", "❄️|copo de nieve", "🌊|ola", "🌵|cactus"] },
+      // Vehicles: turned off for now (didn't fit with the other sets). Uncomment to bring it back.
+      // vehicles: { name: "vehículos",  items: ["🚗|carro", "🚌|bus", "🚒|carro de bomberos", "🚓|carro de policía", "🚑|ambulancia", "🚜|tractor", "🚂|tren", "✈️|avión", "🚁|helicóptero", "🚀|cohete", "🚢|barco", "🚲|bicicleta"] },
+      nature:   { name: "cosas de la naturaleza", items: ["☀️|sol", "🌙|luna", "⭐|estrella", "☁️|nube", "🌈|arcoíris", "🌸|flor", "🌳|árbol", "🍄|hongo", "🍂|hoja", "❄️|copo de nieve", "🌊|ola", "🌵|cactus", "🌧️|lluvia", "⚡|rayo"] },
     },
     findPairs: what => `¡Vamos a buscar parejas de ${what}!`,
     alphabet: "abcdefghijklmnñopqrstuvwxyz",

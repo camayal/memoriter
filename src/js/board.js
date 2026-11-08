@@ -5,13 +5,16 @@ const grid = document.getElementById("grid"), board = document.getElementById("b
 let cards = [], openCards = [], locked = false, matched = 0, total = 0;
 let mismatch = null;                                // { a, b, timer } while two different cards are showing
 
+const emojiHTML = e => escapeHTML(e);
+
 function faceHTML(item, color) {
   if (item.kind === "shape") return `<svg viewBox="0 0 100 100" aria-hidden="true">${SHAPES[item.show](color, darker(color, .85))}</svg>`;
   if (item.kind === "swatch") return crayonSVG(item.show);      // colours: a crayon in that colour (same drawing as the tile)
   if (item.kind === "img") return `<img src="${encodeURI(item.show)}" alt="" draggable="false">`;
   const len = [...item.show].length;
   const size = item.kind === "emoji" ? 66 : Math.min(64, 150 / len);
-  return `<span class="txt" style="font-size:${size}cqmin;color:${color}">${escapeHTML(item.show)}</span>`;
+  const inner = item.kind === "emoji" ? emojiHTML(item.show) : escapeHTML(item.show);
+  return `<span class="txt" style="font-size:${size}cqmin;color:${color}">${inner}</span>`;
 }
 
 function newGame() {

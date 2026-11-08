@@ -1,8 +1,8 @@
 /* sw.js: lets the installed app open offline.
    The game page is fetched from the network first (so updates arrive as soon as they are pushed)
    and falls back to the saved copy when offline. Icons and the font are served from the cache.
-   build.py replaces 06d650e57f with a hash of the game, so each new build replaces the old cache. */
-const CACHE = "memoriter-06d650e57f";
+   build.py replaces 4c213ed899 with a hash of the game, so each new build replaces the old cache. */
+const CACHE = "memoriter-4c213ed899";
 const SHELL = ["./", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png"];
 
 self.addEventListener("install", e => {

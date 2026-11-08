@@ -46,7 +46,9 @@ function sparkle(x, y, size, color) {
    heads, boxes) get the happy-face firework instead. Shapes load as images, so this is prepared
    when the show starts; if it isn't ready, the heart or smiley is used. */
 let finaleSymbol = null;
-const CLEAR_OUTLINES = new Set(["🐱", "🐰", "🐟", "🐘", "🦆", "🍎", "🍌", "🍐", "🍒", "🚗", "✈️", "🚲", "🚁", "🌙", "⭐", "☁️", "🌸", "🌳"]);
+// Checked one by one (outline readable in sparks). Vehicles stay listed in case that set comes back.
+const CLEAR_OUTLINES = new Set(["🐄", "🐖", "🐕", "🐈", "🐇", "🐎", "🐢", "🦨", "🐱", "🐰", "🐑", "🐐", "🦆", "🐓", "🐘", "🦒", "🦓", "🦋", "🕷️", "🐧", "🦢", "🐟",
+  "🍎", "🍌", "🍐", "🍒", "🌙", "⭐", "☁️", "🌸", "🌳", "🚗", "✈️", "🚲", "🚁"]);
 function prepareSymbol(item, color) {
   finaleSymbol = null;
   if (!item) return;

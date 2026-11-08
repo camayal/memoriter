@@ -69,6 +69,7 @@ function setupForm() {
   <div class="actions">
     <button type="submit" class="start">Start game ▶</button>
     <button type="button" class="copy">Copy link</button>
+    <button type="button" class="cancel">Cancel</button>
     <div class="link"></div>
   </div>
 </form>`;
@@ -121,6 +122,12 @@ function initSetup() {
   };
   form.addEventListener("input", refresh); form.addEventListener("change", refresh);
   form.addEventListener("submit", e => { e.preventDefault(); location.href = urlFor(); });
+  // Cancel: back to the game exactly as it was (same address, just without the setup screen).
+  box.querySelector(".cancel").addEventListener("click", () => {
+    const p = new URLSearchParams(location.search); p.delete("setup"); p.delete("parents");
+    const q = p.toString();
+    location.href = location.pathname + (q ? "?" + q : "") + location.hash;
+  });
   box.querySelector(".copy").addEventListener("click", async e => {
     try { await navigator.clipboard.writeText(urlFor()); e.target.textContent = "Copied ✓"; }
     catch { e.target.textContent = "Select the link below to copy"; }

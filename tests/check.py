@@ -108,7 +108,7 @@ def subset(values, allowed): return set(values) <= set(allowed)
 
 # Emoji of each picture set (from src/js/i18n.js), to check a game uses exactly one set.
 _i18n = (ROOT / "src/js/i18n.js").read_text(encoding="utf-8")
-_en = _i18n.split("sets: {")[1].split("findPairs")[0]
+_en = "\n".join(l for l in _i18n.split("sets: {")[1].split("findPairs")[0].splitlines() if not l.strip().startswith("//"))
 SETS = {name: re.findall(r'"([^"|]+)\|', body) for name, body in re.findall(r"(\w+):\s*\{ name: [^,]+,\s*items: \[(.*?)\] \}", _en)}
 
 
@@ -139,14 +139,16 @@ CASES = [
     ("shapes=line,circle", "line is ignored if asked for", lambda p: set(p.say) == {"circle"}),
     ("shapes=semicircle&lang=es", "semicircle shape (es: semicírculo)", lambda p: p.n == 2 and set(p.say) == {"semicírculo"}),
     ("lang=es", "EN·ES switch on start screen, ES active", lambda p: re.search(r'class="langsw".*?<button[^>]*class="on"[^>]*>ES<', p.dom, re.S)),
-    ("demo=end&start=0&again=0", "EN·ES switch on end screen", lambda p: 'class="langsw"' in p.dom.split('id="end"')[1].split('id="rest"')[0]),
+    ("demo=end&start=0&again=0&rest=0", "EN·ES switch on end screen", lambda p: 'class="langsw"' in p.dom.split('id="end"')[1].split('id="rest"')[0]),
     ("shapes=circle,triangle", "shapes list without theme", lambda p: p.n == 4 and subset(p.say, ["circle", "triangle"])),
     ("shapes=circle,triangle&lang=es", "Spanish shape names", lambda p: subset(p.say, ["círculo", "triángulo"])),
     ("theme=images", "pictures: one random set per game", lambda p: p.n == 8 and any(subset(p.faces, s) for s in SETS.values())),
     ("set=fruits", "set=fruits (theme guessed)", lambda p: p.n == 8 and subset(p.faces, SETS["fruits"])),
-    ("theme=images&set=vehicles&lang=es", "Spanish vehicle names + phrase", lambda p: subset(p.faces, SETS["vehicles"]) and "carro" in " ".join(p.say + ["carro"]) and "¡Vamos a buscar parejas de vehículos!" in p.dom),
+    ("theme=images&set=sea&lang=es", "Spanish sea animals + phrase", lambda p: subset(p.faces, SETS["sea"]) and "¡Vamos a buscar parejas de animales del mar!" in p.dom),
+    ("set=bichos&lang=es", "bugs set by its Spanish name", lambda p: subset(p.faces, SETS["bugs"])),
+    ("set=animals", "old set=animals still works (farm)", lambda p: subset(p.faces, SETS["farm"])),
     ("set=nature&cards=20", "nature set, 10 pairs", lambda p: p.n == 20 and subset(p.faces, SETS["nature"])),
-    ("", "pictures tile shows mixed sets", lambda p: all(e in p.dom for e in ["🐶", "🍎", "🚗"])),
+    ("", "pictures tile shows mixed sets", lambda p: all(e in p.dom for e in ["🐶", "🍎", "🐠"])),
     ("setup&set=fruits", "setup: pictures with one set", lambda p: re.search(r'value="images" checked', p.dom) and re.search(r'<option value="fruits" selected', p.dom)),
     ("items=A|Apple,B|Ball", "custom items with spoken text", lambda p: p.n == 4 and subset(p.faces, "AB") and subset(p.say, ["Apple", "Ball"])),
     ("items=cat,dog", "items without theme", lambda p: subset(p.faces, ["cat", "dog"])),
@@ -166,13 +168,13 @@ CASES = [
     ("demo=end&start=0&again=0&rest=0", "rest=0: game tiles, no moon",
      lambda p: re.search(r'id="end" class="show"', p.dom) and not re.search(r'id="rest"[^>]*class="show"', p.dom)),
     ("setup&rest=3", "setup: rest field pre-filled", lambda p: re.search(r'name="rest"[^>]*value="3"', p.dom)),
-    ("demo=end&start=0", "end fireworks (night sky on)", lambda p: 'id="night" class="on"' in p.dom),
-    ("demo=end&start=0&again=0", "end screen: current game big, others small",
+    ("demo=end&start=0&rest=0", "end fireworks (night sky on)", lambda p: 'id="night" class="on"' in p.dom),
+    ("demo=end&start=0&again=0&rest=0", "end screen: current game big, others small",
      lambda p: re.search(r'id="end" class="show"', p.dom) and re.findall(r'class="tile big" data-theme="(\w+)"', p.dom) == ["numbers"]
                and len(re.findall(r'class="tile small"', p.dom)) == 4),
-    ("demo=end&start=0&again=0&themes=letters,shapes", "end screen respects themes=",
+    ("demo=end&start=0&again=0&themes=letters,shapes&rest=0", "end screen respects themes=",
      lambda p: re.findall(r'class="tile (?:big|small)" data-theme="(\w+)"', p.dom) == ["numbers", "letters", "shapes"]),
-    ("demo=end&theme=letters&again=0", "parent-made game end: only its big tile",
+    ("demo=end&theme=letters&again=0&rest=0", "parent-made game end: only its big tile",
      lambda p: re.findall(r'class="tile (?:big|small)" data-theme="(\w+)"', p.dom.split('id="end"')[1]) == ["letters"]
                and 'class="replay"' in p.dom.split('id="end"')[1]),
     ("start=0", "start=0 removes Start screen", lambda p: 'id="start"' not in p.dom),
@@ -186,13 +188,14 @@ CASES = [
     ("items=cat,dog,fish", "own words: tile previews them", lambda p: subset(re.findall(r'class="sym"[^>]*>([^<]*)<', p.dom.split('id="start"')[1].split('id="night"')[0]), ["cat", "dog", "fish"])),
     ("theme=numbers&lang=es", "Spanish phrase on parent-made tile", lambda p: "¡Vamos a buscar parejas de números!" in p.dom),
     ("", "hidden grown-up door (credit line) on start screen", lambda p: 'class="credit-hold"' in p.dom.split('id="start"')[1].split('id="night"')[0]),
+    ("setup&theme=letters", "setup has a Cancel button", lambda p: 'class="cancel"' in p.dom),
     ("setup", "?setup opens the parents' form", lambda p: 'id="setup"' in p.dom and 'name="theme"' in p.dom),
     ("setup&theme=shapes&shapes=circle,star&cards=12&lang=es", "setup form is pre-filled from the link",
      lambda p: re.search(r'value="shapes" checked', p.dom) and re.search(r'value="circle" checked', p.dom)
                and re.search(r'value="star" checked', p.dom) and re.search(r'<option value="12" selected', p.dom)
                and re.search(r'<option value="es" selected', p.dom)),
     ("theme=colors", "colors theme: swatches", lambda p: p.n == 8 and all(f == "svg" for f in p.faces) and subset(p.say, ["red", "blue", "yellow", "green", "orange", "purple", "pink", "brown", "black"])),
-    ("theme=colores&lang=es", "Spanish colour names", lambda p: subset(p.say, ["rojo", "azul", "amarillo", "verde", "naranja", "morado", "rosa", "café", "negro"])),
+    ("theme=colores&lang=es", "Spanish colour names", lambda p: subset(p.say, ["rojo", "azul", "amarillo", "verde", "naranja", "morado", "rosado", "café", "negro"])),
     ("help=1", "help overlay", lambda p: 'class="overlay"' in p.dom and "MEMORITER" in p.dom),
     ("voices=1", "voices overlay", lambda p: 'class="overlay"' in p.dom and "voices in this browser" in p.dom),
 ]

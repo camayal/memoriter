@@ -120,6 +120,7 @@ html,body{margin:0;height:100%;background:var(--page-bg);overflow:hidden;
 #setup button{font:700 18px/1 system-ui,sans-serif;border:0;border-radius:12px;padding:14px 22px;cursor:pointer}
 #setup .start{background:#3DAA5C;color:#fff;box-shadow:0 3px 0 #2C7E44}
 #setup .copy{background:#E6ECF7;color:#23529F}
+#setup .cancel{background:#F1EEE8;color:#5b6573}
 #setup .link{width:100%;font:13px/1.4 ui-monospace,Consolas,monospace;word-break:break-all;color:#5b6573}
 #setup [hidden]{display:none!important}
 

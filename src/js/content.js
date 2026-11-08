@@ -9,10 +9,17 @@ const parseItem = (raw, kind) => {
   return { kind, show: show.trim(), say: say !== undefined ? say.trim() : kind === "text" ? spoken(show) : show.trim() };
 };
 
-/* Picture set for the images theme: set=animals|fruits|vehicles|nature, or random (default).
+/* Picture set for the images theme: set=farm|wild|bugs|birds|sea|fruits|nature, or random (default).
    With random, a new set is chosen each time the child picks the pictures game (never the same
    twice in a row), and the voice names it: "Let's find pairs of fruits!". */
-const SET_ALIASES = { animales: "animals", animal: "animals", frutas: "fruits", fruta: "fruits", fruit: "fruits", vehiculos: "vehicles", "vehículos": "vehicles", vehicle: "vehicles", naturaleza: "nature" };
+const SET_ALIASES = {
+  animals: "farm", animales: "farm", granja: "farm", "farm animals": "farm",
+  salvajes: "wild", safari: "wild", zoo: "wild", "wild animals": "wild",
+  bichos: "bugs", insects: "bugs", insectos: "bugs", bug: "bugs",
+  pajaros: "birds", "pájaros": "birds", aves: "birds", bird: "birds",
+  mar: "sea", ocean: "sea", oceano: "sea", "océano": "sea", "sea animals": "sea",
+  frutas: "fruits", fruta: "fruits", fruit: "fruits", naturaleza: "nature",
+};
 const SET_WANTED = (() => { const v = (Q.get("set") || "random").toLowerCase(); return SET_ALIASES[v] || v; })();
 let chosenSet = null;
 function chooseSet() {
