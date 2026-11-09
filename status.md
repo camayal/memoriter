@@ -135,7 +135,7 @@ People play at **https://camayal.info/wa/pairs** (my GitHub Pages site with the 
 - [x] ~~Ready-made packs~~: animals, fruits, vehicles, nature (`set=`)
 
 ### Lower stimulation (ideas I want to build later)
-- [ ] Calm mode (`calm=1`, also in setup): slower flips and pops, quieter and fewer sounds, softer sparkles, fireworks become a gentle star shower
+- [ ] No movement mode (`animation=0`, also in setup): remove animation, quieter and fewer sounds, no sparkles, no fireworks
 - [ ] Quiet transition between games: the screen dims and a slow "breathing" circle grows and shrinks three times before the tiles appear
 - [ ] Fewer rewards per match: matched pairs fade away softly (no sparkle or pop); excitement kept for the end only
 - [x] ~~Slower pace in the game~~: calm pace ignores taps while two cards are open (default). If needed, `delay=` makes wrong pairs stay longer.
