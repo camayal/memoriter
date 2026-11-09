@@ -113,6 +113,17 @@ class Page:
 def subset(values, allowed): return set(values) <= set(allowed)
 
 
+def sparks(p):
+    """Sparkle colour of each card that has one, by what the card says."""
+    return {html.unescape(re.search(r'data-say="([^"]*)"', b).group(1)): m.group(1)
+            for b in re.findall(r'<button class="card"[^>]*>', p.dom) if (m := re.search(r'data-spark="([^"]*)"', b))}
+
+
+rgb = lambda h: [int(h[i:i + 2], 16) for i in (1, 3, 5)]
+red = lambda h: (c := rgb(h))[0] > c[1] + 60 and c[0] > c[2] + 60
+green = lambda h: (c := rgb(h))[1] > c[0] + 30 and c[1] > c[2] + 30
+
+
 # Emoji of each picture set (from src/js/i18n.js), to check a game uses exactly one set.
 _i18n = (ROOT / "src/js/i18n.js").read_text(encoding="utf-8")
 _en = "\n".join(l for l in _i18n.split("sets: {")[1].split("findPairs")[0].splitlines() if not l.strip().startswith("//"))
@@ -215,6 +226,9 @@ CASES = [
                and re.search(r'value="star" checked', p.dom) and re.search(r'<option value="12" selected', p.dom)
                and re.search(r'<option value="es" selected', p.dom)),
     ("theme=colors", "colors theme: swatches", lambda p: p.n == 8 and all(f == "svg" for f in p.faces) and subset(p.say, ["red", "blue", "yellow", "green", "orange", "purple", "pink", "brown", "black"])),
+    ("theme=colors", "crayons sparkle in their own colour", lambda p: p.dom.count("data-spark=") == p.n and subset(sparks(p).values(), ["#E04848", "#2F6FDB", "#F2C230", "#3DAA5C", "#F28C28", "#8A4FC7", "#E8649E", "#8B5A3C", "#2F3A4A"])),
+    ("set=fruits&cards=24&_dev=1", "pictures sparkle in their main colour (🍎 red, 🥝 green)", lambda p: p.dom.count("data-spark=") == p.n
+        and red(sparks(p).get("apple", "#ff0000")) and green(sparks(p).get("kiwi", "#00ff00"))),
     ("theme=colores&lang=es", "Spanish colour names", lambda p: subset(p.say, ["rojo", "azul", "amarillo", "verde", "naranja", "morado", "rosado", "café", "negro"])),
     ("help=1", "help overlay", lambda p: 'class="overlay"' in p.dom and "MEMORITER" in p.dom),
     ("voices=1", "voices overlay", lambda p: 'class="overlay"' in p.dom and "voices in this browser" in p.dom),
@@ -227,14 +241,17 @@ def main() -> int:
     print(f"Testing {PAGE.relative_to(ROOT)} with {pathlib.Path(BROWSER).name}\n")
     t0 = time.time()
     queries = [q for q, _, _ in CASES] + ["seed=7&cards=12", "seed=7&cards=12"]
-    if "--dist" in sys.argv: queries = [q if "_play=1" not in q else "" for q in queries]
+    # Development-page-only checks: _play=1 (plays a round in the frame harness) and _dev=1 (reads
+    # picture pixels, which a page opened straight from a file may not do; fine over https).
+    dev_only = lambda q: "_play=1" in q or "_dev=1" in q
+    if "--dist" in sys.argv: queries = [q if not dev_only(q) else "" for q in queries]
     doms = load_all(queries)
     failed = 0
     skipped = 0
     for (query, desc, check), dom in zip(CASES, doms):
         # Round-playing checks need the frame harness, which only runs reliably on the development
         # page; the built file is made from the same sources, so they're skipped with --dist.
-        if "--dist" in sys.argv and "_play=1" in query:
+        if "--dist" in sys.argv and dev_only(query):
             skipped += 1; continue
         p = Page(dom)
         try: ok = check(p)
@@ -246,7 +263,7 @@ def main() -> int:
     a, b = Page(doms[-2]), Page(doms[-1])
     ok = a.faces == b.faces and a.n == 12; failed += not ok
     print(f"{'PASS' if ok else 'FAIL'}  {'seed= gives the same deal twice':42}  ?seed=7&cards=12")
-    note = f", {skipped} round-playing checks skipped (development page only)" if skipped else ""
+    note = f", {skipped} development-page-only checks skipped" if skipped else ""
     print(f"\n{len(CASES) + 1 - failed - skipped} passed, {failed} failed{note}  ({time.time() - t0:.0f} s)")
     return 1 if failed else 0
 

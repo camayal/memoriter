@@ -1117,6 +1117,62 @@ function faceHTML(item, color) {
   return `<span class="txt" style="font-size:${size}cqmin;color:${color}">${inner}</span>`;
 }
 
+/* Sparkle colour of a card: the colour of what it shows.
+   Letters, numbers, words, shapes: their own colour (black ink gets mixed colours instead).
+   Crayons: the crayon's colour. Pictures (emoji, own images): their main colour, read from the
+   drawing itself (pictureColor). Until that is known, or if a picture has no clear colour, mixed. */
+function sparkColor(item, color) {
+  if (item.kind === "swatch") return item.show;
+  if (item.kind === "emoji" || item.kind === "img") return null;
+  return color === INK ? null : color;
+}
+
+/* Main colour of a picture: drawn small on a hidden canvas, then the pixels are sorted into hue
+   groups, leaving out see-through, near-black (outlines), and white or grey ones (eyes, shine).
+   The biggest group wins, and its average colour is the answer (darkened a little if it is very
+   pale, so it shows on the cream background). Null when almost nothing colourful is left
+   (🐼, ⚽) or the picture can't be read (another website's image). Each picture is read once. */
+const pictureColors = new Map();
+function pictureColor(item) {
+  const key = item.kind + ":" + item.show;
+  if (!pictureColors.has(key)) pictureColors.set(key, new Promise(resolve => {
+    const N = 40, cv = document.createElement("canvas"); cv.width = cv.height = N;
+    const g = cv.getContext("2d", { willReadFrequently: true });
+    const read = () => {
+      let d;
+      try { d = g.getImageData(0, 0, N, N).data; } catch { return resolve(null); }   // image from another site
+      const bins = Array.from({ length: 24 }, () => ({ n: 0, r: 0, g: 0, b: 0 }));
+      let solid = 0;
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i + 3] < 200) continue;
+        solid++;
+        const r = d[i], gr = d[i + 1], b = d[i + 2], max = Math.max(r, gr, b), min = Math.min(r, gr, b);
+        if (max < 70 || max - min < 45) continue;                 // outline, white, grey
+        let h = max === r ? (gr - b) / (max - min) : max === gr ? 2 + (b - r) / (max - min) : 4 + (r - gr) / (max - min);
+        h = ((h * 60) + 360) % 360;
+        const bin = bins[Math.floor(h / 15) % 24];
+        bin.n++; bin.r += r; bin.g += gr; bin.b += b;
+      }
+      const best = bins.reduce((a, c) => c.n > a.n ? c : a);
+      if (!solid || best.n < solid * .06) return resolve(null);
+      let hex = "#" + [best.r, best.g, best.b].map(v => Math.round(v / best.n).toString(16).padStart(2, "0")).join("");
+      const [r, gr, b] = [1, 3, 5].map(i => parseInt(hex.substr(i, 2), 16));
+      if (.299 * r + .587 * gr + .114 * b > 225) hex = darker(hex, .9);    // very pale: a touch darker
+      resolve(hex);
+    };
+    if (item.kind === "emoji" && CFG.emoji === "native") {
+      g.font = `${N * .8}px sans-serif`; g.textAlign = "center"; g.textBaseline = "middle";
+      g.fillText(item.show, N / 2, N / 2 + N * .04); read();
+    } else {
+      const img = new Image();
+      img.onload = () => { g.drawImage(img, 0, 0, N, N); read(); };
+      img.onerror = () => resolve(null);
+      img.src = item.kind === "emoji" ? openmojiURL(item.show) : encodeURI(item.show);
+    }
+  }));
+  return pictureColors.get(key);
+}
+
 function newGame() {
   applyPatterns();                                  // new random card back each game
   const items = buildItems();
@@ -1137,8 +1193,13 @@ function newGame() {
     el.addEventListener("click", e => { if (e.detail === 0) onTap(idx); });   // keyboard (Enter/Space)
     el.addEventListener("contextmenu", e => e.preventDefault());             // long press: no menu
     grid.appendChild(el);
-    return { ...d, el, up: false, done: false };
+    const spark = sparkColor(d, d.color);
+    if (spark) el.dataset.spark = spark;            // the sparkle colour (also read by tests/check.py)
+    return { ...d, el, up: false, done: false, spark };
   });
+  // Pictures: read each one's main colour in the background (both cards of the pair get it).
+  for (const c of cards) if (c.kind === "emoji" || c.kind === "img")
+    pictureColor(c).then(hex => { if (hex) { c.spark = hex; c.el.dataset.spark = hex; } });
   layout();
 }
 
@@ -1209,14 +1270,14 @@ function finale() {
   try { sessionStorage.setItem("memoriter-games", gamesDone); } catch { /* storage blocked */ }
   // One of the cards just matched becomes the shape of the final firework (light colour for the night sky).
   const c = cards.length ? randOf(cards) : null;
-  if (c) prepareSymbol(c, c.kind === "swatch" ? lighten(c.show, .15) : c.kind === "emoji" ? "#FFD86B" : lighten(c.color === INK ? "#7FB2F0" : c.color, .3));
+  if (c) prepareSymbol(c, c.kind === "swatch" ? lighten(c.show, .15) : c.kind === "emoji" ? (c.spark ? lighten(c.spark, .25) : "#FFD86B") : lighten(c.color === INK ? "#7FB2F0" : c.color, .3));
   fireworksShow(showAgain, gamesDone);
 }
 
 function vanish(c) {
   const r = c.el.getBoundingClientRect();
   sfx.pop();
-  sparkle(r.left + r.width / 2, r.top + r.height / 2, r.width, c.color === INK ? null : c.color);
+  sparkle(r.left + r.width / 2, r.top + r.height / 2, r.width, c.spark);
   c.el.classList.add("gone");                       // the grid slot stays, so nothing moves around
   c.el.setAttribute("aria-hidden", "true"); c.el.tabIndex = -1;
 }
