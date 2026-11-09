@@ -15,7 +15,7 @@ const TEXT = {
     shapes: { circle: "circle", oval: "oval", square: "square", rectangle: "rectangle", triangle: "triangle", diamond: "diamond", pentagon: "pentagon", hexagon: "hexagon", heptagon: "heptagon", octagon: "octagon", star: "star", heart: "heart", semicircle: "semicircle" },
     // Picture sets (emoji). Only simple, everyday things a toddler knows. "emoji|spoken word".
     sets: {
-      farm:     { name: "farm animals",  items: ["🐄|cow", "🐖|pig", "🐎|horse", "🐑|sheep", "🐐|goat", "🐔|chicken", "🐤|chick", "🦆|duck", "🐇|rabbit", "🐕|dog", "🐈|cat", "🦃|turkey", "🐁|mouse"] },
+      farm:     { name: "farm animals",  items: ["🐄|cow", "🐖|pig", "🐎|horse", "🐑|sheep", "🐐|goat", "🐓|rooster", "🐥|chick", "🦆|duck", "🐇|rabbit", "🐕|dog", "🐈|cat", "🦃|turkey", "🐁|mouse"] },
       wild:     { name: "wild animals",  items: ["🦁|lion", "🐅|tiger", "🐘|elephant", "🦒|giraffe", "🦓|zebra", "🦛|hippo", "🦏|rhino", "🐒|monkey", "🦍|gorilla", "🐊|crocodile", "🐻|bear", "🐼|panda", "🦎|lizard", "🐍|snake", "🐢|turtle", "🦨|skunk"] },
       bugs:     { name: "bugs",          items: ["🐝|bee", "🐞|ladybug", "🦋|butterfly", "🐛|caterpillar", "🐜|ant", "🐌|snail", "🕷️|spider", "🦗|cricket", "🪲|beetle", "🪰|fly", "🦟|mosquito", "🪱|worm"] },
       birds:    { name: "birds",         items: ["🐧|penguin", "🦉|owl", "🦜|parrot", "🦩|flamingo", "🦅|eagle", "🦢|swan", "🕊️|dove", "🦚|peacock", "🐓|rooster"] },
@@ -44,7 +44,7 @@ const TEXT = {
     noVoice: "No hay voz en español en este dispositivo/navegador.",
     shapes: { circle: "círculo", oval: "óvalo", square: "cuadrado", rectangle: "rectángulo", triangle: "triángulo", diamond: "rombo", pentagon: "pentágono", hexagon: "hexágono", heptagon: "heptágono", octagon: "octágono", star: "estrella", heart: "corazón", semicircle: "semicírculo" },
     sets: {
-      farm:     { name: "animales de la granja", items: ["🐄|vaca", "🐖|cerdo", "🐎|caballo", "🐑|oveja", "🐐|cabra", "🐔|gallina", "🐤|pollito", "🦆|pato", "🐇|conejo", "🐕|perro", "🐈|gato", "🦃|pavo", "🐁|ratón"] },
+      farm:     { name: "animales de la granja", items: ["🐄|vaca", "🐖|cerdo", "🐎|caballo", "🐑|oveja", "🐐|cabra", "🐓|gallo", "🐥|pollito", "🦆|pato", "🐇|conejo", "🐕|perro", "🐈|gato", "🦃|pavo", "🐁|ratón"] },
       wild:     { name: "animales salvajes",     items: ["🦁|león", "🐅|tigre", "🐘|elefante", "🦒|jirafa", "🦓|cebra", "🦛|hipopótamo", "🦏|rinoceronte", "🐒|mono", "🦍|gorila", "🐊|cocodrilo", "🐻|oso", "🐼|panda", "🦎|lagartija", "🐍|culebra", "🐢|tortuga", "🦨|zorrillo"] },
       bugs:     { name: "bichos",                items: ["🐝|abeja", "🐞|mariquita", "🦋|mariposa", "🐛|oruga", "🐜|hormiga", "🐌|caracol", "🕷️|araña", "🦗|grillo", "🪲|escarabajo", "🪰|mosca", "🦟|zancudo", "🪱|gusano"] },
       birds:    { name: "pájaros",               items: ["🐧|pingüino", "🦉|búho", "🦜|loro", "🦩|flamenco", "🦅|águila", "🦢|cisne", "🕊️|paloma", "🦚|pavo real", "🐓|gallo"] },

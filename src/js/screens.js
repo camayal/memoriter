@@ -263,9 +263,12 @@ function initRest() {
     timer = setTimeout(() => {
       timer = null; moon.classList.remove("holding");
       resetGames();
-      restEl.classList.remove("show"); night.classList.remove("on");
+      restEl.classList.remove("show");
       audio(); if (AC) tone(660, AC.currentTime, { type: "sine", peak: .1, decay: .15 });
-      if (startEl.isConnected && !startEl.classList.contains("hide")) return;   // came from a reload: tiles are already there
+      // Came from a reload: the Start screen (cream background) is already there under the moon.
+      if (startEl.isConnected && !startEl.classList.contains("hide")) { night.classList.remove("on"); return; }
+      // After a game: the usual end screen, on the night sky it is made for (its "…", EN · ES and
+      // credit are light; on the cream background they'd be invisible).
       showAgain();
     }, 4000);
   });
