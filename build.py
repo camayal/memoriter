@@ -65,7 +65,11 @@ def main() -> int:
     import hashlib, shutil
     OUT.parent.mkdir(exist_ok=True)
     OUT.write_text(html, encoding="utf-8")
-    build_id = hashlib.sha1(html.encode("utf-8")).hexdigest()[:10]
+    # The build id covers the page and the app files (icons, manifest), so a new icon is a new build too.
+    h = hashlib.sha1(html.encode("utf-8"))
+    for f in APP_FILES:
+        h.update((ROOT / "app" / f).read_bytes())
+    build_id = h.hexdigest()[:10]
     for f in APP_FILES:
         shutil.copyfile(ROOT / "app" / f, OUT.parent / f)
     om_src, om_out = ROOT / "assets" / "openmoji", OUT.parent / "openmoji"

@@ -1,6 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <!-- Memoriter app icon: four cards, two face up with the OpenMoji dog face (as on the pictures tile), two face down with the stars card back.
-       Everything sits inside the central ~70% so Android can crop it to a circle or squircle. -->
+       Back, dog / dog, back. The cards (and their shadow) sit inside the maskable safe zone, a centred circle
+       of radius 40% (205 px), so Android can crop the icon to a circle, squircle or rounded square without cutting them. -->
   <defs>
     <pattern id="stars" width="40" height="40" patternUnits="userSpaceOnUse">
       <g fill="#fff" fill-opacity=".42">
@@ -37,21 +38,21 @@
   </defs>
   <rect width="512" height="512" fill="#FFF7EA"/>
   <g filter="url(#shadow)">
-    <!-- face up: dog -->
-    <rect x="96" y="96" width="150" height="150" rx="26" fill="#fff"/>
-    <rect x="266" y="266" width="150" height="150" rx="26" fill="#fff"/>
-    <!-- face down: stars card back with the centre circle -->
+    <!-- face down (top left, bottom right): stars card back with the centre circle -->
     <g>
-      <rect x="266" y="96" width="150" height="150" rx="26" fill="url(#back)"/>
-      <rect x="266" y="96" width="150" height="150" rx="26" fill="url(#stars)"/>
-      <circle cx="341" cy="171" r="26" fill="#fff" fill-opacity=".55"/>
+      <rect x="124" y="124" width="124" height="124" rx="22" fill="url(#back)"/>
+      <rect x="124" y="124" width="124" height="124" rx="22" fill="url(#stars)"/>
+      <circle cx="186" cy="186" r="22" fill="#fff" fill-opacity=".55"/>
     </g>
     <g>
-      <rect x="96" y="266" width="150" height="150" rx="26" fill="url(#back)"/>
-      <rect x="96" y="266" width="150" height="150" rx="26" fill="url(#stars)"/>
-      <circle cx="171" cy="341" r="26" fill="#fff" fill-opacity=".55"/>
+      <rect x="264" y="264" width="124" height="124" rx="22" fill="url(#back)"/>
+      <rect x="264" y="264" width="124" height="124" rx="22" fill="url(#stars)"/>
+      <circle cx="326" cy="326" r="22" fill="#fff" fill-opacity=".55"/>
     </g>
+    <!-- face up (top right, bottom left): dog -->
+    <rect x="264" y="124" width="124" height="124" rx="22" fill="#fff"/>
+    <rect x="124" y="264" width="124" height="124" rx="22" fill="#fff"/>
   </g>
-  <use href="#dog" x="108" y="108" width="126" height="126"/>
-  <use href="#dog" x="278" y="278" width="126" height="126"/>
+  <use href="#dog" x="274" y="134" width="104" height="104"/>
+  <use href="#dog" x="134" y="274" width="104" height="104"/>
 </svg>
