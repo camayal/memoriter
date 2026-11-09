@@ -223,7 +223,7 @@ function setupParams(form) {
   if (peek) p.set("peek", String(peek));
   if (String(f.get("rest")) !== "6") p.set("rest", String(Math.max(0, parseInt(f.get("rest"), 10) || 0)));
   // Keep the look-and-feel settings a link may already have (patterns, colours, timings …).
-  for (const k of ["emoji", "grow", "colors", "back", "backcolor", "mark", "bg", "bgcolor", "delay", "vanish", "rate", "pitch", "win"]) if (URLQ.has(k)) p.set(k, URLQ.get(k));
+  for (const k of ["emoji", "grow", "dark", "colors", "back", "backcolor", "mark", "bg", "bgcolor", "delay", "vanish", "rate", "pitch", "win"]) if (URLQ.has(k)) p.set(k, URLQ.get(k));
   return p;
 }
 

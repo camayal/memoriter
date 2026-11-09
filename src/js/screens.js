@@ -46,7 +46,8 @@ seed     number = same shuffle every time
 start    0 = skip the Start screen (first card may be silent: browsers need a tap to unlock sound)
 win      phrase spoken at the end (default "Good job!" / "¡Muy bien!")
 rest     games before the sleepy-moon rest screen (default 6; 0 = never). A grown-up holds the small star at the top right ~4 s to unlock.
-grow     longer fireworks after each finished game: max extra slow rockets (default 10, ~9 s more); 0 = always short
+dark     seconds on the rest screen before it fades to black (default 60; 0 = never). The star still unlocks it.
+grow     slower fireworks after each finished game (same rockets, further apart; game 5 ~15 s): games it keeps slowing (default 10); 0 = always short
 (grown-ups: hold a game tile ~1 s to lock that game; only it is offered at the end, and the lock survives a reload)
 again    ms after the end before the game tiles show (default: once the last firework has completely faded)
 
@@ -251,6 +252,16 @@ function showRest() {
   night.classList.add("on");
   restEl.classList.add("show");
   say(W.rest);
+  goDarkLater();
+}
+/* After CFG.dark seconds (dark=, default 60) the rest screen fades to black and its gentle motion
+   stops: nothing left to look at, and black pixels are off on OLED screens. A web page can't switch
+   the screen off, but it never keeps it awake either, so the device's own screen timeout does that.
+   The hidden star still works under the black (same spot, top right, hold ~4 s). */
+let darkTimer = null;
+function goDarkLater() {
+  clearTimeout(darkTimer); restEl.classList.remove("dark");
+  if (CFG.dark > 0) darkTimer = setTimeout(() => restEl.classList.add("dark"), CFG.dark * 1000);
 }
 function hideEndTilesOnly() { endEl.classList.remove("show"); }
 function initRest() {
@@ -263,7 +274,8 @@ function initRest() {
     timer = setTimeout(() => {
       timer = null; moon.classList.remove("holding");
       resetGames();
-      restEl.classList.remove("show");
+      clearTimeout(darkTimer);
+      restEl.classList.remove("show", "dark");
       audio(); if (AC) tone(660, AC.currentTime, { type: "sine", peak: .1, decay: .15 });
       // Came from a reload: the Start screen (cream background) is already there under the moon.
       if (startEl.isConnected && !startEl.classList.contains("hide")) { night.classList.remove("on"); return; }
@@ -275,7 +287,8 @@ function initRest() {
   for (const ev of ["pointerup", "pointerleave", "pointercancel"]) moon.addEventListener(ev, cancel);
   moon.addEventListener("contextmenu", e => e.preventDefault());
   // Rest already due when the page opens (e.g. after a reload): show the moon over the Start screen.
-  if (restDue()) { night.classList.add("on"); restEl.classList.add("show"); }
+  if (restDue()) { night.classList.add("on"); restEl.classList.add("show"); goDarkLater(); }
+  const black = document.createElement("div"); black.className = "blackout"; restEl.appendChild(black);
 }
 
 /* Small, faint EN · ES switch in the bottom-right corner of the start and end screens (never during

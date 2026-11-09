@@ -187,6 +187,8 @@ CASES = [
     ("bgcolor=blue", "bgcolor=blue (light tint)", lambda p: re.search(r"--page-bg:\s*#[0-9a-f]{6}", p.root_style) is not None and "#fff7ea" not in p.root_style.lower()),
     ("_play=1&start=0&again=0&rest=1", "rest screen after N games (sleepy moon)",
      lambda p: re.search(r'id="rest"[^>]*class="show"', p.dom) and not re.search(r'id="end" class="show"', p.dom)),
+    ("_play=1&start=0&again=0&rest=1&dark=0.5", "dark=: rest screen fades to black",
+     lambda p: re.search(r'id="rest"[^>]*class="show dark"', p.dom) and 'class="blackout"' in p.dom),
     ("start=0&_play=1&again=0&rest=0", "rest=0: game tiles, no moon",
      lambda p: re.search(r'id="end" class="show"', p.dom) and not re.search(r'id="rest"[^>]*class="show"', p.dom)),
     ("setup&rest=3", "setup: rest field pre-filled", lambda p: re.search(r'name="rest"[^>]*value="3"', p.dom)),

@@ -168,6 +168,10 @@ html,body{margin:0;height:100%;background:var(--page-bg);overflow:hidden;
 #rest::after{content:"By: C. A. Maya-Lastra - 2026";position:absolute;left:50%;bottom:max(10px,env(safe-area-inset-bottom));translate:-50% 0;
   font:500 12px/1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.06em;color:rgba(255,255,255,.25);pointer-events:none;user-select:none}
 @media (prefers-reduced-motion:reduce){#rest .moon,#rest .z,#rest .tw{animation:none}#rest .z{opacity:.7}}
+/* dark= seconds later: a slow fade to black over everything (taps still reach the hidden star), motion stops */
+#rest .blackout{position:absolute;inset:0;z-index:5;background:#000;opacity:0;pointer-events:none;transition:opacity 5s ease}
+#rest.dark .blackout{opacity:1}
+#rest.dark .moon,#rest.dark .z,#rest.dark .tw,#rest.dark .unlock-star span{animation-play-state:paused}
 
 /* EN · ES switch: tiny and faint, bottom-right of the start and end screens. */
 .langsw{position:absolute;right:max(10px,env(safe-area-inset-right));bottom:max(4px,env(safe-area-inset-bottom));

@@ -66,7 +66,8 @@ const CFG = {
   // Picture emoji: OpenMoji drawings (same on every device, default) or the device's own emoji.
   emoji: (Q.get("emoji") || "").toLowerCase() === "native" ? "native" : "openmoji",
   rest: Q.get("rest") === "0" ? 0 : Math.max(0, Math.round(num("rest", 6))),   // games before the rest screen (0 = never)
-  calmMax: Q.get("grow") === "0" ? 0 : Math.max(0, Math.round(num("grow", 10))),   // extra calm rockets, max            // go full screen when a game tile is tapped
+  dark: Math.max(0, num("dark", 60)),                 // seconds on the rest screen before it fades to black (0 = never)
+  calmMax: Q.get("grow") === "0" ? 0 : Math.max(0, Math.round(num("grow", 10))),   // games the fireworks keep slowing down            // go full screen when a game tile is tapped
 };
 
 /* Random numbers: optionally seeded (seed=…) so the same shuffle repeats. */

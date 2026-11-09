@@ -176,6 +176,10 @@ html,body{margin:0;height:100%;background:var(--page-bg);overflow:hidden;
 #rest::after{content:"By: C. A. Maya-Lastra - 2026";position:absolute;left:50%;bottom:max(10px,env(safe-area-inset-bottom));translate:-50% 0;
   font:500 12px/1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.06em;color:rgba(255,255,255,.25);pointer-events:none;user-select:none}
 @media (prefers-reduced-motion:reduce){#rest .moon,#rest .z,#rest .tw{animation:none}#rest .z{opacity:.7}}
+/* dark= seconds later: a slow fade to black over everything (taps still reach the hidden star), motion stops */
+#rest .blackout{position:absolute;inset:0;z-index:5;background:#000;opacity:0;pointer-events:none;transition:opacity 5s ease}
+#rest.dark .blackout{opacity:1}
+#rest.dark .moon,#rest.dark .z,#rest.dark .tw,#rest.dark .unlock-star span{animation-play-state:paused}
 
 /* EN · ES switch: tiny and faint, bottom-right of the start and end screens. */
 .langsw{position:absolute;right:max(10px,env(safe-area-inset-right));bottom:max(4px,env(safe-area-inset-bottom));
@@ -328,7 +332,8 @@ const CFG = {
   // Picture emoji: OpenMoji drawings (same on every device, default) or the device's own emoji.
   emoji: (Q.get("emoji") || "").toLowerCase() === "native" ? "native" : "openmoji",
   rest: Q.get("rest") === "0" ? 0 : Math.max(0, Math.round(num("rest", 6))),   // games before the rest screen (0 = never)
-  calmMax: Q.get("grow") === "0" ? 0 : Math.max(0, Math.round(num("grow", 10))),   // extra calm rockets, max            // go full screen when a game tile is tapped
+  dark: Math.max(0, num("dark", 60)),                 // seconds on the rest screen before it fades to black (0 = never)
+  calmMax: Q.get("grow") === "0" ? 0 : Math.max(0, Math.round(num("grow", 10))),   // games the fireworks keep slowing down            // go full screen when a game tile is tapped
 };
 
 /* Random numbers: optionally seeded (seed=…) so the same shuffle repeats. */
@@ -427,7 +432,7 @@ function letterSpeech(ch) {
   return name;
 }
 
-const LETTERS_ES = { a: "a", b: "be", c: "ce", d: "de", e: "e", f: "efe", g: "ge", h: "hache", i: "i", j: "jota", k: "ka", l: "ele", m: "eme", n: "ene", "ñ": "eñe", o: "o", p: "pe", q: "cu", r: "erre", s: "ese", t: "te", u: "u", v: "uve", w: "uve doble", x: "equis", y: "ye", z: "zeta" };
+const LETTERS_ES = { a: "a", b: "be", c: "ce", d: "de", e: "e", f: "efe", g: "ge", h: "hache", i: "i", j: "jota", k: "ka", l: "ele", m: "eme", n: "ene", "ñ": "eñe", o: "o", p: "pe", q: "cu", r: "erre", s: "ese", t: "te", u: "u", v: "uve", w: "doble u", x: "equis", y: "ye", z: "zeta" };
 
 function numberES(n) {
   if (n < 0) return "menos " + numberES(-n);
@@ -1048,22 +1053,22 @@ function fireworksShow(onReady, round = 1) {
   // touch slower so it sounds happy and sing-song.
   say(Q.get("win") || freshPick("win-" + LANG, W.wins || [W.win]), true, { pitch: 1.25, rate: .92 });
   const Wd = innerWidth, H = innerHeight, reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  let t = 400;
+  // Calmer with each finished game: the same rockets every time, only further apart. Every gap is
+  // stretched by 60 % more per game already played (game 1 ≈ 7.5 s in all, game 5 ≈ 15 s), and it
+  // stops growing after CFG.calmMax games (grow=, default 10). grow=0 keeps it always short.
+  const slow = 1 + .6 * Math.min(Math.max(0, round - 1), CFG.calmMax);
+  let t = 400 * slow;
   // 1. Two single rockets.
-  for (let i = 0; i < 2; i++) { later(() => launch(), t); t += 550; }
+  for (let i = 0; i < 2; i++) { later(() => launch(), t); t += 550 * slow; }
   // 2. One mirrored pair, left and right.
   if (!reduced) {
     const k = randOf(BURSTS), x = Wd * (.2 + Math.random() * .1), y = H * (.2 + Math.random() * .15);
-    later(() => { launch(k, x, y); launch(k, Wd - x, y); }, t); t += 700;
+    later(() => { launch(k, x, y); launch(k, Wd - x, y); }, t); t += 700 * slow;
   }
-  // 3. A quick volley.
-  if (!reduced) for (let i = 0; i < 4; i++) { later(() => launch(), t); t += 180; }
-  // 3b. Calm part that grows with each finished game: one slow rocket more per game, up to
-  //     CFG.calmMax (default 10, about 9 s more). grow=0 turns it off.
-  const extra = Math.min(Math.max(0, round - 1), CFG.calmMax);
-  for (let i = 0; i < extra; i++) { t += 900; later(() => launch(randOf(["peony", "ring", "willow"])), t); }
+  // 3. A volley (quick in the first game, slower later).
+  if (!reduced) for (let i = 0; i < 4; i++) { later(() => launch(), t); t += 180 * slow; }
   // 4. Big heart or smiley in the middle.
-  t += 300;
+  t += 300 * slow;
   // The big final burst: a symbol from the game just played (see prepareSymbol), else heart/smiley.
   later(() => {
     const sym = finaleSymbol;
@@ -1356,7 +1361,8 @@ seed     number = same shuffle every time
 start    0 = skip the Start screen (first card may be silent: browsers need a tap to unlock sound)
 win      phrase spoken at the end (default "Good job!" / "¡Muy bien!")
 rest     games before the sleepy-moon rest screen (default 6; 0 = never). A grown-up holds the small star at the top right ~4 s to unlock.
-grow     longer fireworks after each finished game: max extra slow rockets (default 10, ~9 s more); 0 = always short
+dark     seconds on the rest screen before it fades to black (default 60; 0 = never). The star still unlocks it.
+grow     slower fireworks after each finished game (same rockets, further apart; game 5 ~15 s): games it keeps slowing (default 10); 0 = always short
 (grown-ups: hold a game tile ~1 s to lock that game; only it is offered at the end, and the lock survives a reload)
 again    ms after the end before the game tiles show (default: once the last firework has completely faded)
 
@@ -1561,6 +1567,16 @@ function showRest() {
   night.classList.add("on");
   restEl.classList.add("show");
   say(W.rest);
+  goDarkLater();
+}
+/* After CFG.dark seconds (dark=, default 60) the rest screen fades to black and its gentle motion
+   stops: nothing left to look at, and black pixels are off on OLED screens. A web page can't switch
+   the screen off, but it never keeps it awake either, so the device's own screen timeout does that.
+   The hidden star still works under the black (same spot, top right, hold ~4 s). */
+let darkTimer = null;
+function goDarkLater() {
+  clearTimeout(darkTimer); restEl.classList.remove("dark");
+  if (CFG.dark > 0) darkTimer = setTimeout(() => restEl.classList.add("dark"), CFG.dark * 1000);
 }
 function hideEndTilesOnly() { endEl.classList.remove("show"); }
 function initRest() {
@@ -1573,7 +1589,8 @@ function initRest() {
     timer = setTimeout(() => {
       timer = null; moon.classList.remove("holding");
       resetGames();
-      restEl.classList.remove("show");
+      clearTimeout(darkTimer);
+      restEl.classList.remove("show", "dark");
       audio(); if (AC) tone(660, AC.currentTime, { type: "sine", peak: .1, decay: .15 });
       // Came from a reload: the Start screen (cream background) is already there under the moon.
       if (startEl.isConnected && !startEl.classList.contains("hide")) { night.classList.remove("on"); return; }
@@ -1585,7 +1602,8 @@ function initRest() {
   for (const ev of ["pointerup", "pointerleave", "pointercancel"]) moon.addEventListener(ev, cancel);
   moon.addEventListener("contextmenu", e => e.preventDefault());
   // Rest already due when the page opens (e.g. after a reload): show the moon over the Start screen.
-  if (restDue()) { night.classList.add("on"); restEl.classList.add("show"); }
+  if (restDue()) { night.classList.add("on"); restEl.classList.add("show"); goDarkLater(); }
+  const black = document.createElement("div"); black.className = "blackout"; restEl.appendChild(black);
 }
 
 /* Small, faint EN · ES switch in the bottom-right corner of the start and end screens (never during
@@ -1946,7 +1964,7 @@ function setupParams(form) {
   if (peek) p.set("peek", String(peek));
   if (String(f.get("rest")) !== "6") p.set("rest", String(Math.max(0, parseInt(f.get("rest"), 10) || 0)));
   // Keep the look-and-feel settings a link may already have (patterns, colours, timings …).
-  for (const k of ["emoji", "grow", "colors", "back", "backcolor", "mark", "bg", "bgcolor", "delay", "vanish", "rate", "pitch", "win"]) if (URLQ.has(k)) p.set(k, URLQ.get(k));
+  for (const k of ["emoji", "grow", "dark", "colors", "back", "backcolor", "mark", "bg", "bgcolor", "delay", "vanish", "rate", "pitch", "win"]) if (URLQ.has(k)) p.set(k, URLQ.get(k));
   return p;
 }
 

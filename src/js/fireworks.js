@@ -215,22 +215,22 @@ function fireworksShow(onReady, round = 1) {
   // touch slower so it sounds happy and sing-song.
   say(Q.get("win") || freshPick("win-" + LANG, W.wins || [W.win]), true, { pitch: 1.25, rate: .92 });
   const Wd = innerWidth, H = innerHeight, reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  let t = 400;
+  // Calmer with each finished game: the same rockets every time, only further apart. Every gap is
+  // stretched by 60 % more per game already played (game 1 ≈ 7.5 s in all, game 5 ≈ 15 s), and it
+  // stops growing after CFG.calmMax games (grow=, default 10). grow=0 keeps it always short.
+  const slow = 1 + .6 * Math.min(Math.max(0, round - 1), CFG.calmMax);
+  let t = 400 * slow;
   // 1. Two single rockets.
-  for (let i = 0; i < 2; i++) { later(() => launch(), t); t += 550; }
+  for (let i = 0; i < 2; i++) { later(() => launch(), t); t += 550 * slow; }
   // 2. One mirrored pair, left and right.
   if (!reduced) {
     const k = randOf(BURSTS), x = Wd * (.2 + Math.random() * .1), y = H * (.2 + Math.random() * .15);
-    later(() => { launch(k, x, y); launch(k, Wd - x, y); }, t); t += 700;
+    later(() => { launch(k, x, y); launch(k, Wd - x, y); }, t); t += 700 * slow;
   }
-  // 3. A quick volley.
-  if (!reduced) for (let i = 0; i < 4; i++) { later(() => launch(), t); t += 180; }
-  // 3b. Calm part that grows with each finished game: one slow rocket more per game, up to
-  //     CFG.calmMax (default 10, about 9 s more). grow=0 turns it off.
-  const extra = Math.min(Math.max(0, round - 1), CFG.calmMax);
-  for (let i = 0; i < extra; i++) { t += 900; later(() => launch(randOf(["peony", "ring", "willow"])), t); }
+  // 3. A volley (quick in the first game, slower later).
+  if (!reduced) for (let i = 0; i < 4; i++) { later(() => launch(), t); t += 180 * slow; }
   // 4. Big heart or smiley in the middle.
-  t += 300;
+  t += 300 * slow;
   // The big final burst: a symbol from the game just played (see prepareSymbol), else heart/smiley.
   later(() => {
     const sym = finaleSymbol;
