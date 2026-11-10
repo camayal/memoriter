@@ -14,6 +14,9 @@ It is also made to be calm. There is no score and no timer, and the colors are s
 
 - **Language:** tap **EN · ES** in the bottom-right corner.
 - **Settings:** hold the faint **…** in the bottom-left corner for 4 seconds.
+
+![Settings: one setting per line, with a short hint under its name](screenshots/settings.png)
+
 - **Break time:** the break screen has nothing for the child to tap. To end the break, hold the small star near the top-right corner for 4 seconds.
 
 ![Break screen: hold the small star to unlock](screenshots/break.png)

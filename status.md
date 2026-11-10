@@ -31,7 +31,7 @@ _Last updated: 2026-11-09_
 | `app/` | Installable-app sources: `manifest.webmanifest`, `sw.js` (offline), `icon.svg` and the PNG icons I make from it with `python app/make_icons.py` |
 | `assets/fonts/` | The Andika Bold font (`andika-700-latin.woff2`, 19 KB, Latin subset: English and Spanish) with its license `OFL.txt` |
 | `assets/openmoji/` | OpenMoji drawings (SVG) for every emoji the game uses (88 files, ~250 KB), with `LICENSE.txt`. I refresh them with `python app/fetch_openmoji.py` after adding emoji to a set. |
-| `screenshots/` | The two screenshots used in `README.md` |
+| `screenshots/` | The screenshots used in `README.md` (start, settings, break) |
 | `build.py` | `python build.py` builds `dist/` |
 | `dist/` | **The published build** (generated: I edit `src/` / `app/` and rebuild): `index.html` (the whole game in one file) + manifest, icons, `sw.js`. Served by this repo's GitHub Pages at `/memoriter/dist/` and shown by the iframe at `camayal.info/wa/pairs`. |
 
