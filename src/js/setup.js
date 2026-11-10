@@ -11,6 +11,15 @@ const SETUP_THEMES = [
   ["shapes", "Shapes ▲"], ["colors", "Colors 🖍️"], ["custom", "My own cards"],
 ];
 const CARD_COUNTS = [4, 6, 8, 10, 12, 16, 20];
+/* Shared choices of both forms: how numbers and letters are paired, and the no-movement switch. */
+const optHTML = (v, label, sel) => `<option value="${v}"${sel ? " selected" : ""}>${label}</option>`;
+const countSelect = cur => `<label>Match to <select name="count">${optHTML("0", "the same number (3 ↔ 3)", !cur)}${optHTML("dots", "dots (3 ↔ ●●●)", cur === "dots")}${optHTML("fingers", "fingers (3 ↔ three fingers up)", cur === "fingers")}</select></label>`;
+const caseSelect = cur => `<label>Case <select name="case">${optHTML("upper", "capitals (A B C)", cur !== "lower" && cur !== "pair")}${optHTML("lower", "small letters (a b c)", cur === "lower")}${optHTML("pair", "capital ↔ small (A ↔ a)", cur === "pair")}</select></label>`;
+const normCase = v => { v = String(v || "").toLowerCase(); return ["pair", "both", "mixed", "match"].includes(v) ? "pair" : v === "lower" ? "lower" : "upper"; };
+const stillRow = on => `<div class="row" style="margin-top:8px">
+    <label><input type="checkbox" name="still"${on ? " checked" : ""}> no movement</label>
+    <small>Cards change without turning, found pairs fade away, no sparkles or fireworks, softer and fewer sounds.</small>
+  </div>`;
 
 function setupForm() {
   const own = list("items").join("\n");
@@ -33,12 +42,13 @@ ${defaultsForm()}
   <fieldset data-for="numbers"><legend>Numbers</legend><div class="row">
     <label>From <input type="number" name="from" value="${escapeHTML(Q.get("from") || "1")}"></label>
     <label>to <input type="number" name="to" value="${escapeHTML(Q.get("to") || "")}" placeholder="auto"></label>
-    <small>Leave “to” empty to use as many numbers as there are pairs.</small>
+    ${countSelect(CFG.count)}
+    <small>Leave “to” empty to use as many numbers as there are pairs. With dots or fingers, numbers stay within 1 to 10.</small>
   </div></fieldset>
 
   <fieldset data-for="letters"><legend>Letters</legend><div class="row">
     <label>Which <input type="text" name="letters" value="${escapeHTML(Q.get("letters") || "")}" placeholder="abc"></label>
-    <label><input type="checkbox" name="lower"${checked(Q.get("case") === "lower")}> lowercase</label>
+    ${caseSelect(normCase(Q.get("case")))}
     <label>Say <select name="phonics">${opt("0", "the letter name (bee)", CFG.phonics === "0")}${opt("1", "the letter sound (buh)", CFG.phonics === "1" || CFG.phonics === "sound")}${opt("both", "both (bee … buh)", CFG.phonics === "both")}</select></label>
     <small>abc = whole alphabet · a-d = a range · aeiou = exactly these · vowels</small>
   </div></fieldset>
@@ -71,7 +81,7 @@ ${defaultsForm()}
   </div><div class="row" style="margin-top:8px">
     <label>Peek <input type="number" name="peek" min="0" max="30" value="${CFG.peek}"> seconds</label>
     <small>Shows every card face up for a moment when the game starts, then turns them over. 0 = off.</small>
-  </div><div class="row" style="margin-top:8px">
+  </div>${stillRow(!CFG.motion)}<div class="row" style="margin-top:8px">
     <label>Rest after <input type="number" name="rest" min="0" max="50" value="${CFG.rest}"> games</label>
     <small>A sleepy moon says it's time for a break; a grown-up holds the small star at the top right 4 s to unlock. 0 = never.</small>
   </div></fieldset>
@@ -89,7 +99,7 @@ ${defaultsForm()}
 /* ---------- Defaults (this device) ----------
    What the child gets when picking a tile alone, e.g. numbers 10–20 once 1–8 are known. Saved on
    this device (localStorage), used whenever the address doesn't say otherwise. */
-const DEFAULT_KEYS = ["from", "to", "letters", "case", "phonics", "shapes", "set", "emoji", "cards", "voice", "tts", "sound", "fullscreen", "pace", "peek", "rest"];
+const DEFAULT_KEYS = ["from", "to", "count", "letters", "case", "phonics", "shapes", "set", "emoji", "cards", "voice", "tts", "sound", "fullscreen", "pace", "peek", "animation", "rest"];
 function defaultsForm() {
   const D = SAVED_DEFAULTS, has = Object.keys(D).length > 0;
   const opt = (v, label, sel) => `<option value="${v}"${sel ? " selected" : ""}>${label}</option>`;
@@ -105,11 +115,12 @@ function defaultsForm() {
   <fieldset><legend>Numbers</legend><div class="row">
     <label>From <input type="number" name="from" value="${escapeHTML(D.from || "1")}"></label>
     <label>to <input type="number" name="to" value="${escapeHTML(D.to || "")}" placeholder="auto"></label>
+    ${countSelect(D.count === "fingers" ? "fingers" : D.count && D.count !== "0" ? "dots" : "")}
   </div></fieldset>
 
   <fieldset><legend>Letters</legend><div class="row">
     <label>Which <input type="text" name="letters" value="${escapeHTML(D.letters || "")}" placeholder="abc"></label>
-    <label><input type="checkbox" name="lower"${checked(D.case === "lower")}> lowercase</label>
+    ${caseSelect(normCase(D.case))}
     <label>Say <select name="phonics">${opt("0", "the letter name (bee)", dPh === "0")}${opt("1", "the letter sound (buh)", dPh === "1")}${opt("both", "both (bee … buh)", dPh === "both")}</select></label>
   </div></fieldset>
 
@@ -138,7 +149,7 @@ function defaultsForm() {
   </div><div class="row" style="margin-top:8px">
     <label>Peek <input type="number" name="peek" min="0" max="30" value="${escapeHTML(D.peek ?? "0")}"> seconds</label>
     <small>Shows every card face up for a moment when the game starts, then turns them over. 0 = off.</small>
-  </div><div class="row" style="margin-top:8px">
+  </div>${stillRow(D.animation === "0")}<div class="row" style="margin-top:8px">
     <label>Rest after <input type="number" name="rest" min="0" max="50" value="${escapeHTML(D.rest ?? "6")}"> games</label>
   </div></fieldset>
 
@@ -155,8 +166,9 @@ function collectDefaults(form) {
   const f = new FormData(form), d = {};
   if (f.get("from") && f.get("from") !== "1") d.from = f.get("from");
   if (f.get("to")) d.to = f.get("to");
+  if (f.get("count") !== "0") d.count = f.get("count");
   if (String(f.get("letters") || "").trim()) d.letters = String(f.get("letters")).trim();
-  if (f.get("lower")) d.case = "lower";
+  if (f.get("case") !== "upper") d.case = f.get("case");
   if (f.get("phonics") !== "0") d.phonics = f.get("phonics");
   if (f.getAll("shape").length) d.shapes = f.getAll("shape").join(",");
   const sets = f.getAll("set");
@@ -168,6 +180,7 @@ function collectDefaults(form) {
   if (!f.get("sound")) d.sound = "0";
   if (!f.get("fullscreen")) d.fullscreen = "0";
   if (f.get("pace")) d.pace = "fast";
+  if (f.get("still")) d.animation = "0";
   const peek = String(Math.max(0, Math.min(30, parseFloat(f.get("peek")) || 0)));
   if (peek !== "0") d.peek = peek;
   const rest = String(Math.max(0, parseInt(f.get("rest"), 10) || 0));
@@ -204,10 +217,11 @@ function setupParams(form) {
   if (theme === "numbers") {
     if (f.get("from") && f.get("from") !== "1") p.set("from", f.get("from"));
     if (f.get("to")) p.set("to", f.get("to"));
+    if (f.get("count") !== "0") p.set("count", f.get("count"));
   }
   if (theme === "letters") {
     if (f.get("letters")) p.set("letters", f.get("letters"));
-    if (f.get("lower")) p.set("case", "lower");
+    if (f.get("case") !== "upper") p.set("case", f.get("case"));
     if (f.get("phonics") !== "0") p.set("phonics", f.get("phonics"));
   }
   if (theme === "images" && f.get("set") !== "random") p.set("set", f.get("set"));
@@ -219,6 +233,7 @@ function setupParams(form) {
   if (!f.get("sound")) p.set("sound", "0");
   if (!f.get("fullscreen")) p.set("fullscreen", "0");
   if (f.get("pace")) p.set("pace", "fast");
+  if (f.get("still")) p.set("animation", "0");
   const peek = Math.max(0, Math.min(30, parseFloat(f.get("peek")) || 0));
   if (peek) p.set("peek", String(peek));
   if (String(f.get("rest")) !== "6") p.set("rest", String(Math.max(0, parseInt(f.get("rest"), 10) || 0)));

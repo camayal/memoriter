@@ -28,6 +28,7 @@ function spark(o) {
 
 /* Small burst at (x, y). color = null → mixed palette colours. */
 function sparkle(x, y, size, color) {
+  if (!CFG.motion) return;                          // animation=0: no sparkles
   const n = 26, sp = size / 34;
   for (let i = 0; i < n; i++) {
     const a = (i / n) * Math.PI * 2 + Math.random() * .2, v = sp * (.5 + Math.random() * .7);
@@ -215,6 +216,13 @@ function fireworksShow(onReady, round = 1) {
   // touch slower so it sounds happy and sing-song.
   say(Q.get("win") || freshPick("win-" + LANG, W.wins || [W.win]), true, { pitch: 1.25, rate: .92 });
   const Wd = innerWidth, H = innerHeight, reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // animation=0 (no movement): no rockets. The night sky comes on while the phrase is said, and the
+  // tiles appear 1.5 s later (always the same short pause).
+  if (!CFG.motion) {
+    running = false;
+    later(onReady, Q.has("again") ? num("again", 0) : 1500);
+    return;
+  }
   // Calmer with each finished game: the same rockets every time, only further apart. Every gap is
   // stretched by 60 % more per game already played (game 1 ≈ 7.5 s in all, game 5 ≈ 15 s), and it
   // stops growing after CFG.calmMax games (grow=, default 10). grow=0 keeps it always short.

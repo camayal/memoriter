@@ -60,6 +60,15 @@ const CFG = {
   // Peek: seconds every card is shown face up when a game starts (0 = off, the default; max 30).
   peek: Math.max(0, Math.min(30, num("peek", 0))),
   upper: (Q.get("case") || "upper").toLowerCase() !== "lower",
+  // Letters: case=pair matches each capital to its small letter (A ↔ a). Off by default.
+  casePair: ["pair", "both", "mixed", "match"].includes((Q.get("case") || "").trim().toLowerCase()),
+  // Numbers: count=dots matches each number to that many dots (3 ↔ ●●●), count=fingers to that many
+  // fingers (OpenMoji hands). Numbers then stay within 1 to 10. Off by default (count=0).
+  count: (v => v === "fingers" || v === "hands" ? "fingers" : ["", "0", "no", "off", "false"].includes(v) ? "" : "dots")((Q.get("count") || "").trim().toLowerCase()),
+  // Movement: animation=0 is the no-movement mode: cards change face without turning, matched pairs
+  // fade out, no sparkles, no fireworks (a quiet night sky and the cheerful phrase), a still moon,
+  // softer and fewer sounds. animation=1 (default) is the normal game.
+  motion: Q.get("animation") !== "0",
   // Letters: say the name ("bee"), the sound ("buh", phonics=1) or both ("B … buh", phonics=both).
   phonics: (Q.get("phonics") || "0").toLowerCase(),
   fullscreen: Q.get("fullscreen") !== "0",
@@ -67,7 +76,7 @@ const CFG = {
   emoji: (Q.get("emoji") || "").toLowerCase() === "native" ? "native" : "openmoji",
   rest: Q.get("rest") === "0" ? 0 : Math.max(0, Math.round(num("rest", 6))),   // games before the rest screen (0 = never)
   dark: Math.max(0, num("dark", 60)),                 // seconds on the rest screen before it fades to black (0 = never)
-  calmMax: Q.get("grow") === "0" ? 0 : Math.max(0, Math.round(num("grow", 10))),   // games the fireworks keep slowing down            // go full screen when a game tile is tapped
+  calmMax: Q.get("grow") === "0" ? 0 : Math.max(0, Math.round(num("grow", 10))),   // games the fireworks keep slowing down
 };
 
 /* Random numbers: optionally seeded (seed=…) so the same shuffle repeats. */
@@ -78,5 +87,6 @@ if (Q.has("seed")) {
 }
 const shuffle = arr => { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; };
 const pick = (pool, n) => shuffle(pool.slice()).slice(0, n);
+if (!CFG.motion) document.documentElement.classList.add("still");   // styles.css: no movement
 const randOf = a => a[Math.floor(Math.random() * a.length)];
 const escapeHTML = s => s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));

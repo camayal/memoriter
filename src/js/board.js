@@ -19,6 +19,8 @@ function emojiHTML(e) {
 function faceHTML(item, color) {
   if (item.kind === "shape") return `<svg viewBox="0 0 100 100" aria-hidden="true">${SHAPES[item.show](color, darker(color, .85))}</svg>`;
   if (item.kind === "swatch") return crayonSVG(item.show);      // colours: a crayon in that colour (same drawing as the tile)
+  if (item.kind === "dots") return dotsSVG(item.show, color);   // count=dots
+  if (item.kind === "fingers") return fingersSVG(item.show);     // count=fingers
   if (item.kind === "img") return `<img src="${encodeURI(item.show)}" alt="" draggable="false">`;
   const len = [...item.show].length;
   const size = item.kind === "emoji" ? 66 : Math.min(64, 150 / len);
@@ -32,6 +34,7 @@ function faceHTML(item, color) {
    drawing itself (pictureColor). Until that is known, or if a picture has no clear colour, mixed. */
 function sparkColor(item, color) {
   if (item.kind === "swatch") return item.show;
+  if (item.kind === "fingers") return HAND_COLOR;
   if (item.kind === "emoji" || item.kind === "img") return null;
   return color === INK ? null : color;
 }
@@ -89,7 +92,8 @@ function newGame() {
   clearTimeout(peekTimer); peeking = false;
   total = items.length; matched = 0; openCards = []; locked = false; mismatch = null;
   const colors = gameColors(items.length);
-  const deck = shuffle(items.flatMap((it, i) => [{ ...it, id: i, color: colors[i] }, { ...it, id: i, color: colors[i] }]));
+  // Two cards per item. With an "alt" (3 ↔ dots, A ↔ a) the second card shows the alt instead.
+  const deck = shuffle(items.flatMap((it, i) => [{ ...it, id: i, color: colors[i] }, { ...it, ...it.alt, id: i, color: colors[i], isAlt: !!it.alt }]));
   grid.innerHTML = "";
   cards = deck.map((d, idx) => {
     const el = document.createElement("button");
@@ -178,14 +182,15 @@ function finale() {
   gamesDone++;
   try { sessionStorage.setItem("memoriter-games", gamesDone); } catch { /* storage blocked */ }
   // One of the cards just matched becomes the shape of the final firework (light colour for the night sky).
-  const c = cards.length ? randOf(cards) : null;
+  const main = cards.filter(c => !c.isAlt);          // the number or capital, not its dots / small letter
+  const c = main.length ? randOf(main) : null;
   if (c) prepareSymbol(c, c.kind === "swatch" ? lighten(c.show, .15) : c.kind === "emoji" ? (c.spark ? lighten(c.spark, .25) : "#FFD86B") : lighten(c.color === INK ? "#7FB2F0" : c.color, .3));
   fireworksShow(showAgain, gamesDone);
 }
 
 function vanish(c) {
   const r = c.el.getBoundingClientRect();
-  sfx.pop();
+  if (CFG.motion) sfx.pop();                         // no-movement mode: a silent, soft fade
   sparkle(r.left + r.width / 2, r.top + r.height / 2, r.width, c.spark);
   c.el.classList.add("gone");                       // the grid slot stays, so nothing moves around
   c.el.setAttribute("aria-hidden", "true"); c.el.tabIndex = -1;

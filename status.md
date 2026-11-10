@@ -3,7 +3,7 @@
 Memoriter is a memory pairs game I'm making for toddlers. I write it as separate source files and bundle it into one embeddable HTML file.
 Every setting comes from the URL. I add `?help=1` to see them on screen.
 
-_Last updated: 2026-11-08_
+_Last updated: 2026-11-09_
 
 ## Project structure
 
@@ -15,13 +15,14 @@ _Last updated: 2026-11-08_
 | `src/js/i18n.js` | Every word per language: Start/win phrases, shape and animal names, **numbers and letters as words** (`1` → "uno", `B` → "be") |
 | `src/js/colors.js` | Palette and colour helpers |
 | `src/js/patterns.js` | Card back and page background patterns |
-| `src/js/shapes.js` | SVG shapes |
+| `src/js/shapes.js` | SVG shapes, plus the dots and hand layout for quantity cards (`count=`) |
+| `src/js/hands.js` | Counting hands for `count=fingers` (OpenMoji ☝ ✌ 🖐, plus 3 and 4 made from ✌). **Generated** by `python app/make_hands.py`: I don't edit it by hand. |
 | `src/js/content.js` | Builds the cards for each theme |
 | `src/js/audio.js` | Sound effects (Web Audio) |
 | `src/js/speech.js` | Text-to-speech, voice choice and presets |
 | `src/js/fireworks.js` | Sparkle particles and the end fireworks show |
 | `site/wa/pairs/` | My copies of the website's shell files for `camayal.info/wa/pairs` (iframe page, manifest, offline `sw.js`) |
-| `tests/check.py` | `python tests/check.py` checks 72 URL settings in headless Edge/Chrome (~5 s). `--dist` tests the built file. |
+| `tests/check.py` | `python tests/check.py` checks 97 URL settings in headless Edge/Chrome (~5 s). `--dist` tests the built file. |
 | `src/js/board.js` | Game logic: deal, flip, match, layout |
 | `src/js/screens.js` | Game tiles, Start screen, end screen, `?help=1`, `?voices=1` |
 | `src/js/setup.js` | Parents' setup screen (`?setup`) |
@@ -64,6 +65,7 @@ To add a language, I copy the `en` block in `src/js/i18n.js`, translate it, and 
 | Rest screen (sleepy moon) | ✅ Done | After 6 finished games (`rest=6`, `rest=0` = never, also in setup) the fireworks end on a quiet night sky with a sleeping crescent moon, slowly rising "Z z z" and softly twinkling stars; the voice says "Time for a break. See you soon!" / "¡Hora de descansar! Hasta pronto." Nothing for the child to tap. To unlock, I hold one small star near the top-right corner ~4 s (it looks like the other stars and brightens slowly while held). I made sure the moon itself doesn't react, so a child touching it can't unlock. Reloading the page doesn't skip it. After 1 minute (`dark=60`, `dark=0` = never) the moon screen fades slowly (5 s) to black and its motion stops; the star still unlocks it in the same spot. A web page can't switch the screen off, but the game never keeps the screen awake, so the device's own screen timeout turns it off (on Android: Settings → Display → Screen timeout). |
 | Theme symbol in the final firework | ✅ Done | The big final burst draws the **outline** of one of the cards just matched in evenly spaced sparks: a letter, number or word as itself, a shape as its outline; the colors game ends with a rainbow arc of coloured sparks (red outside → purple inside). Pictures use their outline when it reads clearly (cat, rabbit, fish, elephant, duck, apple, banana, pear, cherries, car, airplane, bike, helicopter, moon, star, cloud, flower, tree); the rest (round heads like dog/pig/frog, boxes like bus/train) get the happy-face firework (list in `CLEAR_OUTLINES`, `fireworks.js`). The other bursts (flowers, rings…) stay. |
 | No idle animations | ✅ Done | I stopped the tiles from "breathing": nothing moves on screen until it is touched (the rest screen's slow moon and stars are the only gentle motion). |
+| No movement mode | ✅ Done (off by default) | `animation=0` (or "no movement" in setup, Defaults and the link) takes out every movement and fade: cards change face at once instead of turning, found pairs simply disappear (no pop, sparkle or sound), the start screen, game tiles, night sky and rest screen appear and go at once, tiles don't sparkle, pop or sink, and the end has no fireworks: the night sky comes on while the cheerful phrase is said, then the tiles appear 1.5 s later (always the same short pause; I shortened it because waiting with nothing moving felt long). The rest screen's moon, "Z z z" and stars stay still, and it turns black at once after `dark=`. Sounds are softer and fewer (only the tap and the voice). Only the grown-up holds (hidden star, "…") still brighten slowly, as the sign the hold works. `animation=1` is the default. |
 | Full screen | ✅ Done | Tapping a game tile switches to full screen (no address bar or browser buttons) on Android, desktop and iPad, also inside a same-site iframe. Not available on iPhone Safari. `fullscreen=0` or the setup screen turns it off. |
 | Install as an app (PWA) | ✅ Done (I still need to test it on a phone) | `dist/` includes an app manifest (full-screen display, cream theme), icons (four cards: two OpenMoji dog faces face up, the same dog as the pictures tile, and two star backs face down) and a service worker, so the installed app opens instantly from the saved copy (also offline) and picks up updates in the background, shown on the next open. It installs from `camayal.info/wa/pairs` with the browser's "Install app" / "Add to Home screen" (needs the shell's manifest, see Publishing). Only works over https (GitHub Pages), not from disk. |
 | No pull-to-refresh, no zoom | ✅ Done | `overscroll-behavior:none` stops pull-down refresh and rubber-banding; `touch-action:none`, `maximum-scale=1` and blocked pinch / ctrl+wheel gestures stop zoom. The setup screen can still scroll. |
@@ -73,6 +75,8 @@ To add a language, I copy the `en` block in `src/js/i18n.js`, translate it, and 
 | Theme 5: colors | ✅ Done | Colour swatches (red, blue, yellow, green, orange, purple, pink, brown, black), spoken as their names in English or Spanish. |
 | Theme 1: numbers (range from the URL) | ✅ Done | `from` / `to`. Picks at random when the range is bigger than the number of pairs. Spoken as words in the game language. |
 | Theme 2: letters (`abc`, `a-d`, `aeiou`) | ✅ Done | Also `vowels` / `vocales` and `case=lower`. Spanish adds ñ and speaks the Spanish letter names (be, ce, hache, jota…). |
+| Numbers ↔ quantities (dots or fingers) | ✅ Done (off by default) | `count=dots` matches each number to that many dots, in dice patterns so small amounts are seen at a glance (drawn in the card's colour). `count=fingers` matches it to OpenMoji hands: ☝ 1, ✌ 2, 🖐 5 are OpenMoji's own; OpenMoji has no 3 or 4, so I made them from ✌ by raising its folded ring finger (3) and then its little finger (4), in the same style (`app/make_hands.py` builds `src/js/hands.js`). 6–10 are two hands: 🖐 on the left (turned so its thumb points out) plus the hand for the rest, both drawn at the same size. Both options go from 1 to 10, so the numbers stay within 1–10 (`from=5&to=20` → 5 to 10) and every pair is number ↔ quantity. Both cards say the number. In setup under Numbers → "Match to", in Defaults and the link. The final firework uses the number. An earlier try with my own hand drawings didn't look good, so I switched to OpenMoji. |
+| Capital ↔ small letter (A ↔ a) | ✅ Done (off by default) | `case=pair` puts the capital on one card and the small letter on the other; both say the letter name (or sound). In setup under Letters → "Case" (capitals / small letters / capital ↔ small), in Defaults and the link. |
 | Phonics (letter sounds) | ✅ Done (I still need to tune it by ear) | `phonics=1` says the letter's sound instead of its name (B → "buh", M → "mmm"); `phonics=both` says both ("B, buh"). English and Spanish (Spanish h says "muda"). Also in the setup screen under Letters, and for single-letter own cards. Browsers can't pronounce raw phonemes, so I spell the sounds for the voice to read, and some may need adjusting per voice: I edit `PHONICS_EN` / `PHONICS_ES` in `src/js/i18n.js`, or override one card with `items=B\|buh`. |
 | Bilingual (en / es) | ✅ Done | `lang=es` translates every spoken word: numbers as words ("veintidós"), Spanish letter names, shapes, animals, the Start and win phrases. It picks a Spanish voice, preferring the browser's own region. I tested it headless in Edge, which chose a Spanish "Natural" voice. |
 | Colombian Spanish | ✅ Done | I use Colombian terms for the Spanish words (carro, carro de policía, carro de bomberos, bus, banano, durazno, rosado, café…). With `lang=es` the voice prefers Colombian Spanish (es-CO, e.g. Edge's Salome / Gonzalo), then US Spanish (es-US), then any Spanish; `lang=es-MX` etc. still picks that region. |
@@ -83,7 +87,7 @@ To add a language, I copy the `en` block in `src/js/i18n.js`, translate it, and 
 
 ## URL parameters
 
-`setup` · `pace` · `peek` · `theme` · `themes` · `cards` · `from` · `to` · `letters` · `case` · `phonics` · `shapes` · `set` · `items` · `lang` · `voice` · `voices` ·
+`setup` · `pace` · `peek` · `animation` · `theme` · `themes` · `cards` · `from` · `to` · `count` · `letters` · `case` · `phonics` · `shapes` · `set` · `items` · `lang` · `voice` · `voices` ·
 `rate` · `pitch` · `tts` · `sound` · `colors` · `delay` · `vanish` · `back` · `backcolor` · `mark` · `bg` · `bgcolor` · `fullscreen` · `grow` · `rest` · `dark` · `emoji` · `seed` · `start` · `win` · `again` · `help`
 
 I removed `demo` (the tests now play the round for real) and `starttext` (the "Let's go!" button became the big tile). I also removed some as redundant: `pairs` (use `cards`), `img` (use `items` with `theme=images`), `theme=custom` (guessed from `items`), `vol` (use `sound=0`). I kept `rate` / `pitch` as fine-tuning on top of the `voice=` presets.
@@ -106,7 +110,7 @@ A TWA (Trusted Web Activity) is a small Android app that opens the PWA full scre
    - The website repo has no `.nojekyll` / `_config.yml`, so GitHub Pages runs Jekyll, which **skips dot-folders**. I need a `_config.yml` with `include: [".well-known"]` (safer for the old site than `.nojekyll`).
    - Use the **Play App Signing** SHA-256 fingerprint (Play Console → App integrity), not only my upload key's. A wrong fingerprint is the usual cause of the address bar showing.
    - One file covers both the shell (`/wa/pairs/`) and the game in the iframe (`/memoriter/dist/`): same origin.
-3. **Play Console**: $25 once plus identity check. New *personal* accounts must run a **closed test with 12+ testers for 14 days** before production. Listing: 512 icon, 1024×500 feature graphic, phone/tablet screenshots (`screenshots/`), privacy policy URL (a short page: no data collected, settings stay on the device).
+3. **Play Console**: 
 4. **Kids (Families policy)**, since the audience is under 13: privacy policy, no ads, no analytics or third-party data collection (Memoriter already has none). I fill in the Data safety form and the content rating questionnaire. The hidden 4 s hold for setup already works as a parental gate.
 
 Good to know: every `git push` updates the Play app too (no new upload); I only rebuild the `.aab` to change the name, icon or package settings. Speech uses the device's Chrome (Google voices). **iOS** would need a WKWebView wrapper (PWABuilder iOS or Capacitor), a Mac with Xcode, $99/year and Apple's review (guideline 4.2 "just a website", strict Kids category), so for iPad, Safari → Add to Home Screen stays the way.
@@ -141,34 +145,26 @@ Good to know: every `git push` updates the Play app too (no new upload); I only 
 
 ### Themes / content
 - [ ] Better phonics: recorded letter-sound clips (one short recording per sound, en + es) instead of spelled approximations; until then, I tune `PHONICS_EN` / `PHONICS_ES` by ear per voice
-- [ ] More picture sets if needed (food, clothes, toys, body parts), keeping only words toddlers know (done so far: farm, wild, bugs, birds, sea)
 - [x] ~~Colors theme~~ (done)
-- [ ] Number words and quantities (dots or fingers matched to a digit)
-- [ ] Matching uppercase to lowercase (A ↔ a)
-- [ ] Mixed pairs: picture ↔ word, number ↔ quantity (the two cards of a pair look different)
+- [x] ~~Quantities (dots or fingers matched to a digit)~~: `count=dots|fingers` (off by default)
+- [x] ~~Matching uppercase to lowercase (A ↔ a)~~: `case=pair` (off by default)
+- [ ] Mixed pairs: picture ↔ word (the two cards of a pair look different; the deck already supports it: an item's `alt` is the second card's face)
 - [x] ~~Ready-made packs~~: animals, fruits, vehicles, nature (`set=`)
 
 ### Lower stimulation (ideas I want to build later)
-- [ ] No movement mode (`animation=0`, also in setup): remove animation, quieter and fewer sounds, no sparkles, no fireworks
-- [ ] Quiet transition between games: the screen dims and a slow "breathing" circle grows and shrinks three times before the tiles appear
-- [ ] Fewer rewards per match: matched pairs fade away softly (no sparkle or pop); excitement kept for the end only
+- [x] ~~No movement mode~~: `animation=0` (also in setup); `animation=1` stays the default
 - [x] ~~Slower pace in the game~~: calm pace ignores taps while two cards are open (default). If needed, `delay=` makes wrong pairs stay longer.
-- [ ] Gentle cooldown on the end tiles: they fade in slowly and ignore taps for the first 2 seconds
 - [ ] Session limits for parents in setup: rest length in minutes (auto-unlock after the break) and a daily maximum of games
 
 ### Gameplay / UX
 - [x] ~~Preview mode~~: `peek=N` (or Peek in setup, Defaults and link) shows every card face up for N seconds when a game starts, silently, then turns them over; taps are ignored meanwhile. Off by default (`peek=0`).
-- [ ] Difficulty presets (`level=1..3`) that set the pair count
 - [x] ~~Card back styles~~ (done: `back=`, `backcolor=`)
 - [x] ~~A parent settings panel~~ (`?setup`)
-- [ ] Keyboard and switch access for accessibility
 
 ### Technical
-- [ ] Message API so the hosting page can be notified when a game ends (`postMessage`)
 - [x] ~~Install as an app (PWA)~~, with offline play
 - [x] ~~Faster start~~: the offline helpers (`app/sw.js` and the shell's `sw.js`) open everything from the saved copy straight away and refresh it in the background, instead of waiting for the network first (which was slow on a weak signal). An update now shows on the **next** open. On the first visit, the pictures are saved after the first screen, not before.
 - [x] ~~Offline play for the installed app from `camayal.info/wa/pairs`~~ (`site/wa/pairs/sw.js`)
-- [ ] Recorded voice clips as an alternative to TTS (`audio=url`)
 - [ ] Google Play app as a TWA (Bubblewrap / PWABuilder); steps in **Publishing → Google Play as a TWA**
 - [x] ~~Split into modules~~ (`src/` + `build.py`)
 - [x] ~~Automated checks~~ (`tests/check.py`)

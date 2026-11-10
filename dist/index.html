@@ -213,6 +213,21 @@ img.emoji,.front img.emoji{width:1.2em;height:1.2em;object-fit:contain;vertical-
 #end .setupdoor{color:rgba(255,255,255,.3)}
 .setupdoor.holding{color:rgba(47,58,74,.8);transition:color 4s linear}
 #end .setupdoor.holding{color:rgba(255,255,255,.85)}
+
+/* animation=0 (no movement): nothing moves, scales or fades. Cards change face at once (no turn),
+   matched cards simply disappear, screens appear and go at once (start, end, night sky, rest screen
+   and its blackout), tiles don't sink, the moon and its stars stay still. Only the grown-up holds
+   (hidden star, "…") still brighten slowly, as their only sign that the hold is working. */
+.still{--flip:1ms}
+.still .card.gone{animation:none;opacity:0}
+.still #start,.still #night,.still #end,.still #rest .blackout{transition:none}
+.still #end.show,.still #rest.show{animation:none;opacity:1}
+.still #start .tile:active,.still #end .tile:active{translate:none}
+.still .tile.holding{scale:none;transition:none}
+.still .tile.armed{scale:none}
+.still #rest .moon,.still #rest .z,.still #rest .tw,.still #rest .unlock-star span{animation:none}
+.still #rest .z{opacity:.7}
+.still #rest .tw{opacity:.6}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#FFF7EA">
@@ -326,6 +341,15 @@ const CFG = {
   // Peek: seconds every card is shown face up when a game starts (0 = off, the default; max 30).
   peek: Math.max(0, Math.min(30, num("peek", 0))),
   upper: (Q.get("case") || "upper").toLowerCase() !== "lower",
+  // Letters: case=pair matches each capital to its small letter (A ↔ a). Off by default.
+  casePair: ["pair", "both", "mixed", "match"].includes((Q.get("case") || "").trim().toLowerCase()),
+  // Numbers: count=dots matches each number to that many dots (3 ↔ ●●●), count=fingers to that many
+  // fingers (OpenMoji hands). Numbers then stay within 1 to 10. Off by default (count=0).
+  count: (v => v === "fingers" || v === "hands" ? "fingers" : ["", "0", "no", "off", "false"].includes(v) ? "" : "dots")((Q.get("count") || "").trim().toLowerCase()),
+  // Movement: animation=0 is the no-movement mode: cards change face without turning, matched pairs
+  // fade out, no sparkles, no fireworks (a quiet night sky and the cheerful phrase), a still moon,
+  // softer and fewer sounds. animation=1 (default) is the normal game.
+  motion: Q.get("animation") !== "0",
   // Letters: say the name ("bee"), the sound ("buh", phonics=1) or both ("B … buh", phonics=both).
   phonics: (Q.get("phonics") || "0").toLowerCase(),
   fullscreen: Q.get("fullscreen") !== "0",
@@ -333,7 +357,7 @@ const CFG = {
   emoji: (Q.get("emoji") || "").toLowerCase() === "native" ? "native" : "openmoji",
   rest: Q.get("rest") === "0" ? 0 : Math.max(0, Math.round(num("rest", 6))),   // games before the rest screen (0 = never)
   dark: Math.max(0, num("dark", 60)),                 // seconds on the rest screen before it fades to black (0 = never)
-  calmMax: Q.get("grow") === "0" ? 0 : Math.max(0, Math.round(num("grow", 10))),   // games the fireworks keep slowing down            // go full screen when a game tile is tapped
+  calmMax: Q.get("grow") === "0" ? 0 : Math.max(0, Math.round(num("grow", 10))),   // games the fireworks keep slowing down
 };
 
 /* Random numbers: optionally seeded (seed=…) so the same shuffle repeats. */
@@ -344,6 +368,7 @@ if (Q.has("seed")) {
 }
 const shuffle = arr => { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; };
 const pick = (pool, n) => shuffle(pool.slice()).slice(0, n);
+if (!CFG.motion) document.documentElement.classList.add("still");   // styles.css: no movement
 const randOf = a => a[Math.floor(Math.random() * a.length)];
 const escapeHTML = s => s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
@@ -585,10 +610,56 @@ const SHAPES = {
   heart:     (c, s) => `<path d="M50 86 C20 64 8 48 8 32 C8 18 19 9 31 9 C40 9 46 14 50 21 C54 14 60 9 69 9 C81 9 92 18 92 32 C92 48 80 64 50 86Z" fill="${c}" stroke="${s}" stroke-width="4" stroke-linejoin="round"/>`,
 };
 
+/* ---------- Quantities (numbers game, count=dots | count=fingers) ----------
+   The second card of a number pair shows that many dots or fingers (1 to 10).
+   Dots: in the card's colour, dice patterns, so small amounts are seen at a glance without counting.
+   Fingers: OpenMoji hands (hands.js): one hand for 1 to 5; for 6 to 10 a whole hand 🖐 on the left
+   (turned so its thumb points out) and the hand for the rest on the right. */
+const DOTS = {
+  1: [[50, 50]],
+  2: [[30, 30], [70, 70]],
+  3: [[26, 26], [50, 50], [74, 74]],
+  4: [[29, 29], [71, 29], [29, 71], [71, 71]],
+  5: [[27, 27], [73, 27], [50, 50], [27, 73], [73, 73]],
+  6: [[30, 22], [70, 22], [30, 50], [70, 50], [30, 78], [70, 78]],
+  7: [[26, 22], [74, 22], [26, 50], [50, 50], [74, 50], [26, 78], [74, 78]],
+  8: [[30, 17], [70, 17], [30, 39], [70, 39], [30, 61], [70, 61], [30, 83], [70, 83]],
+  9: [[22, 22], [50, 22], [78, 22], [22, 50], [50, 50], [78, 50], [22, 78], [50, 78], [78, 78]],
+  10: [[17, 24], [39, 24], [61, 24], [83, 24], [35, 50], [65, 50], [17, 76], [39, 76], [61, 76], [83, 76]],
+};
+const QTY_MAX = 10;
+function dotsSVG(n, c) {
+  const pts = DOTS[n] || [], r = n <= 2 ? 13 : n <= 5 ? 11.5 : n <= 7 ? 10 : 8.8, s = darker(c, .8);
+  return `<svg viewBox="0 0 100 100" aria-hidden="true">${pts.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${c}" stroke="${s}" stroke-width="3"/>`).join("")}</svg>`;
+}
+const handAt = (n, x, y, size, mirror) => `<svg x="${x}" y="${y}" width="${size}" height="${size}" viewBox="0 0 72 72" overflow="visible">${mirror ? `<g transform="matrix(-1 0 0 1 72 0)">${HANDS[n]}</g>` : HANDS[n]}</svg>`;
+function fingersSVG(n) {
+  // 🖐 fills its 72×72 box more than ☝ ✌ and the 3 and 4 hands, so alone it is drawn a little smaller.
+  // Two hands (6 to 10): both drawn at exactly the same size, side by side.
+  const body = n === 5 ? handAt(5, 6, 6, 88) : n < 5 ? handAt(n, 0, 0, 100)
+    : handAt(5, -9, 19, 62, true) + handAt(n - 5, 47, 19, 62);
+  return `<svg viewBox="0 0 100 100" overflow="visible" aria-hidden="true">${body}</svg>`;
+}
+const HAND_COLOR = "#F2C230";                      // sparkles of a hand card: OpenMoji's skin yellow, a touch deeper
+
+/* ===== src/js/hands.js ===== */
+/* hands.js: GENERATED by app/make_hands.py (don't edit by hand). Counting hands for count=fingers,
+   each drawn in a 72×72 box: OpenMoji ☝ (1), ✌ (2), 🖐 (5); 3 and 4 are made from ✌.
+   OpenMoji (https://openmoji.org), CC BY-SA 4.0. */
+const HANDS = {
+  1: '<g><path fill="#fcea2b" stroke="none" d="M20.2385,52.0665c1.0756,8.6001,8.0438,14.9847,16.215,14.857c9.106,0,16.8546-6.833,16.8546-16.878 l-0.0019,0.251l-0.6189-11.213c-0.1679-2.1944-1.9158-3.8708-3.9892-3.826h-9.4197c-5.6339-3.2226-18.8644,6.5869-18.8644,8.5099"/><path fill="#fcea2b" stroke="none" d="M23.6714,48.4689c-1.9056-0.1527-4.0021-1.6337-3.8889-3.6995l0.0538-14.7823 c-0.2381-1.933,3.3124-3.8158,5.0972-4.0736c1.7848-0.2578,2.473,2.9834,2.7111,4.9164c0.9887-5.0982,0.2472-0.932-0.7415,6.639v7 C27.0163,46.5347,25.577,48.3162,23.6714,48.4689z"/><path fill="#fcea2b" stroke="none" d="M31.5339,53.2379c-1.9056-0.1527-3.345-1.9342-3.2317-4l-0.029-19.7702 c-0.6874-1.8063-5.2848-1.2272,2.9078-3.2917c1.7538-0.4419,2.9939,0.7177,3.2319,2.6507 c0.0382,0.3099,0.3909,5.1012,0.3528,5.4111v15C34.8789,51.3037,33.4395,53.0852,31.5339,53.2379z"/><path fill="#fcea2b" stroke="none" d="M33.7593,37.9333v-7.3098c-0.0213-1.9167,2.1944-5.08,4.2141-5.3379 c2.0197-0.2578,6.9202,1.697,7.1896,3.63c0.0432,0.3099,0.0171,1.1216-0.0261,1.4314l-2.0281,5.8444"/><path fill="#fcea2b" stroke="none" d="M43.1089,37.6294l0.366-29.2067c0-6.175,9.417-5.3884,9.417,0.283l1.0547,30.9545"/></g><g><path fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M24.3121,40.8979 c-2.0638-0.1527-3.6226-1.9342-3.5-4v-7c-0.2578-1.933,1.1001-3.709,3.0331-3.9669c1.933-0.2578,3.709,1.1001,3.9669,3.0331 c0.0413,0.3099,0.0413,0.6239,0,0.9337v7C27.9347,38.9637,26.3759,40.7452,24.3121,40.8979z"/><path fill="none" stroke="#000000" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M53.3092,51.072V40.7288 c-0.1631-2.228-1.7835-4.5373-4.8134-4.5373"/><path fill="none" stroke="#000000" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M48.4958,36.1982h-8.2889 c-1.7123-0.1206-3.189,1.4125-3.3155,3.4423c0.1509,2.0752,1.5455,3.7158,3.2957,3.877l0.8695,0.1151 c1.8128,0.238,3.2957,1.3199,3.2957,2.4018v1.967v0.4327c-1.7849,0.4502-3.4373,1.4541-4.7885,2.9093"/><path fill="none" stroke="#000000" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M20.7807,53.0597 c1.058,8.4584,7.9121,14.7378,15.9497,14.6122c8.957,0,16.5788-6.7204,16.5788-16.5999l-0.001-0.001"/><line x1="44.3083" x2="44.3083" y1="8.372" y2="23.3615" fill="none" stroke="#000000" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2"/><line x1="52.6833" x2="52.6833" y1="8.5804" y2="33.3988" fill="none" stroke="#000000" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2"/><path fill="none" stroke="#000000" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M44.3083,8.372 c0-5.875,8.375-5.1875,8.375,0.2083"/><path fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M32.7489,40.7605 c-3.322,1.2271-4.997-1.9342-4.8744-4v-7c-0.2578-1.933,1.1001-3.709,3.0331-3.9669c1.933-0.2578,3.709,1.1001,3.9669,3.0331 c0.0413,0.3099,0.0413,0.6239,0,0.9337"/><path fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M34.9369,34.1256v-5.3175 c-0.2578-1.933,1.1001-3.709,3.0331-3.9669c1.933-0.2578,3.709,1.1001,3.9669,3.0331c0.0413,0.3099,0.0413,0.6239,0,0.9337 l0.031,3.5043"/><path fill="none" stroke="#000000" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M20.7807,53.0597 c-0.08-1.5115,0-8.9394,0-8.9394"/></g>',
+  2: '<g><path fill="#fcea2b" stroke="#fcea2b" stroke-width="2" d="m52.24 37.4 1.906-29.01-1.397-2.065-3.985 0.2361-1.837 4.735-2.375 17.38-1.906 2.125-2.656-2.312-2.5-21.12-2.155-1.694-2.137 0.07921-1.989 3.188 2.943 24.83h-2.557c-2.036-5.827-6.417-2.234-7.105 1.084-4.414-2.323-4.892-0.5945-6.62 2.234l-0.2205 8.076c0.2641 2.848 0.5205 4.681 0.873 6.947l1.697 5.274 6 6.917 8.333 2.666 7.583-0.916 6.917-4.594 3.48-5.344c1.194-6.675 1.056-12.23-0.292-18.71z"/></g><g><path fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m52.62 31.13 1.8-22.18c-0.3427-4.964-6.779-5.02-7.227-0.026l-2.42 17.36c-0.3 2.179-1.278 3.962-2.166 3.962s-1.845-1.785-2.126-3.967l-2.231-17.34c-0.8196-5.278-7.439-4.322-7.037 0.0011l2.527 21.03"/><path fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m53.63 50.08c0 9.872-8.02 16.88-17.89 16.88"/><path fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m43.74 47.29v-2.333c0-1.1-1.789-2.2-3.976-2.441l-1.049-0.117c-2.187-0.242-3.976-1.851-3.976-3.774s1.8-3.334 4-3.334h10c2.201-0.0448 4.057 1.632 4.235 3.826l0.657 11.21"/><path fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m37.96 50.36c1.63-1.48 3.624-2.5 5.777-2.958"/><path fill="none" stroke="#000" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="m18.53 52.1c1.142 8.6 8.539 14.98 17.21 14.86 9.667 0 17.89-6.833 17.89-16.88"/><path fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m31.75 49.72c0 1.258-0.6709 2.42-1.76 3.048s-2.431 0.6288-3.52 0-1.76-1.791-1.76-3.048v-15.96c0-1.258 0.6709-2.42 1.76-3.048s2.431-0.6288 3.52 0c1.089 0.6288 1.76 1.791 1.76 3.049z" paint-order="normal"/><path fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m24.71 44.94c0 1.262-0.6709 2.427-1.76 3.058s-2.431 0.6308-3.52 0c-1.089-0.6308-1.76-1.796-1.76-3.058v-7.937c0-1.262 0.6709-2.427 1.76-3.058 1.089-0.6308 2.431-0.6308 3.52 0s1.76 1.796 1.76 3.058z" paint-order="normal"/></g>',
+  3: '<path fill="#fcea2b" d="M24.68 41.75L18.75 13.87A3.6 3.6 0 0 1 25.8 12.37L31.72 40.25L24.5 46Z"/><path fill="#fcea2b" stroke="#fcea2b" stroke-width="2" d="m52.24 37.4 1.906-29.01-1.397-2.065-3.985 0.2361-1.837 4.735-2.375 17.38-1.906 2.125-2.656-2.312-2.5-21.12-2.155-1.694-2.137 0.07921-1.989 3.188 2.943 24.83h-2.557c-2.036-5.827-6.417-2.234-7.105 1.084-4.414-2.323-4.892-0.5945-6.62 2.234l-0.2205 8.076c0.2641 2.848 0.5205 4.681 0.873 6.947l1.697 5.274 6 6.917 8.333 2.666 7.583-0.916 6.917-4.594 3.48-5.344c1.194-6.675 1.056-12.23-0.292-18.71z"/><path fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M23.1 34.3L18.75 13.87A3.6 3.6 0 0 1 25.8 12.37L29.54 30Q31.7 34 33.74 30.04"/><path fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m52.62 31.13 1.8-22.18c-0.3427-4.964-6.779-5.02-7.227-0.026l-2.42 17.36c-0.3 2.179-1.278 3.962-2.166 3.962s-1.845-1.785-2.126-3.967l-2.231-17.34c-0.8196-5.278-7.439-4.322-7.037 0.0011l2.527 21.03"/><path fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m53.63 50.08c0 9.872-8.02 16.88-17.89 16.88"/><path fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m43.74 47.29v-2.333c0-1.1-1.789-2.2-3.976-2.441l-1.049-0.117c-2.187-0.242-3.976-1.851-3.976-3.774s1.8-3.334 4-3.334h10c2.201-0.0448 4.057 1.632 4.235 3.826l0.657 11.21"/><path fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m37.96 50.36c1.63-1.48 3.624-2.5 5.777-2.958"/><path fill="none" stroke="#000" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="m18.53 52.1c1.142 8.6 8.539 14.98 17.21 14.86 9.667 0 17.89-6.833 17.89-16.88"/><path fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m24.71 44.94c0 1.262-0.6709 2.427-1.76 3.058s-2.431 0.6308-3.52 0c-1.089-0.6308-1.76-1.796-1.76-3.058v-7.937c0-1.262 0.6709-2.427 1.76-3.058 1.089-0.6308 2.431-0.6308 3.52 0s1.76 1.796 1.76 3.058z" paint-order="normal"/>',
+  4: '<path fill="#fcea2b" d="M24.68 41.75L18.75 13.87A3.6 3.6 0 0 1 25.8 12.37L31.72 40.25L24.5 46Z"/><path fill="#fcea2b" d="M18.33 46.25L9.55 23.38A3.5 3.5 0 0 1 16.09 20.87L24.87 43.75L18.6 52Z"/><path fill="#fcea2b" stroke="#fcea2b" stroke-width="2" d="m52.24 37.4 1.906-29.01-1.397-2.065-3.985 0.2361-1.837 4.735-2.375 17.38-1.906 2.125-2.656-2.312-2.5-21.12-2.155-1.694-2.137 0.07921-1.989 3.188 2.943 24.83h-2.557c-2.036-5.827-6.417-2.234-7.105 1.084-4.414-2.323-4.892-0.5945-6.62 2.234l-0.2205 8.076c0.2641 2.848 0.5205 4.681 0.873 6.947l1.697 5.274 6 6.917 8.333 2.666 7.583-0.916 6.917-4.594 3.48-5.344c1.194-6.675 1.056-12.23-0.292-18.71z"/><path fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M23.24 35L18.75 13.87A3.6 3.6 0 0 1 25.8 12.37L29.54 30Q31.7 34 33.74 30.04"/><path fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.53 52.1Q16.93 46 15.93 40L9.55 23.38A3.5 3.5 0 0 1 16.09 20.87L21.51 35Q22.38 38.5 23.24 35"/><path fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m52.62 31.13 1.8-22.18c-0.3427-4.964-6.779-5.02-7.227-0.026l-2.42 17.36c-0.3 2.179-1.278 3.962-2.166 3.962s-1.845-1.785-2.126-3.967l-2.231-17.34c-0.8196-5.278-7.439-4.322-7.037 0.0011l2.527 21.03"/><path fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m53.63 50.08c0 9.872-8.02 16.88-17.89 16.88"/><path fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m43.74 47.29v-2.333c0-1.1-1.789-2.2-3.976-2.441l-1.049-0.117c-2.187-0.242-3.976-1.851-3.976-3.774s1.8-3.334 4-3.334h10c2.201-0.0448 4.057 1.632 4.235 3.826l0.657 11.21"/><path fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m37.96 50.36c1.63-1.48 3.624-2.5 5.777-2.958"/><path fill="none" stroke="#000" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="m18.53 52.1c1.142 8.6 8.539 14.98 17.21 14.86 9.667 0 17.89-6.833 17.89-16.88"/>',
+  5: '<g><g><path fill="#fcea2b" d="M66,38c-1.3062-3.5-7.0171-2.7539-11.3713,.06-1.7618,1.1387-3.2292,1.8673-7.4167,2.7215-1.8333,0-2.2391-1.9534-1.8836-3.8665l4.199-23.441c1.195-5.9529-6.1175-8.14-7.5747-2.0134l-3.6565,20.4129c-1.8394,5.0852-2.515,0-2.515,0l-1.0147-21.9877c0-7.9583-7.82-8.4583-7.82,0l.9266,20.08c.4115,7.9309-1.512,3.4622-1.512,2.8356l-3.677-17.8734c-1.7743-7.5312-8.8056-5.5938-7.54,1.2692l3.4159,15.935c.5643,3.6861-2.3321,1.9393-2.8394,1.0535l-3.3419-7.7057c-2.7812-5.8647-8.75-3.521-6.8125,2.2915l5.6038,14.2809c.5393,1.5454,.9435,3.1347,1.2083,4.75,0,4,2.584,12.2077,4.7282,14.3519,7.695,7.695,20.1711,7.695,27.8661,0h0c5.1557-5.7893,7.6245-8.2154,9.6557-12.6529l12.3717-8.5014-1-2Z"/></g></g><g><path fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M47.9476,40.8241c1.0524,.1759,6.0224-2.6225,8.1478-4.0255,.1078-.0712,.2223-.1421,.3474-.213,4.0767-2.3119,7.0259-3.05,9.5563,.3959,.9708,1.3945,1.6556,4.3672-.0631,4.7371-7.936,2.2814-13.936,10.2814-13.936,10.2814-2.0073,2.3086-4.9867,6.8747-7.027,9.1543-7.2576,8.1088-22.24,9.3151-27.8661,0-2.5855-4.28-4.28-14.3835-5.9365-19.1019-1.2704-3.6188-5.6042-14.2812-5.6042-14.2812-1.9375-5.8125,4.0313-8.1562,6.8125-2.2912l3.1633,7.2935c.9192,2.1543,3.5826,3.0451,3.0183-.641l-3.4165-15.9358c-1.2651-6.863,5.7662-8.8,7.5405-1.2692l3.677,17.8734c0,.6266,1.9235,5.0953,1.512-2.8356l-.9266-20.0795c0-8.4583,7.82-7.9583,7.82,0l1.0147,21.9877s.6756,5.0852,2.515,0l3.6565-20.4127c1.4572-6.127,8.77-3.94,7.5747,2.0134l-4.199,23.441c-.3555,1.9131,.05,3.8665,1.8836,3.8665l.7354,.0424Z"/></g>',
+};
+
 /* ===== src/js/content.js ===== */
 /* content.js: builds the list of card items for the chosen theme.
-   Each item: { kind: "text" | "shape" | "swatch" | "img" | "emoji", show, say }
-   "show" is what appears on the card, "say" is what the voice speaks (already in the game language). */
+   Each item: { kind: "text" | "shape" | "swatch" | "img" | "emoji", show, say, alt? }
+   "show" is what appears on the card, "say" is what the voice speaks (already in the game language).
+   "alt" (optional): { kind, show } for the second card of the pair when the two cards look different:
+   3 ↔ three dots or fingers (count=), A ↔ a (case=pair). Both cards say the same word. */
 
 /* "shown|spoken" → item. Without "|", numbers and single letters are spoken as words (see spoken()). */
 const parseItem = (raw, kind) => {
@@ -619,10 +690,13 @@ const currentSet = () => chosenSet || chooseSet();
 
 const THEMES = {
   numbers(n) {
-    const from = Math.round(num("from", 1)), to = Math.round(num("to", from + n - 1));
+    // count=dots|fingers: these go from 1 to 10, so the range is kept inside 1…10 (from=5&to=20 → 5 to 10).
+    const fit = v => CFG.count ? Math.max(1, Math.min(QTY_MAX, v)) : v;
+    const from = fit(Math.round(num("from", 1))), to = fit(Math.round(num("to", from + n - 1)));
     const lo = Math.min(from, to), hi = Math.max(from, to);
     const all = Array.from({ length: Math.min(hi - lo + 1, 1000) }, (_, i) => lo + i);
-    return (all.length <= n ? all : pick(all, n)).map(v => ({ kind: "text", show: String(v), say: W.number(v) }));
+    const alt = v => CFG.count ? { kind: CFG.count, show: v } : undefined;
+    return (all.length <= n ? all : pick(all, n)).map(v => ({ kind: "text", show: String(v), say: W.number(v), alt: alt(v) }));
   },
 
   letters(n) {
@@ -633,7 +707,12 @@ const THEMES = {
     else if (spec === "vowels" || spec === "vocales") chars = [..."aeiou"];
     else if (/^.-.$/u.test(spec)) { const a = abc.indexOf(spec[0]), b = abc.indexOf(spec[2]); chars = [...abc].slice(Math.min(a, b), Math.max(a, b) + 1); }
     else chars = [...new Set([...spec.replace(/[^\p{L}]/gu, "")])];
-    return (chars.length <= n ? chars : pick(chars, n)).map(ch => ({ kind: "text", show: CFG.upper ? ch.toUpperCase() : ch, say: letterSpeech(ch) }));
+    // case=pair: the capital on one card, the small letter on the other (A ↔ a). Letters that look
+    // alike in both cases (c, o, s …) stay in: the child learns they are one letter.
+    return (chars.length <= n ? chars : pick(chars, n)).map(ch => ({
+      kind: "text", show: CFG.upper || CFG.casePair ? ch.toUpperCase() : ch, say: letterSpeech(ch),
+      alt: CFG.casePair ? { kind: "text", show: ch.toLowerCase() } : undefined,
+    }));
   },
 
   shapes(n) {
@@ -675,7 +754,7 @@ function audio() {
   if (!CFG.sound) return null;
   if (!AC) {
     const C = window.AudioContext || window.webkitAudioContext; if (!C) return null;
-    AC = new C(); master = AC.createGain(); master.gain.value = 0.6; master.connect(AC.destination);
+    AC = new C(); master = AC.createGain(); master.gain.value = CFG.motion ? 0.6 : 0.35;   // animation=0: softer master.connect(AC.destination);
     noiseBuf = AC.createBuffer(1, AC.sampleRate * 1.5, AC.sampleRate);
     const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
   }
@@ -866,6 +945,7 @@ function spark(o) {
 
 /* Small burst at (x, y). color = null → mixed palette colours. */
 function sparkle(x, y, size, color) {
+  if (!CFG.motion) return;                          // animation=0: no sparkles
   const n = 26, sp = size / 34;
   for (let i = 0; i < n; i++) {
     const a = (i / n) * Math.PI * 2 + Math.random() * .2, v = sp * (.5 + Math.random() * .7);
@@ -1053,6 +1133,13 @@ function fireworksShow(onReady, round = 1) {
   // touch slower so it sounds happy and sing-song.
   say(Q.get("win") || freshPick("win-" + LANG, W.wins || [W.win]), true, { pitch: 1.25, rate: .92 });
   const Wd = innerWidth, H = innerHeight, reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // animation=0 (no movement): no rockets. The night sky comes on while the phrase is said, and the
+  // tiles appear 1.5 s later (always the same short pause).
+  if (!CFG.motion) {
+    running = false;
+    later(onReady, Q.has("again") ? num("again", 0) : 1500);
+    return;
+  }
   // Calmer with each finished game: the same rockets every time, only further apart. Every gap is
   // stretched by 60 % more per game already played (game 1 ≈ 7.5 s in all, game 5 ≈ 15 s), and it
   // stops growing after CFG.calmMax games (grow=, default 10). grow=0 keeps it always short.
@@ -1115,6 +1202,8 @@ function emojiHTML(e) {
 function faceHTML(item, color) {
   if (item.kind === "shape") return `<svg viewBox="0 0 100 100" aria-hidden="true">${SHAPES[item.show](color, darker(color, .85))}</svg>`;
   if (item.kind === "swatch") return crayonSVG(item.show);      // colours: a crayon in that colour (same drawing as the tile)
+  if (item.kind === "dots") return dotsSVG(item.show, color);   // count=dots
+  if (item.kind === "fingers") return fingersSVG(item.show);     // count=fingers
   if (item.kind === "img") return `<img src="${encodeURI(item.show)}" alt="" draggable="false">`;
   const len = [...item.show].length;
   const size = item.kind === "emoji" ? 66 : Math.min(64, 150 / len);
@@ -1128,6 +1217,7 @@ function faceHTML(item, color) {
    drawing itself (pictureColor). Until that is known, or if a picture has no clear colour, mixed. */
 function sparkColor(item, color) {
   if (item.kind === "swatch") return item.show;
+  if (item.kind === "fingers") return HAND_COLOR;
   if (item.kind === "emoji" || item.kind === "img") return null;
   return color === INK ? null : color;
 }
@@ -1185,7 +1275,8 @@ function newGame() {
   clearTimeout(peekTimer); peeking = false;
   total = items.length; matched = 0; openCards = []; locked = false; mismatch = null;
   const colors = gameColors(items.length);
-  const deck = shuffle(items.flatMap((it, i) => [{ ...it, id: i, color: colors[i] }, { ...it, id: i, color: colors[i] }]));
+  // Two cards per item. With an "alt" (3 ↔ dots, A ↔ a) the second card shows the alt instead.
+  const deck = shuffle(items.flatMap((it, i) => [{ ...it, id: i, color: colors[i] }, { ...it, ...it.alt, id: i, color: colors[i], isAlt: !!it.alt }]));
   grid.innerHTML = "";
   cards = deck.map((d, idx) => {
     const el = document.createElement("button");
@@ -1274,14 +1365,15 @@ function finale() {
   gamesDone++;
   try { sessionStorage.setItem("memoriter-games", gamesDone); } catch { /* storage blocked */ }
   // One of the cards just matched becomes the shape of the final firework (light colour for the night sky).
-  const c = cards.length ? randOf(cards) : null;
+  const main = cards.filter(c => !c.isAlt);          // the number or capital, not its dots / small letter
+  const c = main.length ? randOf(main) : null;
   if (c) prepareSymbol(c, c.kind === "swatch" ? lighten(c.show, .15) : c.kind === "emoji" ? (c.spark ? lighten(c.spark, .25) : "#FFD86B") : lighten(c.color === INK ? "#7FB2F0" : c.color, .3));
   fireworksShow(showAgain, gamesDone);
 }
 
 function vanish(c) {
   const r = c.el.getBoundingClientRect();
-  sfx.pop();
+  if (CFG.motion) sfx.pop();                         // no-movement mode: a silent, soft fade
   sparkle(r.left + r.width / 2, r.top + r.height / 2, r.width, c.spark);
   c.el.classList.add("gone");                       // the grid slot stays, so nothing moves around
   c.el.setAttribute("aria-hidden", "true"); c.el.tabIndex = -1;
@@ -1325,8 +1417,11 @@ theme    numbers | letters | shapes | images (pictures) | colors   (default: the
 themes   which tiles the Start screen offers, in order, e.g. themes=numbers,colors (default: all five)
 cards    number of cards on the board, even number               (default: 8 = 4 pairs)
 from,to  numbers range, e.g. from=1&to=20 (random pick if the range has more numbers than pairs)
+count    dots | fingers = match each number to that many dots (3 ↔ ●●●) or fingers (OpenMoji hands);
+         numbers then stay within 1 to 10
+         (default 0: both cards show the number)
 letters  abc (whole alphabet) | a-d (range) | aeiou (exact list) | vowels
-case     upper | lower                                           (default: upper)
+case     upper | lower | pair (capital ↔ small letter, A ↔ a)    (default: upper)
 phonics  letters say their name (0, default) | their sound, e.g. "buh" (1) | both, "bee … buh" (both)
 shapes   comma list: circle,oval,square,rectangle,triangle,diamond,
          pentagon,hexagon,heptagon,octagon,star,heart,semicircle (default: random pick)
@@ -1347,6 +1442,8 @@ colors   one = one random colour for all cards, new each game (default)
 delay    ms before a non-matching pair flips back (default 1200)
 vanish   ms a matched pair stays visible before it pops away (default 900)
 peek     seconds every card is shown face up when a game starts (default 0 = off)
+animation 0 = no movement: cards change face without turning, matched pairs fade, no sparkles or fireworks,
+         still moon, softer and fewer sounds (default 1: normal)
 pace     fast = a tap while two cards are open moves on at once (for quick players).
          Default (calm): those taps are ignored until the wrong pair turns back or the pair pops away.
 back     card back pattern (default: random, new each game, never plain)
@@ -1391,7 +1488,10 @@ const startEl = document.getElementById("start"), endEl = document.getElementByI
 /* The tile for a parent-made game: previews its first three cards. */
 function customTile() {
   const base = THEME_TILES[CFG.theme] || { tint: NAMED.pink };
-  const items = buildItems().slice(0, 3);
+  let items = buildItems();
+  // Pairs that look different (3 ↔ dots, A ↔ a): the preview shows one such pair, then the next item.
+  if (items[0]?.alt) items = [items[0], { ...items[0], ...items[0].alt }, ...items.slice(1)];
+  items = items.slice(0, 3);
   while (items.length < 3) items.push(items[items.length - 1] || face("?"));
   return { tint: base.tint, faces: items };
 }
@@ -1430,6 +1530,8 @@ function crayonSVG(c) {
 function miniFace(tint, f) {
   if (f.kind === "shape") return `<svg viewBox="0 0 100 100">${SHAPES[f.show](tint, darker(tint, .85))}</svg>`;
   if (f.kind === "swatch") return crayonSVG(f.show);
+  if (f.kind === "dots") return dotsSVG(f.show, tint);
+  if (f.kind === "fingers") return fingersSVG(f.show);
   if (f.kind === "img") return `<img src="${encodeURI(f.show)}" alt="">`;
   if (f.kind === "emoji") return `<span class="emo">${emojiHTML(f.show)}</span>`;
   const len = [...f.show].length;
@@ -1505,7 +1607,7 @@ function goFullscreen() {
 
 function beginGame(fromEl, label) {
   goFullscreen();
-  audio(); sfx.pop(); say(label);
+  audio(); if (CFG.motion) sfx.pop(); say(label);   // animation=0: just the voice
   const r = fromEl.getBoundingClientRect();         // festive confetti pop from what was tapped
   sparkle(r.left + r.width * .3, r.top + r.height / 2, Math.max(r.width, r.height) * 1.2, null);
   sparkle(r.left + r.width * .7, r.top + r.height / 2, Math.max(r.width, r.height) * 1.2, null);
@@ -1752,6 +1854,15 @@ const SETUP_THEMES = [
   ["shapes", "Shapes ▲"], ["colors", "Colors 🖍️"], ["custom", "My own cards"],
 ];
 const CARD_COUNTS = [4, 6, 8, 10, 12, 16, 20];
+/* Shared choices of both forms: how numbers and letters are paired, and the no-movement switch. */
+const optHTML = (v, label, sel) => `<option value="${v}"${sel ? " selected" : ""}>${label}</option>`;
+const countSelect = cur => `<label>Match to <select name="count">${optHTML("0", "the same number (3 ↔ 3)", !cur)}${optHTML("dots", "dots (3 ↔ ●●●)", cur === "dots")}${optHTML("fingers", "fingers (3 ↔ three fingers up)", cur === "fingers")}</select></label>`;
+const caseSelect = cur => `<label>Case <select name="case">${optHTML("upper", "capitals (A B C)", cur !== "lower" && cur !== "pair")}${optHTML("lower", "small letters (a b c)", cur === "lower")}${optHTML("pair", "capital ↔ small (A ↔ a)", cur === "pair")}</select></label>`;
+const normCase = v => { v = String(v || "").toLowerCase(); return ["pair", "both", "mixed", "match"].includes(v) ? "pair" : v === "lower" ? "lower" : "upper"; };
+const stillRow = on => `<div class="row" style="margin-top:8px">
+    <label><input type="checkbox" name="still"${on ? " checked" : ""}> no movement</label>
+    <small>Cards change without turning, found pairs fade away, no sparkles or fireworks, softer and fewer sounds.</small>
+  </div>`;
 
 function setupForm() {
   const own = list("items").join("\n");
@@ -1774,12 +1885,13 @@ ${defaultsForm()}
   <fieldset data-for="numbers"><legend>Numbers</legend><div class="row">
     <label>From <input type="number" name="from" value="${escapeHTML(Q.get("from") || "1")}"></label>
     <label>to <input type="number" name="to" value="${escapeHTML(Q.get("to") || "")}" placeholder="auto"></label>
-    <small>Leave “to” empty to use as many numbers as there are pairs.</small>
+    ${countSelect(CFG.count)}
+    <small>Leave “to” empty to use as many numbers as there are pairs. With dots or fingers, numbers stay within 1 to 10.</small>
   </div></fieldset>
 
   <fieldset data-for="letters"><legend>Letters</legend><div class="row">
     <label>Which <input type="text" name="letters" value="${escapeHTML(Q.get("letters") || "")}" placeholder="abc"></label>
-    <label><input type="checkbox" name="lower"${checked(Q.get("case") === "lower")}> lowercase</label>
+    ${caseSelect(normCase(Q.get("case")))}
     <label>Say <select name="phonics">${opt("0", "the letter name (bee)", CFG.phonics === "0")}${opt("1", "the letter sound (buh)", CFG.phonics === "1" || CFG.phonics === "sound")}${opt("both", "both (bee … buh)", CFG.phonics === "both")}</select></label>
     <small>abc = whole alphabet · a-d = a range · aeiou = exactly these · vowels</small>
   </div></fieldset>
@@ -1812,7 +1924,7 @@ ${defaultsForm()}
   </div><div class="row" style="margin-top:8px">
     <label>Peek <input type="number" name="peek" min="0" max="30" value="${CFG.peek}"> seconds</label>
     <small>Shows every card face up for a moment when the game starts, then turns them over. 0 = off.</small>
-  </div><div class="row" style="margin-top:8px">
+  </div>${stillRow(!CFG.motion)}<div class="row" style="margin-top:8px">
     <label>Rest after <input type="number" name="rest" min="0" max="50" value="${CFG.rest}"> games</label>
     <small>A sleepy moon says it's time for a break; a grown-up holds the small star at the top right 4 s to unlock. 0 = never.</small>
   </div></fieldset>
@@ -1830,7 +1942,7 @@ ${defaultsForm()}
 /* ---------- Defaults (this device) ----------
    What the child gets when picking a tile alone, e.g. numbers 10–20 once 1–8 are known. Saved on
    this device (localStorage), used whenever the address doesn't say otherwise. */
-const DEFAULT_KEYS = ["from", "to", "letters", "case", "phonics", "shapes", "set", "emoji", "cards", "voice", "tts", "sound", "fullscreen", "pace", "peek", "rest"];
+const DEFAULT_KEYS = ["from", "to", "count", "letters", "case", "phonics", "shapes", "set", "emoji", "cards", "voice", "tts", "sound", "fullscreen", "pace", "peek", "animation", "rest"];
 function defaultsForm() {
   const D = SAVED_DEFAULTS, has = Object.keys(D).length > 0;
   const opt = (v, label, sel) => `<option value="${v}"${sel ? " selected" : ""}>${label}</option>`;
@@ -1846,11 +1958,12 @@ function defaultsForm() {
   <fieldset><legend>Numbers</legend><div class="row">
     <label>From <input type="number" name="from" value="${escapeHTML(D.from || "1")}"></label>
     <label>to <input type="number" name="to" value="${escapeHTML(D.to || "")}" placeholder="auto"></label>
+    ${countSelect(D.count === "fingers" ? "fingers" : D.count && D.count !== "0" ? "dots" : "")}
   </div></fieldset>
 
   <fieldset><legend>Letters</legend><div class="row">
     <label>Which <input type="text" name="letters" value="${escapeHTML(D.letters || "")}" placeholder="abc"></label>
-    <label><input type="checkbox" name="lower"${checked(D.case === "lower")}> lowercase</label>
+    ${caseSelect(normCase(D.case))}
     <label>Say <select name="phonics">${opt("0", "the letter name (bee)", dPh === "0")}${opt("1", "the letter sound (buh)", dPh === "1")}${opt("both", "both (bee … buh)", dPh === "both")}</select></label>
   </div></fieldset>
 
@@ -1879,7 +1992,7 @@ function defaultsForm() {
   </div><div class="row" style="margin-top:8px">
     <label>Peek <input type="number" name="peek" min="0" max="30" value="${escapeHTML(D.peek ?? "0")}"> seconds</label>
     <small>Shows every card face up for a moment when the game starts, then turns them over. 0 = off.</small>
-  </div><div class="row" style="margin-top:8px">
+  </div>${stillRow(D.animation === "0")}<div class="row" style="margin-top:8px">
     <label>Rest after <input type="number" name="rest" min="0" max="50" value="${escapeHTML(D.rest ?? "6")}"> games</label>
   </div></fieldset>
 
@@ -1896,8 +2009,9 @@ function collectDefaults(form) {
   const f = new FormData(form), d = {};
   if (f.get("from") && f.get("from") !== "1") d.from = f.get("from");
   if (f.get("to")) d.to = f.get("to");
+  if (f.get("count") !== "0") d.count = f.get("count");
   if (String(f.get("letters") || "").trim()) d.letters = String(f.get("letters")).trim();
-  if (f.get("lower")) d.case = "lower";
+  if (f.get("case") !== "upper") d.case = f.get("case");
   if (f.get("phonics") !== "0") d.phonics = f.get("phonics");
   if (f.getAll("shape").length) d.shapes = f.getAll("shape").join(",");
   const sets = f.getAll("set");
@@ -1909,6 +2023,7 @@ function collectDefaults(form) {
   if (!f.get("sound")) d.sound = "0";
   if (!f.get("fullscreen")) d.fullscreen = "0";
   if (f.get("pace")) d.pace = "fast";
+  if (f.get("still")) d.animation = "0";
   const peek = String(Math.max(0, Math.min(30, parseFloat(f.get("peek")) || 0)));
   if (peek !== "0") d.peek = peek;
   const rest = String(Math.max(0, parseInt(f.get("rest"), 10) || 0));
@@ -1945,10 +2060,11 @@ function setupParams(form) {
   if (theme === "numbers") {
     if (f.get("from") && f.get("from") !== "1") p.set("from", f.get("from"));
     if (f.get("to")) p.set("to", f.get("to"));
+    if (f.get("count") !== "0") p.set("count", f.get("count"));
   }
   if (theme === "letters") {
     if (f.get("letters")) p.set("letters", f.get("letters"));
-    if (f.get("lower")) p.set("case", "lower");
+    if (f.get("case") !== "upper") p.set("case", f.get("case"));
     if (f.get("phonics") !== "0") p.set("phonics", f.get("phonics"));
   }
   if (theme === "images" && f.get("set") !== "random") p.set("set", f.get("set"));
@@ -1960,6 +2076,7 @@ function setupParams(form) {
   if (!f.get("sound")) p.set("sound", "0");
   if (!f.get("fullscreen")) p.set("fullscreen", "0");
   if (f.get("pace")) p.set("pace", "fast");
+  if (f.get("still")) p.set("animation", "0");
   const peek = Math.max(0, Math.min(30, parseFloat(f.get("peek")) || 0));
   if (peek) p.set("peek", String(peek));
   if (String(f.get("rest")) !== "6") p.set("rest", String(Math.max(0, parseInt(f.get("rest"), 10) || 0)));

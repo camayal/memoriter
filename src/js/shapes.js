@@ -27,3 +27,35 @@ const SHAPES = {
   // arch:      (c, s) => `<path d="M10 90 V48 A40 40 0 0 1 90 48 V90 H66 V64 A16 16 0 0 0 34 64 V90 Z" fill="${c}" stroke="${s}" stroke-width="4" stroke-linejoin="round"/>`,
   heart:     (c, s) => `<path d="M50 86 C20 64 8 48 8 32 C8 18 19 9 31 9 C40 9 46 14 50 21 C54 14 60 9 69 9 C81 9 92 18 92 32 C92 48 80 64 50 86Z" fill="${c}" stroke="${s}" stroke-width="4" stroke-linejoin="round"/>`,
 };
+
+/* ---------- Quantities (numbers game, count=dots | count=fingers) ----------
+   The second card of a number pair shows that many dots or fingers (1 to 10).
+   Dots: in the card's colour, dice patterns, so small amounts are seen at a glance without counting.
+   Fingers: OpenMoji hands (hands.js): one hand for 1 to 5; for 6 to 10 a whole hand 🖐 on the left
+   (turned so its thumb points out) and the hand for the rest on the right. */
+const DOTS = {
+  1: [[50, 50]],
+  2: [[30, 30], [70, 70]],
+  3: [[26, 26], [50, 50], [74, 74]],
+  4: [[29, 29], [71, 29], [29, 71], [71, 71]],
+  5: [[27, 27], [73, 27], [50, 50], [27, 73], [73, 73]],
+  6: [[30, 22], [70, 22], [30, 50], [70, 50], [30, 78], [70, 78]],
+  7: [[26, 22], [74, 22], [26, 50], [50, 50], [74, 50], [26, 78], [74, 78]],
+  8: [[30, 17], [70, 17], [30, 39], [70, 39], [30, 61], [70, 61], [30, 83], [70, 83]],
+  9: [[22, 22], [50, 22], [78, 22], [22, 50], [50, 50], [78, 50], [22, 78], [50, 78], [78, 78]],
+  10: [[17, 24], [39, 24], [61, 24], [83, 24], [35, 50], [65, 50], [17, 76], [39, 76], [61, 76], [83, 76]],
+};
+const QTY_MAX = 10;
+function dotsSVG(n, c) {
+  const pts = DOTS[n] || [], r = n <= 2 ? 13 : n <= 5 ? 11.5 : n <= 7 ? 10 : 8.8, s = darker(c, .8);
+  return `<svg viewBox="0 0 100 100" aria-hidden="true">${pts.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${c}" stroke="${s}" stroke-width="3"/>`).join("")}</svg>`;
+}
+const handAt = (n, x, y, size, mirror) => `<svg x="${x}" y="${y}" width="${size}" height="${size}" viewBox="0 0 72 72" overflow="visible">${mirror ? `<g transform="matrix(-1 0 0 1 72 0)">${HANDS[n]}</g>` : HANDS[n]}</svg>`;
+function fingersSVG(n) {
+  // 🖐 fills its 72×72 box more than ☝ ✌ and the 3 and 4 hands, so alone it is drawn a little smaller.
+  // Two hands (6 to 10): both drawn at exactly the same size, side by side.
+  const body = n === 5 ? handAt(5, 6, 6, 88) : n < 5 ? handAt(n, 0, 0, 100)
+    : handAt(5, -9, 19, 62, true) + handAt(n - 5, 47, 19, 62);
+  return `<svg viewBox="0 0 100 100" overflow="visible" aria-hidden="true">${body}</svg>`;
+}
+const HAND_COLOR = "#F2C230";                      // sparkles of a hand card: OpenMoji's skin yellow, a touch deeper

@@ -10,8 +10,11 @@ theme    numbers | letters | shapes | images (pictures) | colors   (default: the
 themes   which tiles the Start screen offers, in order, e.g. themes=numbers,colors (default: all five)
 cards    number of cards on the board, even number               (default: 8 = 4 pairs)
 from,to  numbers range, e.g. from=1&to=20 (random pick if the range has more numbers than pairs)
+count    dots | fingers = match each number to that many dots (3 ↔ ●●●) or fingers (OpenMoji hands);
+         numbers then stay within 1 to 10
+         (default 0: both cards show the number)
 letters  abc (whole alphabet) | a-d (range) | aeiou (exact list) | vowels
-case     upper | lower                                           (default: upper)
+case     upper | lower | pair (capital ↔ small letter, A ↔ a)    (default: upper)
 phonics  letters say their name (0, default) | their sound, e.g. "buh" (1) | both, "bee … buh" (both)
 shapes   comma list: circle,oval,square,rectangle,triangle,diamond,
          pentagon,hexagon,heptagon,octagon,star,heart,semicircle (default: random pick)
@@ -32,6 +35,8 @@ colors   one = one random colour for all cards, new each game (default)
 delay    ms before a non-matching pair flips back (default 1200)
 vanish   ms a matched pair stays visible before it pops away (default 900)
 peek     seconds every card is shown face up when a game starts (default 0 = off)
+animation 0 = no movement: cards change face without turning, matched pairs fade, no sparkles or fireworks,
+         still moon, softer and fewer sounds (default 1: normal)
 pace     fast = a tap while two cards are open moves on at once (for quick players).
          Default (calm): those taps are ignored until the wrong pair turns back or the pair pops away.
 back     card back pattern (default: random, new each game, never plain)
@@ -76,7 +81,10 @@ const startEl = document.getElementById("start"), endEl = document.getElementByI
 /* The tile for a parent-made game: previews its first three cards. */
 function customTile() {
   const base = THEME_TILES[CFG.theme] || { tint: NAMED.pink };
-  const items = buildItems().slice(0, 3);
+  let items = buildItems();
+  // Pairs that look different (3 ↔ dots, A ↔ a): the preview shows one such pair, then the next item.
+  if (items[0]?.alt) items = [items[0], { ...items[0], ...items[0].alt }, ...items.slice(1)];
+  items = items.slice(0, 3);
   while (items.length < 3) items.push(items[items.length - 1] || face("?"));
   return { tint: base.tint, faces: items };
 }
@@ -115,6 +123,8 @@ function crayonSVG(c) {
 function miniFace(tint, f) {
   if (f.kind === "shape") return `<svg viewBox="0 0 100 100">${SHAPES[f.show](tint, darker(tint, .85))}</svg>`;
   if (f.kind === "swatch") return crayonSVG(f.show);
+  if (f.kind === "dots") return dotsSVG(f.show, tint);
+  if (f.kind === "fingers") return fingersSVG(f.show);
   if (f.kind === "img") return `<img src="${encodeURI(f.show)}" alt="">`;
   if (f.kind === "emoji") return `<span class="emo">${emojiHTML(f.show)}</span>`;
   const len = [...f.show].length;
@@ -190,7 +200,7 @@ function goFullscreen() {
 
 function beginGame(fromEl, label) {
   goFullscreen();
-  audio(); sfx.pop(); say(label);
+  audio(); if (CFG.motion) sfx.pop(); say(label);   // animation=0: just the voice
   const r = fromEl.getBoundingClientRect();         // festive confetti pop from what was tapped
   sparkle(r.left + r.width * .3, r.top + r.height / 2, Math.max(r.width, r.height) * 1.2, null);
   sparkle(r.left + r.width * .7, r.top + r.height / 2, Math.max(r.width, r.height) * 1.2, null);

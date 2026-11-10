@@ -205,3 +205,18 @@ img.emoji,.front img.emoji{width:1.2em;height:1.2em;object-fit:contain;vertical-
 #end .setupdoor{color:rgba(255,255,255,.3)}
 .setupdoor.holding{color:rgba(47,58,74,.8);transition:color 4s linear}
 #end .setupdoor.holding{color:rgba(255,255,255,.85)}
+
+/* animation=0 (no movement): nothing moves, scales or fades. Cards change face at once (no turn),
+   matched cards simply disappear, screens appear and go at once (start, end, night sky, rest screen
+   and its blackout), tiles don't sink, the moon and its stars stay still. Only the grown-up holds
+   (hidden star, "…") still brighten slowly, as their only sign that the hold is working. */
+.still{--flip:1ms}
+.still .card.gone{animation:none;opacity:0}
+.still #start,.still #night,.still #end,.still #rest .blackout{transition:none}
+.still #end.show,.still #rest.show{animation:none;opacity:1}
+.still #start .tile:active,.still #end .tile:active{translate:none}
+.still .tile.holding{scale:none;transition:none}
+.still .tile.armed{scale:none}
+.still #rest .moon,.still #rest .z,.still #rest .tw,.still #rest .unlock-star span{animation:none}
+.still #rest .z{opacity:.7}
+.still #rest .tw{opacity:.6}
