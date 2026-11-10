@@ -69,6 +69,9 @@ const CFG = {
   // fade out, no sparkles, no fireworks (a quiet night sky and the cheerful phrase), a still moon,
   // softer and fewer sounds. animation=1 (default) is the normal game.
   motion: Q.get("animation") !== "0",
+  // adapt=1 (grow with my child): the number of cards follows how well the child remembers, from 4 up
+  // to maxcards= (default 16), starting at cards=. See stats.js. Off by default.
+  adapt: ["1", "yes", "on", "true"].includes((Q.get("adapt") || "").trim().toLowerCase()),
   // Letters: say the name ("bee"), the sound ("buh", phonics=1) or both ("B … buh", phonics=both).
   phonics: (Q.get("phonics") || "0").toLowerCase(),
   fullscreen: Q.get("fullscreen") !== "0",

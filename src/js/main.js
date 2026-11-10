@@ -9,6 +9,7 @@ addEventListener("wheel", e => { if (e.ctrlKey) e.preventDefault(); }, { passive
 initSpeech();
 initFireworks();
 initBoard();
+applyAdaptLevel();                                  // adapt=1: start at the level reached last time
 initStartScreen();
 initRest();
 initHelp();

@@ -4,6 +4,9 @@
 const grid = document.getElementById("grid"), board = document.getElementById("board");
 let cards = [], openCards = [], locked = false, matched = 0, total = 0, peeking = false, peekTimer = null;
 let mismatch = null;                                // { a, b, timer } while two different cards are showing
+/* This game, for progress (stats.js) and adapt=1: the cards turned over so far (their place is
+   known), and per pair whether the child remembered or forgot where its other card was. */
+let seen = new Set(), marks = {}, play = null;
 
 /* Emoji as HTML. Default: the OpenMoji drawing (https://openmoji.org, CC BY-SA 4.0), identical on
    every device, from assets/openmoji/ (dist/openmoji/ once built). emoji=native uses the device's
@@ -91,6 +94,7 @@ function newGame() {
   if (mismatch) clearTimeout(mismatch.timer);
   clearTimeout(peekTimer); peeking = false;
   total = items.length; matched = 0; openCards = []; locked = false; mismatch = null;
+  seen = new Set(); marks = {}; play = { start: 0, flips: 0, mism: 0, quick: 0, miss: 0 };
   const colors = gameColors(items.length);
   // Two cards per item. With an "alt" (3 ↔ dots, A ↔ a) the second card shows the alt instead.
   const deck = shuffle(items.flatMap((it, i) => [{ ...it, id: i, color: colors[i] }, { ...it, ...it.alt, id: i, color: colors[i], isAlt: !!it.alt }]));
@@ -126,13 +130,22 @@ function onTap(i) {
   if (locked) { if (!CFG.fast) return; flipBack(); }
   sfx.tap();
   c.up = true; c.el.classList.add("up"); c.el.setAttribute("aria-label", c.say);
+  if (!play.start) play.start = Date.now();
+  play.flips++;
+  // First card of a turn whose other card was already seen: the child can know where it is.
+  // The last pair doesn't count: with two cards left it can't be missed.
+  const partner = cards.findIndex((x, j) => j !== i && x.id === c.id);
+  c.knew = openCards.length === 0 && seen.has(partner) && matched < total - 1;
+  seen.add(i);
   // The second card of a pair found right away isn't spoken again: the word was just said.
   const sameAsOpen = openCards.length === 1 && openCards[0].id === c.id;
   if (!sameAsOpen) say(c.say);
   openCards.push(c);
   if (openCards.length < 2) return;
   const [a, b] = openCards; openCards = [];
+  const mark = marks[a.id] ||= { quick: 0, miss: 0 };
   if (a.id === b.id) {
+    if (a.knew) { mark.quick++; play.quick++; }      // remembered where its pair was
     a.done = b.done = true;
     const last = ++matched === total;
     // Let the child see and hear the pair, then pop them away one after the other.
@@ -142,6 +155,8 @@ function onTap(i) {
     if (!CFG.fast) { locked = true; setTimeout(() => { if (!mismatch) locked = false; }, CFG.vanish + 160 + 300); }
     if (last) setTimeout(finale, CFG.vanish + 900);
   } else {
+    play.mism++;
+    if (a.knew) { mark.miss++; play.miss++; }        // its pair had been seen, but another card was chosen
     locked = true;
     mismatch = { a, b, timer: setTimeout(flipBack, CFG.delay) };
   }
@@ -179,6 +194,11 @@ function resetGames() {
 const restDue = () => CFG.rest > 0 && gamesDone >= CFG.rest;
 
 function finale() {
+  // Progress for the parents (setup → Progress) and the grow-with-my-child level for the next game.
+  const game = { theme: CFG.theme, pairs: total, ms: play.start ? Date.now() - play.start : 0, flips: play.flips, mism: play.mism, quick: play.quick, miss: play.miss };
+  const mains = [...new Map(cards.filter(c => !c.isAlt).map(c => [c.id, c])).values()];   // one card per pair, never the dots / word
+  recordGame(game, mains, marks);
+  adaptAfterGame(game);
   gamesDone++;
   try { sessionStorage.setItem("memoriter-games", gamesDone); } catch { /* storage blocked */ }
   // One of the cards just matched becomes the shape of the final firework (light colour for the night sky).

@@ -16,9 +16,16 @@ const optHTML = (v, label, sel) => `<option value="${v}"${sel ? " selected" : ""
 const countSelect = cur => `<label>Match to <select name="count">${optHTML("0", "the same number (3 ↔ 3)", !cur)}${optHTML("dots", "dots (3 ↔ ●●●)", cur === "dots")}${optHTML("fingers", "fingers (3 ↔ three fingers up)", cur === "fingers")}</select></label>`;
 const caseSelect = cur => `<label>Case <select name="case">${optHTML("upper", "capitals (A B C)", cur !== "lower" && cur !== "pair")}${optHTML("lower", "small letters (a b c)", cur === "lower")}${optHTML("pair", "capital ↔ small (A ↔ a)", cur === "pair")}</select></label>`;
 const normCase = v => { v = String(v || "").toLowerCase(); return ["pair", "both", "mixed", "match"].includes(v) ? "pair" : v === "lower" ? "lower" : "upper"; };
+const MAX_CARDS = [8, 10, 12, 16, 20];
+/* Grow with my child (both forms). */
+const helpRows = (adapt, maxc) => `<div class="row" style="margin-top:8px">
+    <label><input type="checkbox" name="adapt"${adapt ? " checked" : ""}> grow with my child</label>
+    <label>up to <select name="maxcards">${MAX_CARDS.map(n => optHTML(n, `${n} cards`, n === maxc)).join("")}</select></label>
+    <small>Starts at “Cards”. After two games where your child remembers well, one pair more; after a hard game, one pair less (never under 4 cards). Your child won't notice.</small>
+  </div>`;
 const stillRow = on => `<div class="row" style="margin-top:8px">
     <label><input type="checkbox" name="still"${on ? " checked" : ""}> no movement</label>
-    <small>Cards change without turning, found pairs fade away, no sparkles or fireworks, softer and fewer sounds.</small>
+    <small>Cards change without turning, found pairs disappear, no fades, sparkles or fireworks, softer and fewer sounds.</small>
   </div>`;
 
 function setupForm() {
@@ -31,6 +38,7 @@ function setupForm() {
   return `<div class="setup-wrap">
   <h1>Memoriter: settings</h1>
 ${defaultsForm()}
+${progressHTML()}
   <form class="create-form" autocomplete="off"><details${THEME_GIVEN ? " open" : ""}>
   <summary>Create a game (link)</summary>
   <p class="lead">Make one specific game, then press <b>Start game</b>. Bookmark or copy the link to use the same game again.</p>
@@ -68,7 +76,7 @@ ${defaultsForm()}
   </fieldset>
 
   <fieldset><legend>Cards and voice</legend><div class="row">
-    <label>Cards <select name="cards">${CARD_COUNTS.map(n => opt(n, `${n} (${n / 2} pairs)`, n === CFG.pairs * 2)).join("")}</select></label>
+    <label>Cards <select name="cards">${CARD_COUNTS.map(n => opt(n, `${n} (${n / 2} pairs)`, n === Math.floor(num("cards", 8) / 2) * 2)).join("")}</select></label>
     <label>Language <select name="lang">${opt("en", "English", LANG === "en")}${opt("es", "Español", LANG === "es")}</select></label>
     <label>Voice <select name="voice">${["auto", "soft", "female", "male"].map(v => opt(v, v, v === VOICE_Q)).join("")}</select></label>
   </div><div class="row" style="margin-top:8px">
@@ -81,7 +89,7 @@ ${defaultsForm()}
   </div><div class="row" style="margin-top:8px">
     <label>Peek <input type="number" name="peek" min="0" max="30" value="${CFG.peek}"> seconds</label>
     <small>Shows every card face up for a moment when the game starts, then turns them over. 0 = off.</small>
-  </div>${stillRow(!CFG.motion)}<div class="row" style="margin-top:8px">
+  </div>${helpRows(CFG.adapt, adaptMax())}${stillRow(!CFG.motion)}<div class="row" style="margin-top:8px">
     <label>Rest after <input type="number" name="rest" min="0" max="50" value="${CFG.rest}"> games</label>
     <small>A sleepy moon says it's time for a break; a grown-up holds the small star at the top right 4 s to unlock. 0 = never.</small>
   </div></fieldset>
@@ -99,7 +107,7 @@ ${defaultsForm()}
 /* ---------- Defaults (this device) ----------
    What the child gets when picking a tile alone, e.g. numbers 10–20 once 1–8 are known. Saved on
    this device (localStorage), used whenever the address doesn't say otherwise. */
-const DEFAULT_KEYS = ["from", "to", "count", "letters", "case", "phonics", "shapes", "set", "emoji", "cards", "voice", "tts", "sound", "fullscreen", "pace", "peek", "animation", "rest"];
+const DEFAULT_KEYS = ["from", "to", "count", "letters", "case", "phonics", "shapes", "set", "emoji", "cards", "voice", "tts", "sound", "fullscreen", "pace", "peek", "animation", "rest", "adapt", "maxcards"];
 function defaultsForm() {
   const D = SAVED_DEFAULTS, has = Object.keys(D).length > 0;
   const opt = (v, label, sel) => `<option value="${v}"${sel ? " selected" : ""}>${label}</option>`;
@@ -149,7 +157,7 @@ function defaultsForm() {
   </div><div class="row" style="margin-top:8px">
     <label>Peek <input type="number" name="peek" min="0" max="30" value="${escapeHTML(D.peek ?? "0")}"> seconds</label>
     <small>Shows every card face up for a moment when the game starts, then turns them over. 0 = off.</small>
-  </div>${stillRow(D.animation === "0")}<div class="row" style="margin-top:8px">
+  </div>${helpRows(D.adapt === "1", parseInt(D.maxcards || "16", 10))}${stillRow(D.animation === "0")}<div class="row" style="margin-top:8px">
     <label>Rest after <input type="number" name="rest" min="0" max="50" value="${escapeHTML(D.rest ?? "6")}"> games</label>
   </div></fieldset>
 
@@ -161,6 +169,65 @@ function defaultsForm() {
   </div>
 </form>`;
 }
+/* ---------- Progress (this device) ----------
+   Little stats from stats.js: how much was played, how often the child remembered where a card's
+   pair was, which cards are forgotten most, the grow-with-my-child level and the last games. */
+const THEME_NAMES = { numbers: "Numbers", letters: "Letters", images: "Pictures", shapes: "Shapes", colors: "Colors", custom: "My own cards" };
+const fmtTime = ms => { const s = Math.round(ms / 1000); return s < 60 ? `${s} s` : `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, "0")} s`; };
+const pct = (a, b) => b ? Math.round(100 * a / b) + " %" : "–";
+const sumOf = (gs, k) => gs.reduce((n, g) => n + (g[k] || 0), 0);
+/* Time per pair, so games with different numbers of cards can be compared (a 16-card game takes longer). */
+const perPair = gs => { const ms = sumOf(gs.filter(g => g.ms), "ms"), pairs = sumOf(gs.filter(g => g.ms), "pairs"); return pairs ? fmtTime(ms / pairs) : "–"; };
+function itemHTML(e) {
+  if (e.kind === "emoji") return `<span class="pi">${emojiHTML(e.label)}</span>`;
+  if (e.kind === "text") return `<span class="pi txt">${escapeHTML(e.label)}</span>`;
+  return `<span class="pi">${escapeHTML(e.label)}</span>`;
+}
+function progressHTML() {
+  const { games, items } = loadStats();
+  const day = 864e5, now = Date.now(), today = new Date().setHours(0, 0, 0, 0);
+  const last10 = games.slice(-10), prev10 = games.slice(-20, -10);
+  const rem = gs => pct(sumOf(gs, "quick"), sumOf(gs, "quick") + sumOf(gs, "miss"));
+  const lv = adaptLevel();
+  const level = CFG.adapt || lv ? `<p><b>Grow with my child:</b> ${CFG.adapt ? "on" : "off"}, next game with <b>${lv ? lv.cards : CFG.pairs * 2} cards</b> (from 4 up to ${adaptMax()}).</p>` : "";
+  // Cards forgotten most, per game: forgot / (forgot + remembered), only cards that were forgotten.
+  const byTheme = {};
+  for (const e of Object.values(items)) if (e.miss) (byTheme[e.theme] ||= []).push(e);
+  const practise = Object.entries(byTheme).map(([t, es]) => {
+    es.sort((a, b) => b.miss / (b.miss + b.quick) - a.miss / (a.miss + a.quick) || b.miss - a.miss);
+    return `<div class="prow"><b>${THEME_NAMES[t] || t}</b> ${es.slice(0, 8).map(e => `<span class="pitem" title="${escapeHTML(e.say || "")}">${itemHTML(e)}<small>forgot ${e.miss} of ${e.miss + e.quick}</small></span>`).join("")}</div>`;
+  }).join("");
+  const perTheme = Object.entries(games.reduce((m, g) => (m[g.theme] = (m[g.theme] || 0) + 1, m), {}))
+    .sort((a, b) => b[1] - a[1]).map(([t, n]) => `${THEME_NAMES[t] || t} ${n}`).join(" · ");
+  const rows = games.slice(-10).reverse().map(g => `<tr><td>${new Date(g.t).toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" })}</td><td>${THEME_NAMES[g.theme] || g.theme}</td><td>${g.pairs * 2}</td><td>${fmtTime(g.ms)} <small>(${perPair([g])} / pair)</small></td><td>${g.mism}</td><td>${g.quick} / ${g.miss}</td></tr>`).join("");
+  return `<details class="progress"><summary>Progress (this device)</summary>
+  <p class="lead">Kept on this device only. Times are given per pair, so games with more or fewer cards compare fairly. A memory game trains remembering <i>where</i> a card was, so “remembered” counts the times your child turned over a card whose pair had already been seen and then found it; “forgot” the times they picked another card instead. Guessing (the pair not seen yet) and the last pair (it can't be missed) don't count.</p>
+  ${games.length ? `<div class="pstats">
+    <div><b>${games.filter(g => g.t >= today).length}</b><small>games today</small></div>
+    <div><b>${games.filter(g => g.t >= now - 7 * day).length}</b><small>last 7 days</small></div>
+    <div><b>${games.length}</b><small>in all</small></div>
+    <div><b>${perPair(last10)}</b><small>per pair (last 10)</small></div>
+    ${prev10.length ? `<div><b>${perPair(prev10)}</b><small>per pair (10 before)</small></div>` : ""}
+    <div><b>${rem(last10)}</b><small>remembered (last 10)</small></div>
+    ${prev10.length ? `<div><b>${rem(prev10)}</b><small>remembered (10 before)</small></div>` : ""}
+  </div>
+  ${level}
+  <p><b>Games played:</b> ${perTheme}</p>
+  ${practise ? `<h3>Cards forgotten most</h3>${practise}` : `<p>No card has been forgotten yet.</p>`}
+  <h3>Last games</h3>
+  <table class="ptable"><tr><th>When</th><th>Game</th><th>Cards</th><th>Time</th><th>Mismatches</th><th>Remembered / forgot</th></tr>${rows}</table>`
+  : `<p>No games yet on this device.</p>${level}`}
+  <div class="actions"><button type="button" class="clearstats">Clear progress</button></div>
+</details>`;
+}
+function initProgress(box) {
+  box.querySelector(".clearstats")?.addEventListener("click", e => {
+    if (!confirm("Delete the progress saved on this device?")) return;
+    clearStats();
+    const d = box.querySelector(".progress"); d.outerHTML = progressHTML(); box.querySelector(".progress").open = true; initProgress(box);
+  });
+}
+
 /* Defaults form → only what differs from the built-in defaults. */
 function collectDefaults(form) {
   const f = new FormData(form), d = {};
@@ -175,6 +242,8 @@ function collectDefaults(form) {
   if (sets.length && sets.length < Object.keys(W.sets).length) d.set = sets.join(",");   // all or none ticked = all sets
   if (f.get("emoji") === "native") d.emoji = "native";
   if (f.get("cards") !== "8") d.cards = f.get("cards");
+  if (f.get("adapt")) d.adapt = "1";
+  if (f.get("maxcards") !== "16") d.maxcards = f.get("maxcards");
   if (f.get("voice") !== "auto") d.voice = f.get("voice");
   if (!f.get("tts")) d.tts = "0";
   if (!f.get("sound")) d.sound = "0";
@@ -227,6 +296,7 @@ function setupParams(form) {
   if (theme === "images" && f.get("set") !== "random") p.set("set", f.get("set"));
   if (theme === "shapes" && f.getAll("shape").length) p.set("shapes", f.getAll("shape").join(","));
   if (f.get("cards") !== "8") p.set("cards", f.get("cards"));
+  if (f.get("adapt")) { p.set("adapt", "1"); if (f.get("maxcards") !== "16") p.set("maxcards", f.get("maxcards")); }
   if (f.get("lang") !== "en") p.set("lang", f.get("lang"));
   if (f.get("voice") !== "auto") p.set("voice", f.get("voice"));
   if (!f.get("tts")) p.set("tts", "0");
@@ -263,6 +333,7 @@ function initSetup() {
     location.href = location.pathname + (q ? "?" + q : "") + location.hash;
   });
   initDefaultsForm(box);
+  initProgress(box);
   box.querySelector(".copy").addEventListener("click", async e => {
     try { await navigator.clipboard.writeText(urlFor()); e.target.textContent = "Copied ✓"; }
     catch { e.target.textContent = "Select the link below to copy"; }

@@ -11,7 +11,13 @@ const { page, queries } = JSON.parse(decodeURIComponent(location.hash.slice(1)))
 const f = document.getElementById("f"), results = [];
 let i = 0;
 // Saved after every page, so a run that stops early still returns the pages it finished.
-const save = () => { document.getElementById("out").textContent = btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(results)).reduce((a, b) => (a.push(b), a), []))); };
+// Converted in chunks: one String.fromCharCode(...all bytes) call fails once the pages add up to a few MB.
+const save = () => {
+  const bytes = new TextEncoder().encode(JSON.stringify(results));
+  let bin = "";
+  for (let k = 0; k < bytes.length; k += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(k, k + 0x8000));
+  document.getElementById("out").textContent = btoa(bin);
+};
 function next() {
   if (i >= queries.length) return;
   f.onload = () => setTimeout(async () => {

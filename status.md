@@ -22,7 +22,8 @@ _Last updated: 2026-11-09_
 | `src/js/speech.js` | Text-to-speech, voice choice and presets |
 | `src/js/fireworks.js` | Sparkle particles and the end fireworks show |
 | `site/wa/pairs/` | My copies of the website's shell files for `camayal.info/wa/pairs` (iframe page, manifest, offline `sw.js`) |
-| `tests/check.py` | `python tests/check.py` checks 97 URL settings in headless Edge/Chrome (~5 s). `--dist` tests the built file. |
+| `tests/check.py` | `python tests/check.py` checks 98 URL settings in headless Edge/Chrome (~5 s). `--dist` tests the built file. |
+| `src/js/stats.js` | Progress kept on the device (`memoriter-stats`) for the setup screen, and the grow-with-my-child level (`memoriter-level`) |
 | `src/js/board.js` | Game logic: deal, flip, match, layout |
 | `src/js/screens.js` | Game tiles, Start screen, end screen, `?help=1`, `?voices=1` |
 | `src/js/setup.js` | Parents' setup screen (`?setup`) |
@@ -77,6 +78,8 @@ To add a language, I copy the `en` block in `src/js/i18n.js`, translate it, and 
 | Theme 2: letters (`abc`, `a-d`, `aeiou`) | ✅ Done | Also `vowels` / `vocales` and `case=lower`. Spanish adds ñ and speaks the Spanish letter names (be, ce, hache, jota…). |
 | Numbers ↔ quantities (dots or fingers) | ✅ Done (off by default) | `count=dots` matches each number to that many dots, in dice patterns so small amounts are seen at a glance (drawn in the card's colour). `count=fingers` matches it to OpenMoji hands: ☝ 1, ✌ 2, 🖐 5 are OpenMoji's own; OpenMoji has no 3 or 4, so I made them from ✌ by raising its folded ring finger (3) and then its little finger (4), in the same style (`app/make_hands.py` builds `src/js/hands.js`). 6–10 are two hands: 🖐 on the left (turned so its thumb points out) plus the hand for the rest, both drawn at the same size. Both options go from 1 to 10, so the numbers stay within 1–10 (`from=5&to=20` → 5 to 10) and every pair is number ↔ quantity. Both cards say the number. In setup under Numbers → "Match to", in Defaults and the link. The final firework uses the number. An earlier try with my own hand drawings didn't look good, so I switched to OpenMoji. |
 | Capital ↔ small letter (A ↔ a) | ✅ Done (off by default) | `case=pair` puts the capital on one card and the small letter on the other; both say the letter name (or sound). In setup under Letters → "Case" (capitals / small letters / capital ↔ small), in Defaults and the link. |
+| Grow with my child | ✅ Done (off by default) | `adapt=1` (setup: "grow with my child", "up to N cards") changes the number of cards by how well my child remembers, without them noticing: after two good games in a row (forgot at most a quarter as often as there are pairs, and remembered at least once) one pair more, up to `maxcards=` (default 16); after one hard game (forgot as often as there are pairs or more) one pair less, never under 4 cards. It starts at "Cards" and the level is kept on the device; setup → Progress shows it and "Clear progress" resets it. |
+| Progress for parents (setup) | ✅ Done | A "Progress (this device)" section in setup: games today / last 7 days / in all, time **per pair** (last 10 games vs the 10 before; per pair so games with different card counts compare fairly), how often my child **remembered** where a card's pair was (last 10 games vs the 10 before), games per theme, the **cards forgotten most** per theme ("forgot 2 of 4"), the grow-with-my-child level, and the last 10 games (when, game, cards, time, mismatches, remembered / forgot). "Remembered" = a card whose pair was already seen in this game, followed by that pair; "forgot" = followed by another card; pure guesses and the last pair (two cards left, it can't be missed) don't count. Kept only on the device (`stats.js`), "Clear progress" deletes it. I tried a spoken "Where is the other one?" hint for those moments and removed it: I didn't like it. |
 | Phonics (letter sounds) | ✅ Done (I still need to tune it by ear) | `phonics=1` says the letter's sound instead of its name (B → "buh", M → "mmm"); `phonics=both` says both ("B, buh"). English and Spanish (Spanish h says "muda"). Also in the setup screen under Letters, and for single-letter own cards. Browsers can't pronounce raw phonemes, so I spell the sounds for the voice to read, and some may need adjusting per voice: I edit `PHONICS_EN` / `PHONICS_ES` in `src/js/i18n.js`, or override one card with `items=B\|buh`. |
 | Bilingual (en / es) | ✅ Done | `lang=es` translates every spoken word: numbers as words ("veintidós"), Spanish letter names, shapes, animals, the Start and win phrases. It picks a Spanish voice, preferring the browser's own region. I tested it headless in Edge, which chose a Spanish "Natural" voice. |
 | Colombian Spanish | ✅ Done | I use Colombian terms for the Spanish words (carro, carro de policía, carro de bomberos, bus, banano, durazno, rosado, café…). With `lang=es` the voice prefers Colombian Spanish (es-CO, e.g. Edge's Salome / Gonzalo), then US Spanish (es-US), then any Spanish; `lang=es-MX` etc. still picks that region. |
@@ -87,7 +90,7 @@ To add a language, I copy the `en` block in `src/js/i18n.js`, translate it, and 
 
 ## URL parameters
 
-`setup` · `pace` · `peek` · `animation` · `theme` · `themes` · `cards` · `from` · `to` · `count` · `letters` · `case` · `phonics` · `shapes` · `set` · `items` · `lang` · `voice` · `voices` ·
+`setup` · `pace` · `peek` · `animation` · `adapt` · `maxcards` · `theme` · `themes` · `cards` · `from` · `to` · `count` · `letters` · `case` · `phonics` · `shapes` · `set` · `items` · `lang` · `voice` · `voices` ·
 `rate` · `pitch` · `tts` · `sound` · `colors` · `delay` · `vanish` · `back` · `backcolor` · `mark` · `bg` · `bgcolor` · `fullscreen` · `grow` · `rest` · `dark` · `emoji` · `seed` · `start` · `win` · `again` · `help`
 
 I removed `demo` (the tests now play the round for real) and `starttext` (the "Let's go!" button became the big tile). I also removed some as redundant: `pairs` (use `cards`), `img` (use `items` with `theme=images`), `theme=custom` (guessed from `items`), `vol` (use `sound=0`). I kept `rate` / `pitch` as fine-tuning on top of the `voice=` presets.
@@ -126,7 +129,6 @@ Good to know: every `git push` updates the Play app too (no new upload); I only 
 - Browsers block sound and speech until the first tap. The game tiles take care of this.
 - Voice quality depends on the device and browser. On Windows, only **Edge** has the natural "Online (Natural)" voices. Chrome has the "Google" voices. IDE preview browsers usually only have the older built-in Windows voices (David, Zira, Mark), which sound robotic. I guess the gender from the voice name. Online voices can be slow to start: if a voice hasn't spoken within 1.2 s, the game retries, switching to a voice installed on the device in the same language if there is one.
 - Spanish (or any language) only sounds right if the device or browser has a voice for it. Otherwise the default voice reads the Spanish words with a foreign accent, and the Start screen shows a note. `lang=` also accepts `spanish` / `español`.
-- `python tests/check.py --dist` falls back to slower one-page-at-a-time loading (~20 s); the development page uses the fast path (~5 s).
 - Phonics sounds are approximations I spelled for the voice ("sss", "buh"). Some voices may read a stretched sound letter by letter ("ess ess ess"). Recorded clips would sound best.
 - Android tip for parents: Settings → Security → App pinning (screen pinning) keeps the toddler inside the browser/app.
 - With `emoji=native`, emoji look different on each operating system (OpenMoji, the default, looks the same everywhere).
@@ -141,14 +143,13 @@ Good to know: every `git push` updates the Play app too (no new upload); I only 
 - [x] ~~Optional soft chime on a match~~ (I replaced it with the pop and small firework)
 - [x] ~~Bundle the font so it works fully offline~~ (stored in `assets/fonts/`, no Google Fonts)
 - [x] ~~Pick a more predictable default voice~~ (voice presets + quality ranking)
-- [ ] Consider recorded audio or a cloud TTS service if browser voices stay too robotic on my target devices
 
 ### Themes / content
 - [ ] Better phonics: recorded letter-sound clips (one short recording per sound, en + es) instead of spelled approximations; until then, I tune `PHONICS_EN` / `PHONICS_ES` by ear per voice
 - [x] ~~Colors theme~~ (done)
 - [x] ~~Quantities (dots or fingers matched to a digit)~~: `count=dots|fingers` (off by default)
 - [x] ~~Matching uppercase to lowercase (A ↔ a)~~: `case=pair` (off by default)
-- [ ] Mixed pairs: picture ↔ word (the two cards of a pair look different; the deck already supports it: an item's `alt` is the second card's face)
+- ~~Mixed pairs: picture ↔ word~~: tried and removed; not what I want for this app
 - [x] ~~Ready-made packs~~: animals, fruits, vehicles, nature (`set=`)
 
 ### Lower stimulation (ideas I want to build later)
