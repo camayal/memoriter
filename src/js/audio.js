@@ -9,7 +9,7 @@ function audio() {
   if (!CFG.sound) return null;
   if (!AC) {
     const C = window.AudioContext || window.webkitAudioContext; if (!C) return null;
-    AC = new C(); master = AC.createGain(); master.gain.value = CFG.motion ? 0.6 : 0.35;   // animation=0: softer master.connect(AC.destination);
+    AC = new C(); master = AC.createGain(); master.gain.value = CFG.motion ? 0.6 : 0.35; master.connect(AC.destination);   // animation=0: softer
     noiseBuf = AC.createBuffer(1, AC.sampleRate * 1.5, AC.sampleRate);
     const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
   }

@@ -42,7 +42,7 @@ function recordGame(game, items, marks) {
 
 /* ---------- Grow with my child (adapt=1) ----------
    The number of cards follows how well the child remembers, without the child noticing:
-   - two good games in a row (forgot at most a quarter as often as there are pairs, and at least
+   - three good games in a row (forgot at most a quarter as often as there are pairs, and at least
      one card remembered) → one pair more, up to maxcards= (default 16)
    - one hard game (forgot as often as there are pairs, or more) → one pair less, down to 4 cards
    It starts from the "Cards" setting (cards=, from setup) and goes up or down from there. The level is
@@ -66,7 +66,7 @@ function adaptAfterGame(g) {
   const lv = adaptLevel();
   let cards = CFG.pairs * 2, good = lv ? lv.good || 0 : 0;
   if (g.miss >= g.pairs) { cards -= 2; good = 0; }
-  else if (g.miss <= g.pairs / 4 && g.quick > 0) { good++; if (good >= 2) { cards += 2; good = 0; } }
+  else if (g.miss <= g.pairs / 4 && g.quick > 0) { good++; if (good >= 3) { cards += 2; good = 0; } }
   else good = 0;
   cards = Math.max(ADAPT_MIN, Math.min(adaptMax(), cards));
   saveJSON(LEVEL_KEY, { cards, good, start: adaptStart() });

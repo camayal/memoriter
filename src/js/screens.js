@@ -37,7 +37,7 @@ vanish   ms a matched pair stays visible before it pops away (default 900)
 peek     seconds every card is shown face up when a game starts (default 0 = off)
 animation 0 = no movement: cards change face without turning, matched pairs fade, no sparkles or fireworks,
          still moon, softer and fewer sounds (default 1: normal)
-adapt    1 = grow with my child: after two games remembered well one pair more, after a hard game one pair
+adapt    1 = grow with my child: after three games remembered well one pair more, after a hard game one pair
          less (4 cards at least), starting at cards=; kept on this device   (default: off)
 maxcards most cards adapt=1 may reach (default 16)
 pace     fast = a tap while two cards are open moves on at once (for quick players).

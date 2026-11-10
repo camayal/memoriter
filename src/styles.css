@@ -108,17 +108,41 @@ html,body{margin:0;height:100%;background:var(--page-bg);overflow:hidden;
 #setup .setup-wrap{max-width:640px;margin:0 auto;padding:24px 16px 48px}
 #setup h1{font-size:24px;margin:0 0 4px}
 #setup p.lead{margin:0 0 20px;color:#5b6573}
-#setup fieldset{border:0;background:#fff;border-radius:14px;padding:14px 16px;margin:0 0 14px;
+#setup fieldset{border:0;background:#fff;border-radius:14px;padding:4px 16px;margin:0 0 14px;min-width:0;
   box-shadow:0 1px 3px rgba(47,58,74,.1)}
-#setup legend{font-weight:700;padding:0;margin-bottom:8px;float:left;width:100%}
-#setup .row{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;clear:both}
-#setup label{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
-#setup .choices label{background:#F4F1EA;border-radius:10px;padding:8px 12px}
+/* Group name: small capitals above the card's lines, like a phone's settings list. */
+#setup legend{float:left;width:100%;padding:10px 0 4px;font-size:13px;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;color:#7a8494}
+/* One setting per line: the name on the left, its control on the right, a thin line between settings.
+   The hint uses the whole width under the name, so it never gets squeezed by a wide control. */
+#setup .opt{clear:both;display:grid;grid-template-columns:1fr auto;column-gap:16px;align-items:center;
+  padding:12px 0;cursor:pointer}
+#setup .opt+.opt{border-top:1px solid #EEE8DC}
+#setup .opt-text{display:contents}
+#setup .opt-title{grid-column:1;grid-row:1;font-weight:600}
+#setup .opt small{grid-column:1/-1;grid-row:2;font-size:14px;line-height:1.35;margin-top:2px}
+#setup .opt-ctl{grid-column:2;grid-row:1;display:flex;align-items:center;gap:6px;color:#5b6573}
+#setup .opt-ctl select{max-width:min(240px,50vw)}
+#setup .opt.block{display:flex;flex-direction:column;align-items:stretch;cursor:default}
+#setup .opt.block .opt-text{display:flex;flex-direction:column}
+#setup .chips{clear:both;display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+#setup fieldset>.chips{margin:4px 0 14px}
+#setup .chips label{display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+  background:#F4F1EA;border-radius:10px;padding:8px 12px}
 #setup .choices input:checked+span{font-weight:700}
+/* On/off switch (a styled checkbox). */
+#setup input.switch{appearance:none;-webkit-appearance:none;flex:none;width:48px;height:28px;margin:0;border-radius:14px;
+  background:#cfd5dd;position:relative;cursor:pointer;transition:background .15s}
+#setup input.switch::before{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;
+  background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+#setup input.switch:checked{background:#3DAA5C}
+#setup input.switch:checked::before{transform:translateX(20px)}
+#setup input.switch:focus-visible{outline:2px solid #23529F;outline-offset:2px}
 #setup input[type=text],#setup input[type=number],#setup select,#setup textarea{
   font:inherit;padding:8px 10px;border:1px solid #cfd5dd;border-radius:8px;background:#fff;color:inherit}
-#setup input[type=number]{width:90px}
-#setup textarea{width:100%;min-height:96px;resize:vertical}
+#setup input[type=number]{width:80px}
+#setup .opt input[type=text]{width:140px}
+#setup textarea{clear:both;display:block;box-sizing:border-box;width:100%;min-height:96px;margin:4px 0 4px;resize:vertical}
 #setup small{color:#5b6573}
 #setup .actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:18px}
 #setup button{font:700 18px/1 system-ui,sans-serif;border:0;border-radius:12px;padding:14px 22px;cursor:pointer}

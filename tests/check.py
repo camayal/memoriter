@@ -188,7 +188,7 @@ CASES = [
     ("set=animals", "old set=animals still works (farm)", lambda p: subset(p.faces, SETS["farm"])),
     ("set=nature&cards=20", "nature set, 10 pairs", lambda p: p.n == 20 and subset(p.faces, SETS["nature"])),
     ("", "pictures tile shows mixed sets", lambda p: all(e in p.dom for e in ["🐶", "🍎", "🐠"])),
-    ("setup&set=fruits", "setup: pictures with one set", lambda p: re.search(r'value="images" checked', p.dom) and re.search(r'<option value="fruits" selected', p.dom)),
+    ("setup&set=fruits", "setup: pictures with one set", lambda p: re.search(r'value="images" checked', p.dom) and re.search(r'value="fruits" checked', p.dom)),
     ("items=A|Apple,B|Ball", "custom items with spoken text", lambda p: p.n == 4 and subset(p.faces, "AB") and subset(p.say, ["Apple", "Ball"])),
     ("items=cat,dog", "items without theme", lambda p: subset(p.faces, ["cat", "dog"])),
     ("theme=images&items=./a.png|cat,./b.png|dog", "image links in items=", lambda p: p.n == 4 and all(f == "img" for f in p.faces)),
