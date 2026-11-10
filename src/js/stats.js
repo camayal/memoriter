@@ -45,23 +45,30 @@ function recordGame(game, items, marks) {
    - two good games in a row (forgot at most a quarter as often as there are pairs, and at least
      one card remembered) → one pair more, up to maxcards= (default 16)
    - one hard game (forgot as often as there are pairs, or more) → one pair less, down to 4 cards
-   The "Cards" setting is where it starts. The level is kept on this device (memoriter-level). */
+   It starts from the "Cards" setting (cards=, from setup) and goes up or down from there. The level is
+   kept on this device (memoriter-level) together with the setting it started from: when a parent
+   changes "Cards", the level starts again from the new value. */
 const ADAPT_MIN = 4;
-const adaptMax = () => Math.max(ADAPT_MIN, Math.min(30, Math.round(num("maxcards", 16) / 2) * 2));
-function adaptLevel() { return loadJSON(LEVEL_KEY, null); }
+const adaptStart = () => Math.max(ADAPT_MIN, Math.min(30, Math.floor(num("cards", 8) / 2) * 2));
+// "up to" never lowers the chosen start: cards=20 with maxcards=16 starts (and stays at most) at 20.
+const adaptMax = () => Math.max(adaptStart(), Math.min(30, Math.round(num("maxcards", 16) / 2) * 2));
+function adaptLevel() {
+  const lv = loadJSON(LEVEL_KEY, null);
+  return lv && lv.cards && lv.start === adaptStart() ? lv : null;   // started from another "Cards" setting: start again
+}
 function applyAdaptLevel() {
   if (!CFG.adapt) return;
   const lv = adaptLevel();
-  if (lv && lv.cards) CFG.pairs = Math.max(ADAPT_MIN, Math.min(adaptMax(), lv.cards)) / 2;
+  CFG.pairs = Math.max(ADAPT_MIN, Math.min(adaptMax(), lv ? lv.cards : adaptStart())) / 2;
 }
 function adaptAfterGame(g) {
   if (!CFG.adapt) return;
-  const lv = adaptLevel() || { cards: CFG.pairs * 2, good: 0 };
-  let cards = CFG.pairs * 2, good = lv.good || 0;
+  const lv = adaptLevel();
+  let cards = CFG.pairs * 2, good = lv ? lv.good || 0 : 0;
   if (g.miss >= g.pairs) { cards -= 2; good = 0; }
   else if (g.miss <= g.pairs / 4 && g.quick > 0) { good++; if (good >= 2) { cards += 2; good = 0; } }
   else good = 0;
   cards = Math.max(ADAPT_MIN, Math.min(adaptMax(), cards));
-  saveJSON(LEVEL_KEY, { cards, good });
+  saveJSON(LEVEL_KEY, { cards, good, start: adaptStart() });
   CFG.pairs = cards / 2;                            // the next game uses it
 }

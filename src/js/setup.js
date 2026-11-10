@@ -21,7 +21,7 @@ const MAX_CARDS = [8, 10, 12, 16, 20];
 const helpRows = (adapt, maxc) => `<div class="row" style="margin-top:8px">
     <label><input type="checkbox" name="adapt"${adapt ? " checked" : ""}> grow with my child</label>
     <label>up to <select name="maxcards">${MAX_CARDS.map(n => optHTML(n, `${n} cards`, n === maxc)).join("")}</select></label>
-    <small>Starts at “Cards”. After two games where your child remembers well, one pair more; after a hard game, one pair less (never under 4 cards). Your child won't notice.</small>
+    <small>Starts at “Cards” and goes up or down from there: after two games where your child remembers well, one pair more; after a hard game, one pair less (never under 4 cards). Changing “Cards” starts again from the new number. Your child won't notice.</small>
   </div>`;
 const stillRow = on => `<div class="row" style="margin-top:8px">
     <label><input type="checkbox" name="still"${on ? " checked" : ""}> no movement</label>
@@ -189,7 +189,7 @@ function progressHTML() {
   const last10 = games.slice(-10), prev10 = games.slice(-20, -10);
   const rem = gs => pct(sumOf(gs, "quick"), sumOf(gs, "quick") + sumOf(gs, "miss"));
   const lv = adaptLevel();
-  const level = CFG.adapt || lv ? `<p><b>Grow with my child:</b> ${CFG.adapt ? "on" : "off"}, next game with <b>${lv ? lv.cards : CFG.pairs * 2} cards</b> (from 4 up to ${adaptMax()}).</p>` : "";
+  const level = CFG.adapt || lv ? `<p><b>Grow with my child:</b> ${CFG.adapt ? "on" : "off"}, next game with <b>${lv ? lv.cards : adaptStart()} cards</b> (started at ${adaptStart()}, can go from 4 up to ${adaptMax()}).</p>` : "";
   // Cards forgotten most, per game: forgot / (forgot + remembered), only cards that were forgotten.
   const byTheme = {};
   for (const e of Object.values(items)) if (e.miss) (byTheme[e.theme] ||= []).push(e);
