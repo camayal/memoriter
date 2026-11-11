@@ -262,4 +262,7 @@ img.emoji,.front img.emoji{width:1.2em;height:1.2em;object-fit:contain;vertical-
 #setup .ptable th,#setup .ptable td{padding:6px 8px;text-align:left;border-bottom:1px solid #eee8dc}
 #setup .ptable th{font-weight:600;color:#5b6573}
 #setup .clearstats{background:#F1EEE8;color:#5b6573}
+#setup .download{background:#E6ECF7;color:#23529F}
+#setup .ptable-wrap{max-height:440px;overflow:auto;border-radius:10px}   /* 10 days can be many games */
+#setup .ptable th{position:sticky;top:0;background:#fff}
 @media (max-width:520px){#setup .ptable th:nth-child(5),#setup .ptable td:nth-child(5){display:none}}

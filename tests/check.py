@@ -153,6 +153,7 @@ CASES = [
     ("setup&adapt=1&maxcards=12", "setup: grow-with-my-child pre-filled",
      lambda p: re.search(r'name="adapt" checked', p.dom) and re.search(r'<option value="12" selected[^>]*>12 cards', p.dom)),
     ("setup", "setup: Progress section", lambda p: 'class="progress"' in p.dom and "Progress (this device)" in p.dom),
+    ("data=1", "data=1: all saved progress, with a download", lambda p: "saved progress" in p.dom and 'class="download"' in p.dom and "Progress (this device)" in p.dom),
     ("", "animation=1 by default (no still class)", lambda p: not re.search(r'<html[^>]*class="[^"]*still', p.dom)),
     ("animation=0", "animation=0: still class on the page", lambda p: re.search(r'<html[^>]*class="[^"]*still', p.dom)),
     ("start=0&_play=1&again=0&rest=0&animation=0", "animation=0: game ends with tiles, no fireworks",

@@ -26,6 +26,7 @@ items    your own cards, comma list or repeated; "shown|spoken" to say something
 lang     language of every spoken/shown word: en | es (also es-MX, spanish, español)  (default: en)
 voice    auto (default: most natural voice) | soft | female | male | part of a voice name (e.g. voice=Jenny)
 voices   1 = list the voices this browser has (tap one to hear it)
+data     1 = all the progress saved on this device (setup shows the last 10 days), with a download (JSON)
 rate     TTS speed (default from the voice preset, ~1)    pitch   TTS pitch (default from preset, ~1)
 tts      0 = mute speech            sound   0 = mute sound effects
 colors   one = one random colour for all cards, new each game (default)

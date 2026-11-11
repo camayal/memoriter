@@ -6,14 +6,19 @@
    the child turns over a card whose pair was already seen earlier in the game (its place was "known"):
    - remembered: the next card is that pair
    - forgot:     the next card is a different one
-   Mismatches where the pair was never seen are just guessing and are not held against any card. */
+   Mismatches where the pair was never seen are just guessing and are not held against any card.
+
+   Everything is kept, for as long as the device allows: every game with its own card results (c), so
+   setup can show any period (it shows the last 10 days; ?data=1 shows everything). A game is about
+   200 bytes, so years of play fit; only if the storage is ever full are the oldest games dropped. */
 
 const STATS_KEY = "memoriter-stats", LEVEL_KEY = "memoriter-level";
-const STATS_MAX_GAMES = 300;
 const loadJSON = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || "null") || d; } catch { return d; } };
 const saveJSON = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* storage blocked */ } };
 
-/* { games: [{ t, theme, pairs, ms, flips, mism, quick, miss }], items: { key: { label, kind, say, theme, games, quick, miss } } } */
+/* { games: [{ t, theme, pairs, ms, flips, mism, quick, miss, c: { key: [quick, miss] } }],
+     items: { key: { label, kind, say, theme, games, quick, miss } } }   (items: what each card looks like + its all-time totals;
+   c only lists the cards that were remembered or forgotten in that game; games saved before 2026-11 have no c) */
 function loadStats() {
   const s = loadJSON(STATS_KEY, {});
   return { games: Array.isArray(s.games) ? s.games : [], items: s.items && typeof s.items === "object" ? s.items : {} };
@@ -30,14 +35,30 @@ const statLabel = c => c.kind === "shape" || c.kind === "swatch" || c.kind === "
    id: { quick, miss } counts from this game. */
 function recordGame(game, items, marks) {
   const s = loadStats();
-  s.games.push({ t: Date.now(), ...game });
-  if (s.games.length > STATS_MAX_GAMES) s.games = s.games.slice(-STATS_MAX_GAMES);
+  const g = { t: Date.now(), ...game, c: {} };
   for (const it of items) {
     const k = statKey(it), m = marks[it.id] || {};
     const e = s.items[k] ||= { label: statLabel(it), kind: it.kind, say: it.say, theme: CFG.theme, games: 0, quick: 0, miss: 0 };
     e.games++; e.quick += m.quick || 0; e.miss += m.miss || 0; e.say = it.say;
+    if (m.quick || m.miss) g.c[k] = [m.quick || 0, m.miss || 0];
   }
-  saveJSON(STATS_KEY, s);
+  s.games.push(g);
+  // Storage full (years of play, or other data on this site): drop the oldest tenth and try again.
+  for (let i = 0; i < 20; i++) {
+    try { localStorage.setItem(STATS_KEY, JSON.stringify(s)); return; }
+    catch { if (s.games.length < 20) return; s.games = s.games.slice(Math.ceil(s.games.length / 10)); }
+  }
+}
+/* Cards forgotten in some games: { key: { ...items[key], quick, miss } } counted only over those games.
+   Old games without card results (c) fall back to nothing; ?data=1 uses the all-time totals instead. */
+function cardTotals(games, items) {
+  const out = {};
+  for (const g of games) for (const [k, [q, m]] of Object.entries(g.c || {})) {
+    if (!items[k]) continue;
+    const e = out[k] ||= { ...items[k], quick: 0, miss: 0 };
+    e.quick += q; e.miss += m;
+  }
+  return out;
 }
 
 /* ---------- Grow with my child (adapt=1) ----------

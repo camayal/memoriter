@@ -167,7 +167,6 @@ function defaultsForm() {
    pair was, which cards are forgotten most, the grow-with-my-child level and the last games. */
 const THEME_NAMES = { numbers: "Numbers", letters: "Letters", images: "Pictures", shapes: "Shapes", colors: "Colors", custom: "My own cards" };
 const fmtTime = ms => { const s = Math.round(ms / 1000); return s < 60 ? `${s} s` : `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, "0")} s`; };
-const pct = (a, b) => b ? Math.round(100 * a / b) + " %" : "–";
 const sumOf = (gs, k) => gs.reduce((n, g) => n + (g[k] || 0), 0);
 /* Time per pair, so games with different numbers of cards can be compared (a 16-card game takes longer). */
 const perPair = gs => { const ms = sumOf(gs.filter(g => g.ms), "ms"), pairs = sumOf(gs.filter(g => g.ms), "pairs"); return pairs ? fmtTime(ms / pairs) : "–"; };
@@ -176,48 +175,48 @@ function itemHTML(e) {
   if (e.kind === "text") return `<span class="pi txt">${escapeHTML(e.label)}</span>`;
   return `<span class="pi">${escapeHTML(e.label)}</span>`;
 }
-function progressHTML() {
+/* all = false: the setup section, the last PROGRESS_DAYS days only (what is useful to look at now).
+   all = true (?data=1): every game ever saved on this device, the all-time card totals, and a download. */
+const PROGRESS_DAYS = 10;
+function progressHTML(all = false) {
   const { games, items } = loadStats();
-  const day = 864e5, now = Date.now(), today = new Date().setHours(0, 0, 0, 0);
-  const last10 = games.slice(-10), prev10 = games.slice(-20, -10);
-  const rem = gs => pct(sumOf(gs, "quick"), sumOf(gs, "quick") + sumOf(gs, "miss"));
+  const shown = all ? games : games.filter(g => g.t >= Date.now() - PROGRESS_DAYS * 864e5);
   const lv = adaptLevel();
   const level = CFG.adapt || lv ? `<p><b>Grow with my child:</b> ${CFG.adapt ? "on" : "off"}, next game with <b>${lv ? lv.cards : adaptStart()} cards</b> (started at ${adaptStart()}, can go from 4 up to ${adaptMax()}).</p>` : "";
-  // Cards forgotten most, per game: forgot / (forgot + remembered), only cards that were forgotten.
-  const byTheme = {};
-  for (const e of Object.values(items)) if (e.miss) (byTheme[e.theme] ||= []).push(e);
+  // Cards forgotten most: forgot / (forgot + remembered), only cards that were forgotten.
+  const cardsSeen = all ? items : cardTotals(shown, items), byTheme = {};
+  for (const e of Object.values(cardsSeen)) if (e.miss) (byTheme[e.theme] ||= []).push(e);
   const practise = Object.entries(byTheme).map(([t, es]) => {
     es.sort((a, b) => b.miss / (b.miss + b.quick) - a.miss / (a.miss + a.quick) || b.miss - a.miss);
-    return `<div class="prow"><b>${THEME_NAMES[t] || t}</b> ${es.slice(0, 8).map(e => `<span class="pitem" title="${escapeHTML(e.say || "")}">${itemHTML(e)}<small>forgot ${e.miss} of ${e.miss + e.quick}</small></span>`).join("")}</div>`;
+    return `<div class="prow"><b>${THEME_NAMES[t] || t}</b> ${es.slice(0, all ? 40 : 8).map(e => `<span class="pitem" title="${escapeHTML(e.say || "")}">${itemHTML(e)}<small>forgot ${e.miss} of ${e.miss + e.quick}</small></span>`).join("")}</div>`;
   }).join("");
-  const perTheme = Object.entries(games.reduce((m, g) => (m[g.theme] = (m[g.theme] || 0) + 1, m), {}))
-    .sort((a, b) => b[1] - a[1]).map(([t, n]) => `${THEME_NAMES[t] || t} ${n}`).join(" · ");
-  const rows = games.slice(-10).reverse().map(g => `<tr><td>${new Date(g.t).toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" })}</td><td>${THEME_NAMES[g.theme] || g.theme}</td><td>${g.pairs * 2}</td><td>${fmtTime(g.ms)} <small>(${perPair([g])} / pair)</small></td><td>${g.mism}</td><td>${g.quick} / ${g.miss}</td></tr>`).join("");
-  return `<details class="progress"><summary>Progress (this device)</summary>
-  <p class="lead">Kept on this device only. Times are given per pair, so games with more or fewer cards compare fairly. A memory game trains remembering <i>where</i> a card was, so “remembered” counts the times your child turned over a card whose pair had already been seen and then found it; “forgot” the times they picked another card instead. Guessing (the pair not seen yet) and the last pair (it can't be missed) don't count.</p>
-  ${games.length ? `<div class="pstats">
-    <div><b>${games.filter(g => g.t >= today).length}</b><small>games today</small></div>
-    <div><b>${games.filter(g => g.t >= now - 7 * day).length}</b><small>last 7 days</small></div>
-    <div><b>${games.length}</b><small>in all</small></div>
-    <div><b>${perPair(last10)}</b><small>per pair (last 10)</small></div>
-    ${prev10.length ? `<div><b>${perPair(prev10)}</b><small>per pair (10 before)</small></div>` : ""}
-    <div><b>${rem(last10)}</b><small>remembered (last 10)</small></div>
-    ${prev10.length ? `<div><b>${rem(prev10)}</b><small>remembered (10 before)</small></div>` : ""}
-  </div>
+  const when = { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", ...(all ? { year: "numeric" } : {}) };
+  const rows = shown.slice().reverse().map(g => `<tr><td>${new Date(g.t).toLocaleString([], when)}</td><td>${THEME_NAMES[g.theme] || g.theme}</td><td>${g.pairs * 2}</td><td>${fmtTime(g.ms)} <small>(${perPair([g])} / pair)</small></td><td>${g.mism}</td><td>${g.quick} / ${g.miss}</td></tr>`).join("");
+  const period = all ? `all ${games.length} games saved on this device` : `the last ${PROGRESS_DAYS} days`;
+  return `<details class="progress"${all ? " open" : ""}><summary>Progress (this device)</summary>
+  <p class="lead">Showing ${period}.${all ? "" : " Everything is kept; add <b>?data=1</b> to the address to see it all."}
+    <b>Remembered</b>: your child turned over a card whose pair they had already seen, then found it. <b>Forgot</b>: they picked another card. Guesses and the last pair don't count.</p>
   ${level}
-  <p><b>Games played:</b> ${perTheme}</p>
-  ${practise ? `<h3>Cards forgotten most</h3>${practise}` : `<p>No card has been forgotten yet.</p>`}
-  <h3>Last games</h3>
-  <table class="ptable"><tr><th>When</th><th>Game</th><th>Cards</th><th>Time</th><th>Mismatches</th><th>Remembered / forgot</th></tr>${rows}</table>`
-  : `<p>No games yet on this device.</p>${level}`}
-  <div class="actions"><button type="button" class="clearstats">Clear progress</button></div>
+  ${shown.length ? `<h3>Cards forgotten most</h3>${practise || `<p>No card forgotten${all ? "" : " in these days"}.</p>`}
+  <h3>${all ? "All games" : "Last games"} (${shown.length})</h3>
+  <div class="ptable-wrap"><table class="ptable"><tr><th>When</th><th>Game</th><th>Cards</th><th>Time</th><th>Mismatches</th><th>Remembered / forgot</th></tr>${rows}</table></div>`
+  : `<p>No games ${all ? "saved" : "in the last " + PROGRESS_DAYS + " days"} on this device.</p>`}
+  <div class="actions">${all ? `<button type="button" class="download">Download data (JSON)</button>` : ""}<button type="button" class="clearstats">Clear progress</button></div>
 </details>`;
 }
-function initProgress(box) {
-  box.querySelector(".clearstats")?.addEventListener("click", e => {
+function initProgress(box, all = false) {
+  box.querySelector(".clearstats")?.addEventListener("click", () => {
     if (!confirm("Delete the progress saved on this device?")) return;
     clearStats();
-    const d = box.querySelector(".progress"); d.outerHTML = progressHTML(); box.querySelector(".progress").open = true; initProgress(box);
+    const d = box.querySelector(".progress"); d.outerHTML = progressHTML(all); box.querySelector(".progress").open = true; initProgress(box, all);
+  });
+  // Everything saved, as a file: the games, the cards and the grow-with-my-child level.
+  box.querySelector(".download")?.addEventListener("click", () => {
+    const data = { app: "memoriter", saved: new Date().toISOString(), ...loadStats(), level: loadJSON(LEVEL_KEY, null) };
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: "application/json" }));
+    a.download = `memoriter-progress-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   });
 }
 
@@ -306,7 +305,24 @@ function setupParams(form) {
   return p;
 }
 
+/* ?data=1: every game saved on this device (not only the last 10 days), with a download. */
+function initDataPage() {
+  const box = document.createElement("div"); box.id = "setup";
+  box.innerHTML = `<div class="setup-wrap"><h1>Memoriter: saved progress</h1>${progressHTML(true)}
+    <div class="actions"><button type="button" class="cancel">Back to the game</button></div></div>`;
+  document.body.appendChild(box);
+  initProgress(box, true);
+  box.querySelector(".cancel").addEventListener("click", backToGame);
+}
+/* Back to the game exactly as it was (same address, just without the setup or data screen). */
+function backToGame() {
+  const p = new URLSearchParams(location.search); p.delete("setup"); p.delete("parents"); p.delete("data");
+  const q = p.toString();
+  location.href = location.pathname + (q ? "?" + q : "") + location.hash;
+}
+
 function initSetup() {
+  if (URLQ.get("data") === "1") return initDataPage();
   if (!Q.has("setup") && !Q.has("parents")) return;
   const box = document.createElement("div"); box.id = "setup";
   box.innerHTML = setupForm();
@@ -320,12 +336,7 @@ function initSetup() {
   };
   form.addEventListener("input", refresh); form.addEventListener("change", refresh);
   form.addEventListener("submit", e => { e.preventDefault(); location.href = urlFor(); });
-  // Cancel: back to the game exactly as it was (same address, just without the setup screen).
-  box.querySelector(".cancel").addEventListener("click", () => {
-    const p = new URLSearchParams(location.search); p.delete("setup"); p.delete("parents");
-    const q = p.toString();
-    location.href = location.pathname + (q ? "?" + q : "") + location.hash;
-  });
+  box.querySelector(".cancel").addEventListener("click", backToGame);
   initDefaultsForm(box);
   initProgress(box);
   box.querySelector(".copy").addEventListener("click", async e => {
